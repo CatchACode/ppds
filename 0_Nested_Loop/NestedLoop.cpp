@@ -227,3 +227,7 @@ TEST(NestedLoopTest, TestLoadingCorrectness) {
 
 
 }
+
+TEST(NestedLoopTest, TestBlockSize) {
+    std::cout << "BlockSize is " << BLOCK_SIZE << std::endl;
+}

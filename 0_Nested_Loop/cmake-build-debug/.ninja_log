@@ -1,9 +1,0 @@
-# ninja log v5
-1	504	1713882342407439849	_deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o	45fcf12091f40c3
-1	636	1713882342537945755	CMakeFiles/NestedLoopExecutable.dir/NestedLoop.cpp.o	aae22e0002f87eee
-1	1406	1713882343305329358	_deps/googletest-build/googletest/CMakeFiles/gtest.dir/src/gtest-all.cc.o	f6b836c1292ecde6
-1406	1505	1713882343412397000	lib/libgtest.a	c27b9248dd9bb87f
-1505	1520	1713882343427416000	lib/libgtest_main.a	d23004dc98e754bb
-1520	1569	1713882343474028789	NestedLoopExecutable	2e9f456950a4dcae
-8	605	1713883055417426241	CMakeFiles/NestedLoopExecutable.dir/NestedLoop.cpp.o	aae22e0002f87eee
-605	652	1713883055465783488	NestedLoopExecutable	2e9f456950a4dcae
