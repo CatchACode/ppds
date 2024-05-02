@@ -17,6 +17,11 @@
 
 #include <cstring>
 #include <fstream>
+#include <iostream>
+#include <format>
+#include <future>
+#include <filesystem>
+#include <mutex>
 
 //==--------------------------------------------------------------------==//
 //==------------------ RELATION & RELATION UTILITY----------------------==//
@@ -211,6 +216,7 @@ inline bool parseLine(const std::string& line, CastRelation& record) {
 template <typename Relation>
 std::vector<Relation> load(const std::string& filename, const size_t numberOfTuples = SIZE_MAX) {
     std::vector<Relation> data;
+    data.reserve(8192);
     std::ifstream file(filename);
     if (!file.is_open()) {
         std::cerr << "Error: Failed to open file " << filename << std::endl;
@@ -277,5 +283,89 @@ inline ResultRelation createResultTuple(const CastRelation& cast, const TitleRel
 
     return result;
 }
+
+std::streampos getFileSize(const std::string& filepath) {
+    std::ifstream file(filepath, std::ifstream::ate | std::ifstream::binary);
+    return file.tellg();
+}
+
+void findChunkBoundaries(const std::string& filepath, std::streampos& start, std::streampos& end) {
+    std::cout << std::this_thread::get_id() <<"::findChunkBoundaries: " << filepath << "\n";
+    std::ifstream file(filepath);
+    file.seekg(start);
+    std::string dummy;
+    if(start == 0) {
+        std::getline(file, dummy);  // When we start we need to skip the first csv line. Afters "start" is always the previous "end" so aligned to newline in file
+    }
+    std::cout << std::this_thread::get_id() << "::findChunkBoundaries: line starts with \'" << static_cast<char>(file.peek()) << "\'\n";
+    start = file.tellg();
+    file.seekg(end);
+    std::getline(file, dummy);
+    end = file.tellg();
+    if(end == start) {
+        // File is probably very small, so we initial start and stop where in the same line
+        std::getline(file, dummy);
+        end = file.tellg();
+    }
+    std::cout << std::this_thread::get_id() << "::findChunkBoundaries: line ends (after) \'" << static_cast<char>(file.peek())<< "\'" << std::endl;
+    file.close();
+}
+
+template <typename Relation>
+void processChunk(const std::string& filepath, std::streampos start, std::streampos end, std::vector<Relation>& data, std::mutex& m_data) {
+    std::cout << "Thread: " << std::this_thread::get_id() <<  " Chunk[" << start << ", " << end << "] started processing" << std::endl;
+    std::ifstream file(filepath);
+    file.seekg(start);
+    std::string line;
+    Relation record;
+
+    while(file.tellg() < end && std::getline(file, line)) {
+        if(parseLine(line, record)) {
+            std::lock_guard<std::mutex> lock(m_data);
+            data.emplace_back(record);
+        } else {
+            std::cerr << "Error: failed to parse line: " << line << std::endl;
+        }
+    }
+    std::cout << "Thread: " << std::this_thread::get_id() <<  " Chunk[" << start << ", " << end << "] finished processing" << std::endl;
+}
+
+
+template<typename Relation>
+std::vector<Relation> threadedLoad(const std::string& filepath, const size_t numberOfTuples = SIZE_MAX) {
+    std::vector<Relation> data;
+    std::mutex m_data;
+    std::vector<std::thread> threads;
+
+    const auto fileSize = getFileSize(filepath);
+    const auto chunkSize = fileSize / std::thread::hardware_concurrency();
+    std::streampos start = 0;
+
+    for(int i = 0; i < std::thread::hardware_concurrency(); ++i) {
+        std::streampos end = (i == std::thread::hardware_concurrency() - 1) ? fileSize : start + chunkSize;
+        if(end != fileSize) {
+            findChunkBoundaries(filepath, start, end);
+        }
+        threads.push_back(std::thread(processChunk<Relation>, std::ref(filepath), start, end, std::ref(data), std::ref(m_data)));
+        start = end;
+    }
+
+    for(auto& t: threads) {
+        t.join();
+    }
+    std::cout << "Loaded " << data.size() << " tuples from file." << std::endl;
+    return data;
+
+}
+
+
+inline std::vector<TitleRelation> threadedLoadTitleRelation(const std::string& filepath, const size_t numberOfTuples = SIZE_MAX) {
+    return threadedLoad<TitleRelation>(filepath, numberOfTuples);
+}
+
+inline std::vector<CastRelation> threadedLoadCastRelation(const std::string& filepath, const size_t numberOfFlags = SIZE_MAX) {
+    return threadedLoad<CastRelation>(filepath, numberOfFlags);
+}
+
 
 #endif //NESTEDLOOPUTILS
