@@ -63,7 +63,8 @@ FetchContent_MakeAvailable(googletest)
 
 # Define the shared library
 add_library(0_Nested_Loop SHARED NestedLoop.cpp
-        ../Util/include/Logger.h)
+        ../Util/include/Logger.h
+        ThreadedLoad.h)
 
 # Define the executable target that uses the shared library
 add_executable(NestedLoopExecutable NestedLoop.cpp
