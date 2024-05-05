@@ -23,10 +23,13 @@ one_gebi_byte=1073741824
 one_hundret_mebi_byte=104857600
 one_mebi_byte=1048576
 one_kibi_byte=1024;
+half_mebi_byte=524288;
+#default_output_size=16384
 #default_output_size=$one_kibi_byte
-#default_output_size=$one_mebi_byte
+#default_output_size=$half_mebi_byte
+default_output_size=$one_mebi_byte
 #default_output_size=$one_gebi_byte
-default_output_size=$one_hundret_mebi_byte
+#default_output_size=$one_hundret_mebi_byte
 fldr_name="data"
 
 [ ! -d "$fldr_name" ] && mkdir -p "$fldr_name"
