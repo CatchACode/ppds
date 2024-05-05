@@ -19,9 +19,13 @@
 #include <fstream>
 #include <iostream>
 #include <format>
-#include <future>
 #include <filesystem>
 #include <mutex>
+#include <span>
+#include <functional>
+#include <string>
+#include <iomanip>
+
 
 //==--------------------------------------------------------------------==//
 //==------------------ RELATION & RELATION UTILITY----------------------==//
@@ -312,59 +316,113 @@ void findChunkBoundaries(const std::string& filepath, std::streampos& start, std
 }
 
 template <typename Relation>
-void processChunk(const std::string& filepath, std::streampos start, std::streampos end, std::vector<Relation>& data, std::mutex& m_data) {
-    std::cout << "Thread: " << std::this_thread::get_id() <<  " Chunk[" << start << ", " << end << "] started processing" << std::endl;
-    std::ifstream file(filepath);
-    file.seekg(start);
+void processChunk(const std::string& chunk, std::istringstream& raw, std::vector<Relation>& data, std::mutex& m_data) {
     std::string line;
     Relation record;
 
-    while(file.tellg() < end && std::getline(file, line)) {
-        if(parseLine(line, record)) {
-            std::lock_guard<std::mutex> lock(m_data);
-            data.emplace_back(record);
-        } else {
-            std::cerr << "Error: failed to parse line: " << line << std::endl;
-        }
-    }
-    std::cout << "Thread: " << std::this_thread::get_id() <<  " Chunk[" << start << ", " << end << "] finished processing" << std::endl;
 }
 
 
 template<typename Relation>
-std::vector<Relation> threadedLoad(const std::string& filepath, const size_t numberOfTuples = SIZE_MAX) {
+std::vector<Relation> threadedLoad(const std::string& filepath, const size_t& bufferSize, const size_t numberOfTuples = SIZE_MAX) {
     std::vector<Relation> data;
+    std::queue<std::string> chunks;
     std::mutex m_data;
-    std::vector<std::thread> threads;
+    std::mutex m_queue;
+    std::mutex m_cout;
+    std::condition_variable cv_queue;
+    std::atomic<bool> stop(false);
 
-    const auto fileSize = getFileSize(filepath);
-    const auto chunkSize = fileSize / std::thread::hardware_concurrency();
-    std::streampos start = 0;
-
-    for(int i = 0; i < std::thread::hardware_concurrency(); ++i) {
-        std::streampos end = (i == std::thread::hardware_concurrency() - 1) ? fileSize : start + chunkSize;
-        if(end != fileSize) {
-            findChunkBoundaries(filepath, start, end);
+    auto const workerThread = [&] {
+        {
+            std::lock_guard<std::mutex> lock(m_cout);
+            std::cout << std::this_thread::get_id() << ": Started\n";
         }
-        threads.push_back(std::thread(processChunk<Relation>, std::ref(filepath), start, end, std::ref(data), std::ref(m_data)));
-        start = end;
+        std::string chunk;
+        std::istringstream raw;
+        std::string line;
+        Relation record;
+        while(!stop || !chunks.empty()) {
+            std::unique_lock<std::mutex> lock(m_queue);
+            cv_queue.wait(lock, [&] {return stop || chunks.empty(); });
+            if(!chunks.empty()) { // As lock is created when stop is set, chunks might be empty when thread awakes
+                chunk = chunks.front();
+                chunks.pop();
+                lock.unlock();
+                assert(!chunk.empty());
+                raw.str(std::move(chunk));
+                data.reserve( // Maybe this helps avoid unnecessary allocation, needs testing to see if benefical
+                    std::ranges::count_if(chunk.begin(), chunk.end(), [&](const char c) {return c == '\n';}) + data.size()
+                );
+                while(!std::getline(raw, line).eof()) {
+                    if(parseLine(line, record)) {
+                        std::lock_guard<std::mutex> lock(m_data);
+                        data.emplace_back(std::move(record));
+                    } else {
+                        std::lock_guard<std::mutex> lock(m_cout);
+                        std::cerr << std::this_thread::get_id() << ": Error parsing line " << line << '\n';
+                    }
+                }
+            }
+        }
+    };
+    std::vector<std::thread> threads(std::thread::hardware_concurrency());
+    for (size_t i = 0; i < threads.size(); ++i) {
+        threads[i] = std::thread(workerThread);
     }
 
+
+    std::ifstream file(filepath, std::ios::in);
+    if(!file) {
+        m_cout.lock();
+        std::cerr << std::this_thread::get_id() << ": Could not open " << filepath << '\n';
+        m_cout.unlock();
+        stop = true;
+        cv_queue.notify_all();
+        for(auto& t : threads) {
+            t.join();
+        }
+        return data;
+    }
+    file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    std::string readBuffer = "";
+    readBuffer.resize(BLOCK_SIZE);
+    std::string leftovers = "";
+    while(file) {
+        file.read(&readBuffer[0], readBuffer.size());
+        if(!leftovers.empty()) {
+            readBuffer.insert(
+                readBuffer.begin(), leftovers.begin(), leftovers.end()
+            );
+            leftovers.clear();
+        }
+        const auto newline = readBuffer.rfind('\n');
+        if(newline != std::string::npos) {
+            leftovers.assign(readBuffer.begin() + newline + 1, readBuffer.end());
+            readBuffer.resize(newline + 1);
+        }
+        {
+            std::lock_guard<std::mutex> lock(m_queue);
+            chunks.emplace(readBuffer);
+            cv_queue.notify_one();
+        }
+
+    }
+    stop.store(true);
+    cv_queue.notify_all();
     for(auto& t: threads) {
         t.join();
     }
-    std::cout << "Loaded " << data.size() << " tuples from file." << std::endl;
     return data;
-
 }
 
 
-inline std::vector<TitleRelation> threadedLoadTitleRelation(const std::string& filepath, const size_t numberOfTuples = SIZE_MAX) {
-    return threadedLoad<TitleRelation>(filepath, numberOfTuples);
+inline std::vector<TitleRelation> threadedLoadTitleRelation(const std::string& filepath, const size_t& bufferSize, const size_t numberOfTuples = SIZE_MAX) {
+    return threadedLoad<TitleRelation>(filepath, bufferSize, numberOfTuples);
 }
 
-inline std::vector<CastRelation> threadedLoadCastRelation(const std::string& filepath, const size_t numberOfFlags = SIZE_MAX) {
-    return threadedLoad<CastRelation>(filepath, numberOfFlags);
+inline std::vector<CastRelation> threadedLoadCastRelation(const std::string& filepath, const size_t& bufferSize, const size_t numberOfFlags = SIZE_MAX) {
+    return threadedLoad<CastRelation>(filepath, bufferSize, numberOfFlags);
 }
 
 
