@@ -95,7 +95,7 @@ std::vector<ResultRelation> performNestedLoopJoin(std::vector<CastRelation>& lef
     return results;
 }
 
-std::vector<ResultRelation> performNestedLoopJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation) {
+std::vector<ResultRelation> performOldNestedLoopJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation) {
     std::vector<ResultRelation> results;
     for (const auto &left_entry: leftRelation) {
         for (const auto &right_entry: rightRelation) {
@@ -109,33 +109,40 @@ std::vector<ResultRelation> performNestedLoopJoin(const std::vector<CastRelation
 }
 
 std::vector<ResultRelation> performChunkedMergeSortJoin(std::vector<CastRelation>& leftRelation, std::vector<TitleRelation>& rightRelation) {
-    std::thread t1 (std::ranges::sort(
+    std::vector<ResultRelation> data;
+    const auto sortCastRelation = [&] {
+        std::ranges::sort(
         leftRelation.begin(), leftRelation.end(),
         [](const auto& a, const auto& b) {
             return a.movieId < b.movieId;
-        }));
+        });
+    };
 
-   std::thread t2 (std::ranges::sort(
-        rightRelation.begin(),
-        rightRelation.end(),
-        [](const auto& a, const auto& b) { return a.imdbId < b.imdbId; }
-        ));
+    const auto sortTitleRelation = [&] {
+        std::ranges::sort(
+            rightRelation.begin(),
+            rightRelation.end(),
+            [](const auto& a, const auto& b) { return a.imdbId < b.imdbId; }
+            );
+    };
+
+    std::thread t1(sortCastRelation);
+    std::thread t2(sortTitleRelation);
+
     t1.join();
     t2.join();
 
     // Determine chunks of Relation; Testing requiered to see if left or right relation should be joined
     // The plan is for each chunk to do a binary search to find it first index then stop after reaching the max l_id
 
-    const auto joinChunk = [&](std::span<CastRelation>& leftChunk, std::span<TitleRelation>& rightRelation) {
-
-    };
+    return data;
 }
 
 TEST(NestedLoopTest, TestJoiningTuples) {
     std::cout << "Test reading data from a file.\n";
 
-    const auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), BLOCK_SIZE);
-    const auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"), BLOCK_SIZE);
+    auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), BLOCK_SIZE);
+    auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"), BLOCK_SIZE);
 
     const auto resultTuples = performNestedLoopJoin(leftRelation, rightRelation);
 
