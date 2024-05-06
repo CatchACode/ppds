@@ -57,7 +57,7 @@ std::vector<ResultRelation> performNestedLoopJoin(std::vector<CastRelation>& lef
     std::vector<ResultRelation> results;
 
     const auto sortCastRelation = [&] {
-        std::ranges::sort(
+        std::sort(
         leftRelation.begin(),
         leftRelation.end(),
         [](const CastRelation& a, const CastRelation& b) { return a.movieId < b.movieId; }
@@ -65,7 +65,7 @@ std::vector<ResultRelation> performNestedLoopJoin(std::vector<CastRelation>& lef
         std::cout << "Thread: " << std::this_thread::get_id() << " has finished sorting the CastRelation" << std::endl;
     };
     const auto sortTitleRelation = [&] {
-        std::ranges::sort(
+        std::sort(
         rightRelation.begin(),
         rightRelation.end(),
         [](const TitleRelation& a, const TitleRelation& b) { return a.imdbId < b.imdbId; }
@@ -111,7 +111,7 @@ std::vector<ResultRelation> performOldNestedLoopJoin(const std::vector<CastRelat
 std::vector<ResultRelation> performChunkedMergeSortJoin(std::vector<CastRelation>& leftRelation, std::vector<TitleRelation>& rightRelation) {
     std::vector<ResultRelation> data;
     const auto sortCastRelation = [&] {
-        std::ranges::sort(
+        std::sort(
         leftRelation.begin(), leftRelation.end(),
         [](const auto& a, const auto& b) {
             return a.movieId < b.movieId;
@@ -119,7 +119,7 @@ std::vector<ResultRelation> performChunkedMergeSortJoin(std::vector<CastRelation
     };
 
     const auto sortTitleRelation = [&] {
-        std::ranges::sort(
+        std::sort(
             rightRelation.begin(),
             rightRelation.end(),
             [](const auto& a, const auto& b) { return a.imdbId < b.imdbId; }
@@ -229,18 +229,18 @@ TEST(NestedLoopTest, TestLoadingCorrectness) {
         return a.titleId != b.titleId;
     };
 
-    std::ranges::sort(
+    std::sort(
         threadedLoad.begin(),
         threadedLoad.end(),
         f
         );
-    std::ranges::sort(
+    std::sort(
         sequentialLoad.begin(),
         sequentialLoad.end(),
         f
         );
 
-    std::ranges::set_difference(
+    std::set_difference(
         sequentialLoad.begin(),
         sequentialLoad.end(),
         threadedLoad.begin(),
@@ -268,7 +268,7 @@ TEST(NestedLoopTest, TestReadingLines) {
     for(std::string line; std::getline(file, line);) {
         lines.emplace_back(line);
     }
-    auto maxLength= std::ranges::max_element(
+    auto maxLength= std::max_element(
         lines.begin(),
         lines.end(),
         [](const auto& a, const auto& b) {
