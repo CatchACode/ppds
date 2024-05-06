@@ -16,11 +16,10 @@ project(PPDS_NESTED_LOOP VERSION 1.0.0)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Set Optimization Flags
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC -fno-omit-frame-pointer -std=c++20")
-set(CMAKE_CXX_FLAGS_RELEASE "-g -O3 -march=native -mtune=native -fPIC -std=c++20")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC")
+set(CMAKE_CXX_FLAGS_RELEASE "-g -O3 -march=native -mtune=native -fPIC")
 
 set(PPDS_PROJECT_DIR "${CMAKE_SOURCE_DIR}/..")
-
 
 include_directories(${PPDS_PROJECT_DIR}/Util/include)
 if(NOT DEFINED DATA_DIRECTORY)
@@ -32,17 +31,8 @@ if(NOT DEFINED SOURCE_DIRECTORY)
 endif()
 
 # Determine block size
-if(WIN32)
-    execute_process(COMMAND "fsutil" "fsinfo" "drives" OUTPUT_VARIABLE DRIVE_INFO)
-    string(REGEX MATCH "Bytes Per Sector.*: ([0-9]+)" BLOCK_SIZE_MATCH "${DRIVE_INFO}")
-    set(BLOCK_SIZE ${CMAKE_MATCH_1})
-elseif(APPLE)
-    execute_process(COMMAND "diskutil" "info" "/" OUTPUT_VARIABLE DRIVE_INFO)
-    string(REGEX MATCH "Device Block Size:.* ([0-9]+) Bytes" BLOCK_SIZE_MATCH "${DRIVE_INFO}")
-    set(BLOCK_SIZE ${CMAKE_MATCH_1})
-else()
-    execute_process(COMMAND "stat" "-f" "-c" "%s" "/" OUTPUT_VARIABLE BLOCK_SIZE)
-endif()
+# Might not be possible for static library...
+set(BLOCK_SIZE 4096)
 
 
 # Pass the block size to the source code as a preprocessor definition
@@ -63,12 +53,11 @@ FetchContent_MakeAvailable(googletest)
 
 # Define the shared library
 add_library(0_Nested_Loop SHARED NestedLoop.cpp
-        ../Util/include/Logger.h
         ThreadedLoad.h)
 
 # Define the executable target that uses the shared library
 add_executable(NestedLoopExecutable NestedLoop.cpp
-        ../Util/include/Logger.h)
+        ThreadedLoad.h)
 
 # Link executable and library with Google Test main
 target_link_libraries(0_Nested_Loop gtest_main)
@@ -80,13 +69,13 @@ target_include_directories(NestedLoopExecutable PRIVATE ${gtest_SOURCE_DIR}/incl
 
 # Add compile definitions
 target_compile_definitions(0_Nested_Loop PRIVATE
-    DATA_DIRECTORY="${DATA_DIRECTORY}"
-    SOURCE_DIRECTORY="${SOURCE_DIRECTORY}"
-    BLOCK_SIZE=${BLOCK_SIZE}
+        DATA_DIRECTORY="${DATA_DIRECTORY}"
+        SOURCE_DIRECTORY="${SOURCE_DIRECTORY}"
+        BLOCK_SIZE=${BLOCK_SIZE}
 )
 
 target_compile_definitions(NestedLoopExecutable PRIVATE
-    DATA_DIRECTORY="${DATA_DIRECTORY}"
-    SOURCE_DIRECTORY="${SOURCE_DIRECTORY}"
-    BLOCK_SIZE=${BLOCK_SIZE}
+        DATA_DIRECTORY="${DATA_DIRECTORY}"
+        SOURCE_DIRECTORY="${SOURCE_DIRECTORY}"
+        BLOCK_SIZE=${BLOCK_SIZE}
 )
