@@ -54,7 +54,7 @@ TEST(NestedLoopTest, TestParsingTitleData) {
 //==--------------------------------------------------------------------==//
 
 
-std::vector<ResultRelation> performSortedNestedLoopJoin(std::vector<CastRelation>& leftRelation, std::vector<TitleRelation>& rightRelation) {
+std::vector<ResultRelation> performNestedLoopJoin(std::vector<CastRelation>& leftRelation, std::vector<TitleRelation>& rightRelation) {
     std::vector<ResultRelation> results;
 
     const auto sortCastRelation = [&] {
@@ -109,8 +109,27 @@ std::vector<ResultRelation> performNestedLoopJoin(const std::vector<CastRelation
     return results;
 }
 
-std::vector<ResultRelation> performChunkedMergeSortJoin(std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation) {
+std::vector<ResultRelation> performChunkedMergeSortJoin(std::vector<CastRelation>& leftRelation, std::vector<TitleRelation>& rightRelation) {
+    std::thread t1 (std::ranges::sort(
+        leftRelation.begin(), leftRelation.end(),
+        [](const auto& a, const auto& b) {
+            return a.movieId < b.movieId;
+        }));
 
+   std::thread t2 (std::ranges::sort(
+        rightRelation.begin(),
+        rightRelation.end(),
+        [](const auto& a, const auto& b) { return a.imdbId < b.imdbId; }
+        ));
+    t1.join();
+    t2.join();
+
+    // Determine chunks of Relation; Testing requiered to see if left or right relation should be joined
+    // The plan is for each chunk to do a binary search to find it first index then stop after reaching the max l_id
+
+    const auto joinChunk = [&](std::span<CastRelation>& leftChunk, std::span<TitleRelation>& rightRelation) {
+
+    };
 }
 
 TEST(NestedLoopTest, TestJoiningTuples) {
@@ -138,7 +157,7 @@ TEST(NestedLoopTest, TestJoiningTuplesSortedThreaded) {
     auto rightRelation = threadedLoadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"), BLOCK_SIZE);
 
 
-    const auto resultTuples = performSortedNestedLoopJoin(leftRelation, rightRelation);
+    const auto resultTuples = performNestedLoopJoin(leftRelation, rightRelation);
 
     std::cout << "\n\n#######################################\n";
     std::cout << "############### RESULTS ###############\n";
@@ -155,7 +174,7 @@ TEST(NestedLoopTest, TestJoinTuplesSortedThreadedLoadThreaded) {
     auto leftRelation = threadedLoadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), BLOCK_SIZE);
     auto rightRelation = threadedLoadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"), BLOCK_SIZE);
 
-    const auto resultTuples = performSortedNestedLoopJoin(leftRelation, rightRelation);
+    const auto resultTuples = performNestedLoopJoin(leftRelation, rightRelation);
 
     std::cout << "\n\n#######################################\n";
     std::cout << "############### RESULTS ###############\n";
@@ -182,7 +201,7 @@ TEST(NestedLoopTest, TestLoadTimes) {
     std::cout << "Time taken by threadedLoad: " << duration << "\n";
 
     start = std::chrono::high_resolution_clock::now();
-    auto resultTuples = performSortedNestedLoopJoin(leftRelation, rightRelation);
+    auto resultTuples = performNestedLoopJoin(leftRelation, rightRelation);
     stop = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
 
