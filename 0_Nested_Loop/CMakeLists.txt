@@ -48,6 +48,7 @@ endif()
 # Pass the block size to the source code as a preprocessor definition
 add_compile_definitions(BLOCK_SIZE=${BLOCK_SIZE})
 message("Block Size is ${BLOCK_SIZE}")
+message("Data Directory is: ${DATA_DIRECTORY}")
 
 # Load gtest
 include(FetchContent)
