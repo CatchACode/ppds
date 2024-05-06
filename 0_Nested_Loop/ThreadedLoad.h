@@ -13,8 +13,9 @@
 
 #include "NestedLoopUtils.hpp"
 
+
 template<typename Relation>
-std::vector<Relation> threadedLoad(const std::string& filepath, const size_t& bufferSize, const size_t numberOfTuples = SIZE_MAX) {
+std::vector<Relation> threadedLoad(const std::string& filepath, const size_t& bufferSize = BLOCK_SIZE) {
     std::vector<Relation> data;
     std::queue<std::string> chunks;
     std::mutex m_data;
@@ -78,9 +79,9 @@ std::vector<Relation> threadedLoad(const std::string& filepath, const size_t& bu
         return data;
     }
     file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    std::string readBuffer = "";
-    readBuffer.resize(BLOCK_SIZE);
-    std::string leftovers = "";
+    std::string readBuffer;
+    readBuffer.resize(bufferSize);
+    std::string leftovers;
     while(file) {
         file.read(readBuffer.data(), readBuffer.size());
         readBuffer.resize(file.gcount());
@@ -108,12 +109,12 @@ std::vector<Relation> threadedLoad(const std::string& filepath, const size_t& bu
 }
 
 
-inline std::vector<TitleRelation> threadedLoadTitleRelation(const std::string& filepath, const size_t& bufferSize, const size_t numberOfTuples = SIZE_MAX) {
-    return threadedLoad<TitleRelation>(filepath, bufferSize, numberOfTuples);
+inline std::vector<TitleRelation> threadedLoadTitleRelation(const std::string& filepath, const size_t& bufferSize) {
+    return threadedLoad<TitleRelation>(filepath, bufferSize);
 }
 
-inline std::vector<CastRelation> threadedLoadCastRelation(const std::string& filepath, const size_t& bufferSize, const size_t numberOfFlags = SIZE_MAX) {
-    return threadedLoad<CastRelation>(filepath, bufferSize, numberOfFlags);
+inline std::vector<CastRelation> threadedLoadCastRelation(const std::string& filepath, const size_t& bufferSize) {
+    return threadedLoad<CastRelation>(filepath, bufferSize);
 }
 
 #endif //THREADEDLOAD_H
