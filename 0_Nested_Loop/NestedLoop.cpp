@@ -204,14 +204,14 @@ TEST(NestedLoopTest, TestLoadTimes) {
 
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
 
-    std::cout << "Time taken by threadedLoad: " << duration << "\n";
+    std::cout << "Time taken by threadedLoad: " << duration.count() << "\n";
 
     start = std::chrono::high_resolution_clock::now();
     auto resultTuples = performNestedLoopJoin(leftRelation, rightRelation);
     stop = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
 
-    std::cout << "Time taken to Merge: " << duration << "\n\n";
+    std::cout << "Time taken to Merge: " << duration.count() << "\n\n";
 }
 
 TEST(NestedLoopTest, TestLoadingCorrectness) {
