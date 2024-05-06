@@ -18,7 +18,6 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
-#include <format>
 #include <filesystem>
 #include <mutex>
 #include <span>

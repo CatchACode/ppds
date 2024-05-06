@@ -14,7 +14,6 @@
 
 #include <iostream>
 #include <thread>
-#include <format>
 #include <chrono>
 #include <gtest/gtest.h>
 
