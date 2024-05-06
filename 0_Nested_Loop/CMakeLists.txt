@@ -46,7 +46,6 @@ endif()
 
 
 # Pass the block size to the source code as a preprocessor definition
-add_compile_definitions(BLOCK_SIZE=${BLOCK_SIZE})
 message("Block Size is ${BLOCK_SIZE}")
 message("Data Directory is: ${DATA_DIRECTORY}")
 
@@ -83,9 +82,11 @@ target_include_directories(NestedLoopExecutable PRIVATE ${gtest_SOURCE_DIR}/incl
 target_compile_definitions(0_Nested_Loop PRIVATE
     DATA_DIRECTORY="${DATA_DIRECTORY}"
     SOURCE_DIRECTORY="${SOURCE_DIRECTORY}"
+        BLOCK_SIZE="${BLOCK_SIZE}"
 )
 
 target_compile_definitions(NestedLoopExecutable PRIVATE
     DATA_DIRECTORY="${DATA_DIRECTORY}"
     SOURCE_DIRECTORY="${SOURCE_DIRECTORY}"
+        BLOCK_SIZE=${BLOCK_SIZE}
 )
