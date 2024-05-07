@@ -129,7 +129,7 @@ void processChunk(const std::vector<CastRelation>::iterator start, const std::ve
             ++r_it;
         } else {
             std::scoped_lock l_results(m_results);
-            results.push_back(createResultTuple(*l_it, *r_it));
+            results.emplace_back(createResultTuple(*l_it, *r_it));
             ++l_it;
             ++r_it;
         }
@@ -163,10 +163,11 @@ std::vector<ResultRelation> performChunkedSortedJoin(std::vector<CastRelation>& 
             );
         chunkStart = chunkEnd;
     }
-
+    /*
     for(auto& t: threads) {
         t.join();
     }
+    */
     return results;
 }
 
@@ -246,8 +247,8 @@ TEST(NestedLoopTest, TestLoadTimes) {
 
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
 
-    std::cout << "Time taken by threadedLoad: " << duration.count() << "\n";
-
+    std::cout << "Time taken by threadedLoad to load both relations: " << duration.count() << "\n";
+    return;
     start = std::chrono::high_resolution_clock::now();
     auto resultTuples = performChunkedSortedJoin(leftRelation, rightRelation);
     stop = std::chrono::high_resolution_clock::now();
