@@ -292,5 +292,23 @@ inline ResultRelation createResultTuple(const CastRelation& cast, const TitleRel
     return result;
 }
 
+/** Sorts the CastRelation vector by movieId, <b>does not work on const vectors!</b>
+ *
+ * @param begin start of vector
+ * @param end end of vector
+ */
+inline void sortCastRelation(const std::vector<CastRelation>::iterator& begin, const std::vector<CastRelation>::iterator& end) {
+    std::sort(begin, end, [](const auto& a, const auto& b) {return a.movieId < b.movieId;});
+}
+
+/** Sorts the TitleRelation vector by imdbId, <b>does not work on const vectors!</b>
+ *
+ * @param begin start of vector
+ * @param end start of vector
+ */
+inline void sortTitleRelation(const std::vector<TitleRelation>::iterator& begin, const std::vector<TitleRelation>::iterator& end) {
+    std::sort(begin, end, [](const auto&a, const auto& b) {return a.imdbId < b.imdbId;});
+}
+
 
 #endif //NESTEDLOOPUTILS

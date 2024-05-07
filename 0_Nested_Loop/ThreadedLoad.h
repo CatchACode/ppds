@@ -27,15 +27,15 @@ std::vector<Relation> threadedLoad(const std::string& filepath, const size_t& bu
     auto const workerThread = [&] {
         size_t numLine = 0;
         {
-            std::lock_guard<std::mutex> lock(m_cout);
-            std::cout << std::this_thread::get_id() << ": Started\n";
+            std::lock_guard lock(m_cout);
+            std::cout << std::this_thread::get_id() << "::threadedLoad::workerThread: starting processing\n";
         }
         std::string chunk;
         std::istringstream raw;
         std::string line;
         Relation record{};
         while(!stop || !chunks.empty()) {
-            std::unique_lock<std::mutex> l_queue(m_queue);
+            std::unique_lock l_queue(m_queue);
             cv_queue.wait(l_queue, [&] {return stop || chunks.empty(); });
             if(!chunks.empty()) { // As lock is created when stop is set, chunks might be empty when thread awakes
                 chunk = chunks.front();
@@ -46,30 +46,29 @@ std::vector<Relation> threadedLoad(const std::string& filepath, const size_t& bu
                 while(!std::getline(raw, line).eof()) {
                     ++numLine;
                     if(parseLine(line, record)) {
-                        std::lock_guard<std::mutex> l_data(m_data);
+                        std::lock_guard l_data(m_data);
                         data.emplace_back(record);
                     } else {
-                        std::lock_guard<std::mutex> l_cout(m_cout);
-                        std::cerr << std::this_thread::get_id() << ": Error parsing line " << line << '\n';
+                        std::lock_guard l_cout(m_cout);
+                        std::cerr << std::this_thread::get_id() << "::threadedLoad::workerThread: Error parsing line " << line << '\n';
                     }
                 }
                 raw.clear();
             }
         }
-        m_cout.lock();
-        std::cout << std::this_thread::get_id() << ": finished\n";
-        m_cout.unlock();
+        std::lock_guard l_cout(m_cout);
+        std::cout << std::this_thread::get_id() << "::threadedLoad::workerThread: finished\n";
     };
-    std::vector<std::thread> threads(std::thread::hardware_concurrency());
+    std::vector<std::jthread> threads(std::thread::hardware_concurrency());
     for (auto & i : threads) {
-        i = std::thread(workerThread);
+        i = std::jthread(workerThread);
     }
 
 
     std::ifstream file(filepath, std::ios::in);
     if(!file) {
         m_cout.lock();
-        std::cerr << std::this_thread::get_id() << ": Could not open " << filepath << '\n';
+        std::cerr << std::this_thread::get_id() << "threadedLoad: Could not open " << filepath << '\n';
         m_cout.unlock();
         stop = true;
         cv_queue.notify_all();
@@ -94,8 +93,8 @@ std::vector<Relation> threadedLoad(const std::string& filepath, const size_t& bu
             readBuffer.resize(newline + 1);
         }
         {
-            std::lock_guard<std::mutex> lock(m_queue);
-            chunks.emplace(readBuffer);
+            std::lock_guard lock(m_queue);
+            chunks.emplace(std::move(readBuffer));
             cv_queue.notify_one();
         }
 
