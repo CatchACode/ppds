@@ -23,6 +23,20 @@
 #include <algorithm>
 #include <ranges>
 
+
+std::vector<ResultRelation> performNestedLoopJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
+    std::vector<ResultRelation> resultTuples;
+
+    for (const auto& castTuple : castRelation) {
+        for (const auto& titleTuple : titleRelation) {
+            if (castTuple.movieId == titleTuple.titleId) {
+                resultTuples.push_back(createResultTuple(castTuple, titleTuple));
+            }
+        }
+    }
+    return resultTuples;
+}
+
 void processChunk(const std::vector<CastRelation>::iterator start, const std::vector<CastRelation>::iterator end,
                   std::vector<TitleRelation>& rightRelation, std::vector<ResultRelation>& results, std::mutex& m_results) {
     std::cout << std::this_thread::get_id() << ": Started processing chunk\n";
@@ -66,6 +80,10 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
     t2.join();
 
     size_t chunkSize = leftRelation.size() / numThreads;
+    if(chunkSize == 0) {
+        // numThreads is larger than data size
+        return performNestedLoopJoin(leftRelationConst, rightRelationConst, std::jthread::hardware_concurrency());
+    }
     std::vector<std::jthread> threads;
     auto chunkStart = leftRelation.begin();
     for(int i = 0; i < numThreads; ++i) {
@@ -86,23 +104,6 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
     }
     */
     return results;
-}
-
-
-
-std::vector<ResultRelation> OldperformJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    omp_set_num_threads(numThreads);
-    std::vector<ResultRelation> resultTuples;
-
-    // TODO: Improve on the nested loop join
-    for (const auto& castTuple : castRelation) {
-        for (const auto& titleTuple : titleRelation) {
-            if (castTuple.movieId == titleTuple.titleId) {
-                resultTuples.push_back(createResultTuple(castTuple, titleTuple));
-            }
-        }
-    }
-    return resultTuples;
 }
 
 TEST(ParallelizationTest, TestJoiningTuples) {
