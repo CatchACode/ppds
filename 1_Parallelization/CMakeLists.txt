@@ -31,6 +31,16 @@ if(NOT DEFINED SOURCE_DIRECTORY)
     set(SOURCE_DIRECTORY "${CMAKE_SOURCE_DIR}/")
 endif()
 
+
+# Determine block size
+# Might not be possible for static library...
+set(BLOCK_SIZE 4096)
+
+
+# Pass the block size to the source code as a preprocessor definition
+message("Block Size is ${BLOCK_SIZE}")
+message("Data directory is ${DATA_DIRECTORY}")
+
 # Load gtest
 include(FetchContent)
 include(ExternalProject)
@@ -83,4 +93,3 @@ target_compile_definitions(ParallelismExecutable PRIVATE
     DATA_DIRECTORY="${DATA_DIRECTORY}"
     SOURCE_DIRECTORY="${SOURCE_DIRECTORY}"
     )
-
