@@ -14,6 +14,7 @@
 
 #include "TimerUtil.hpp"
 #include "JoinUtils.hpp"
+#include "ThreadedLoad.h"
 
 #include <unordered_map>
 #include <iostream>
@@ -75,7 +76,7 @@ std::vector<ResultRelation> performNestedLoopJoin(const std::vector<CastRelation
 
 void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRelation> rightRelation,
                   std::vector<ResultRelation>& results, std::mutex& m_results) {
-    std::cout << std::this_thread::get_id() << ": Started processing chunk\n";
+    //std::cout << std::this_thread::get_id() << ": Started processing chunk\n";
     std::forward_iterator auto r_it = std::ranges::lower_bound(
             rightRelation.begin(), rightRelation.end(), TitleRelation{.titleId = castRelation.begin()->movieId},
             [](const TitleRelation& a, const TitleRelation& b) {
@@ -83,7 +84,7 @@ void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRel
             }
     );
     if(r_it == rightRelation.end()) {
-        std::cout << std::this_thread::get_id() << ": Chunk started with a movieId larger than all TitleRelations.imdbId\n";
+        //std::cout << std::this_thread::get_id() << ": Chunk started with a movieId larger than all TitleRelations.imdbId\n";
     }
     auto l_it = castRelation.begin();
     while(l_it != castRelation.end() && r_it != rightRelation.end()) {
@@ -98,14 +99,14 @@ void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRel
             ++r_it;
         }
     }
-    std::cout << std::this_thread::get_id() << ": has finished it's chunk\n";
+    //std::cout << std::this_thread::get_id() << ": has finished it's chunk\n";
 }
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelationConst, const std::vector<TitleRelation>& rightRelationConst,
                                         int numThreads = std::jthread::hardware_concurrency()) {
     // Putting this here allows for early return on very small data sets
     size_t chunkSize = leftRelationConst.size() / numThreads;
-    std::cout << "chunkSize is: " << chunkSize << '\n';
+    //std::cout << "chunkSize is: " << chunkSize << '\n';
     if(chunkSize == 0) {
         // numThreads is larger than data size
         return performNestedLoopJoin(leftRelationConst, rightRelationConst, std::jthread::hardware_concurrency());
@@ -119,13 +120,15 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
     if(numThreads < 2) {
         sortCastRelation(leftRelation.begin(), leftRelation.end());
         sortTitleRelation(rightRelation.begin(), rightRelation.end());
+        //std::cout << "Relations sorted!\n";
+        return performSortedJoin(std::span(leftRelation), std::span(rightRelation));
     } else {
         std::jthread t1(sortCastRelation, leftRelation.begin(), leftRelation.end());
         std::jthread t2(sortTitleRelation, rightRelation.begin(), rightRelation.end());
         t1.join();
         t2.join();
     }
-    std::cout << "Relations sorted!\n";
+    //std::cout << "Relations sorted!\n";
 
     std::vector<std::jthread> threads;
     auto chunkStart = leftRelation.begin();
@@ -163,4 +166,19 @@ TEST(ParallelizationTest, TestJoiningTuples) {
     std::cout << "Timer: " << timer << std::endl;
     std::cout << "Result size: " << resultTuples.size() << std::endl;
     std::cout << "\n\n";
+}
+
+TEST(ParallelizationTest, TestThreadScaling) {
+    auto leftRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
+    auto rightRelation = threadedLoad<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
+    performJoin(leftRelation, rightRelation); // So Cache is hot?
+
+    for(int i = 1; i <= std::thread::hardware_concurrency(); ++i) {
+        Timer timer("Parallelized Join Execute");
+        timer.start();
+        auto resultTuples = performJoin(leftRelation, rightRelation, i);
+        timer.pause();
+        std::cout << "Timer for numThreads=" << i <<": " << timer << std::endl;
+        std::cout << "\n\n";
+    }
 }
