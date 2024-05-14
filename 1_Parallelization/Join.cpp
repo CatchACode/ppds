@@ -51,7 +51,8 @@ void processChunk(const std::vector<CastRelation>::iterator start, const std::ve
     std::cout << std::this_thread::get_id() << ": has finished it's chunk\n";
 }
 
-std::vector<ResultRelation> performJoin(std::vector<CastRelation>& leftRelation, std::vector<TitleRelation>& rightRelation) {
+std::vector<ResultRelation> performJoin(std::vector<CastRelation>& leftRelation, std::vector<TitleRelation>& rightRelation,
+                                        int numThreads = std::jthread::hardware_concurrency()) {
     std::vector<ResultRelation> results;
     std::mutex m_results;
 
@@ -61,7 +62,6 @@ std::vector<ResultRelation> performJoin(std::vector<CastRelation>& leftRelation,
     t1.join();
     t2.join();
 
-    size_t numThreads = std::thread::hardware_concurrency();
     size_t chunkSize = leftRelation.size() / numThreads;
     std::vector<std::jthread> threads;
     auto chunkStart = leftRelation.begin();
@@ -104,8 +104,8 @@ std::vector<ResultRelation> OldperformJoin(const std::vector<CastRelation>& cast
 
 TEST(ParallelizationTest, TestJoiningTuples) {
     std::cout << "Test reading data from a file.\n";
-    const auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), 10000);
-    const auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"), 10000);
+    auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), 10000);
+    auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"), 10000);
 
     Timer timer("Parallelized Join execute");
     timer.start();
