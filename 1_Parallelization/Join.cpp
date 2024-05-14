@@ -51,8 +51,11 @@ void processChunk(const std::vector<CastRelation>::iterator start, const std::ve
     std::cout << std::this_thread::get_id() << ": has finished it's chunk\n";
 }
 
-std::vector<ResultRelation> performJoin(std::vector<CastRelation>& leftRelation, std::vector<TitleRelation>& rightRelation,
+std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelationConst, const std::vector<TitleRelation>& rightRelationConst,
                                         int numThreads = std::jthread::hardware_concurrency()) {
+    std::vector<CastRelation> leftRelation(std::move(leftRelationConst));
+    std::vector<TitleRelation> rightRelation(std::move(rightRelationConst));
+
     std::vector<ResultRelation> results;
     std::mutex m_results;
 
