@@ -54,6 +54,22 @@ TEST(NestedLoopTest, TestParsingTitleData) {
 //==--------------------------------------------------------------------==//
 
 
+std::vector<ResultRelation> performHashJoin(const std::vector<CastRelation>& leftRelation, std::vector<TitleRelation>& rightRelation) {
+    // Hash on Title, it always has less Relations
+    std::map<int32_t, TitleRelation> hashMap;
+    std::vector<ResultRelation> results;
+    for(const auto& e: rightRelation) {
+        hashMap.emplace(e.imdbId, e);
+    }
+    for(const auto & e: leftRelation) {
+        if(auto search = hashMap.find(e.movieId) != hashMap.end()) {
+            results.emplace_back(createResultTuple(e, static_cast<const TitleRelation>(search)));
+        }
+    }
+    return results;
+}
+
+
 std::vector<ResultRelation> performSortedJoin(std::vector<CastRelation>& leftRelation, std::vector<TitleRelation>& rightRelation) {
     std::vector<ResultRelation> results;
 
@@ -236,6 +252,29 @@ TEST(NestedLoopTest, TestChunkedSortJoin) {
 }
 
 
+TEST(NestedLoopTest, TestHashJoin) {
+    auto leftRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
+    auto rightRelation = threadedLoad<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
+
+    const auto results = performHashJoin(leftRelation, rightRelation);
+
+    std::cout << "\n\n#######################################\n";
+    std::cout << "############### RESULTS ###############\n";
+    std::cout << "#######################################\n";
+    if(results.size() >= 80000) {
+        std::cout << "Skipping printing results\n\n";
+        return;
+    }
+    for(const auto& resultTuple : results) {
+        std::cout << resultRelationToString(resultTuple) << '\n';
+    }
+
+    std::cout << "\n\n";
+
+
+}
+
+
 TEST(NestedLoopTest, TestLoadTimes) {
     std::cout << "Testing Load times\n";
 
@@ -248,12 +287,12 @@ TEST(NestedLoopTest, TestLoadTimes) {
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
 
     std::cout << "Time taken by threadedLoad to load both relations: " << duration.count() << "\n";
-    return;
     start = std::chrono::high_resolution_clock::now();
     auto resultTuples = performChunkedSortedJoin(leftRelation, rightRelation);
     stop = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-
+    std::cout << std::flush;
+    sleep(1);
     std::cout << "Time taken to Merge: " << duration.count() << "\n\n";
 }
 

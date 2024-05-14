@@ -59,6 +59,7 @@ void workerThread(std::mutex& m_cout, const std::atomic<bool>& stop, std::queue<
 
 template<typename Relation>
 std::vector<Relation> threadedLoad(const std::string& filepath, const size_t& bufferSize = BLOCK_SIZE) {
+    std::cout << "Loading " << filepath << std::endl;
     std::vector<Relation> data;
     std::queue<std::string> chunks;
     std::mutex m_data;
@@ -107,6 +108,10 @@ std::vector<Relation> threadedLoad(const std::string& filepath, const size_t& bu
             cv_queue.notify_one();
         }
 
+    }
+    {
+        std::scoped_lock l_cout(m_cout);
+        std::cout << "MainThread::threadedLoad: finished reading the file into chunks" << std::endl;
     }
     stop.store(true);
     cv_queue.notify_all();
