@@ -24,6 +24,12 @@
 #include <ranges>
 
 
+void inline printResults(std::vector<ResultRelation>& results) {
+    for(auto const& record: results) {
+        std::cout << resultRelationToString(record) << std::endl;
+    }
+}
+
 std::vector<ResultRelation> performNestedLoopJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
     std::vector<ResultRelation> resultTuples;
 
@@ -34,6 +40,7 @@ std::vector<ResultRelation> performNestedLoopJoin(const std::vector<CastRelation
             }
         }
     }
+    printResults(resultTuples);
     return resultTuples;
 }
 
@@ -103,6 +110,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
         t.join();
     }
     */
+    printResults(results);
     return results;
 }
 
