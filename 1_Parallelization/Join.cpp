@@ -26,7 +26,7 @@
 
 void inline printResults(std::vector<ResultRelation>& results) {
     for(auto const& record: results) {
-        std::cout << resultRelationToString(record) << std::endl;
+        std::cout << resultRelationToString(record) << '\n';
     }
     std::cout << std::flush;
 }
@@ -49,9 +49,9 @@ void processChunk(const std::vector<CastRelation>::iterator start, const std::ve
                   std::vector<TitleRelation>& rightRelation, std::vector<ResultRelation>& results, std::mutex& m_results) {
     std::cout << std::this_thread::get_id() << ": Started processing chunk\n";
     std::forward_iterator auto r_it = std::ranges::lower_bound(
-            rightRelation.begin(), rightRelation.end(), TitleRelation{.imdbId = start->movieId},
+            rightRelation.begin(), rightRelation.end(), TitleRelation{.titleId = start->movieId},
             [](const TitleRelation& a, const TitleRelation& b) {
-                return a.imdbId < b.imdbId;
+                return a.titleId < b.titleId;
             }
     );
     if(r_it == rightRelation.end()) {
@@ -59,9 +59,9 @@ void processChunk(const std::vector<CastRelation>::iterator start, const std::ve
     }
     auto l_it = start;
     while(l_it != end && r_it != rightRelation.end()) {
-        if(l_it->movieId < r_it->imdbId) {
+        if(l_it->movieId < r_it->titleId) {
             ++l_it;
-        } else if (l_it->movieId > r_it->imdbId) {
+        } else if (l_it->movieId > r_it->titleId) {
             ++r_it;
         } else {
             std::scoped_lock l_results(m_results);
@@ -86,6 +86,8 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
 
     t1.join();
     t2.join();
+
+    std::cout << "Relations sorted!\n";
 
     size_t chunkSize = leftRelation.size() / numThreads;
     if(chunkSize == 0) {
