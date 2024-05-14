@@ -339,7 +339,7 @@ inline void sortCastRelation(const std::vector<CastRelation>::iterator& begin, c
  * @param end start of vector
  */
 inline void sortTitleRelation(const std::vector<TitleRelation>::iterator& begin, const std::vector<TitleRelation>::iterator& end) {
-    std::sort(begin, end, [](const auto&a, const auto& b) {return a.imdbId < b.imdbId;});
+    std::sort(begin, end, [](const auto&a, const auto& b) {return a.titleId < b.titleId;});
 }
 
 
