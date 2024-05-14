@@ -28,6 +28,7 @@ void inline printResults(std::vector<ResultRelation>& results) {
     for(auto const& record: results) {
         std::cout << resultRelationToString(record) << std::endl;
     }
+    std::cout << std::flush;
 }
 
 std::vector<ResultRelation> performNestedLoopJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
