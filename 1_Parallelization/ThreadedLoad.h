@@ -28,7 +28,7 @@ void inline processLine(std::string& line, std::vector<Relation>& data, std::mut
         data.emplace_back(record);
     } else {
         std::lock_guard l_cout(m_cout);
-        //std::cerr << std::this_thread::get_id() << "::threadedLoad::workerThread: Error parsing line " << line << std::endl;
+        std::cerr << std::this_thread::get_id() << "::threadedLoad::workerThread: Error parsing line " << line << std::endl;
     }
 }
 
@@ -37,7 +37,7 @@ void workerThread(std::mutex& m_cout, const std::atomic<bool>& stop, std::queue<
                   std::condition_variable& cv_queue, std::vector<Relation>& data, std::mutex& m_data) {
     {
         std::lock_guard lock(m_cout);
-        //std::cout << std::this_thread::get_id() << "::threadedLoad::workerThread: starting processing" << std::endl;
+        std::cout << std::this_thread::get_id() << "::threadedLoad::workerThread: starting processing" << std::endl;
     }
     std::string chunk;
     std::istringstream raw;
@@ -59,7 +59,7 @@ void workerThread(std::mutex& m_cout, const std::atomic<bool>& stop, std::queue<
         }
     }
     std::lock_guard l_cout(m_cout);
-    //std::cout << std::this_thread::get_id() << "::threadedLoad::workerThread: finished" << std::endl;
+    std::cout << std::this_thread::get_id() << "::threadedLoad::workerThread: finished" << std::endl;
 }
 
 
@@ -84,7 +84,7 @@ std::vector<Relation> threadedLoad(const std::string& filepath, const size_t& bu
     if(!file) {
         {
             std::scoped_lock l_cout(m_cout);
-            //std::cerr << std::this_thread::get_id() << "threadedLoad: Could not open " << filepath << std::endl;
+            std::cerr << std::this_thread::get_id() << "threadedLoad: Could not open " << filepath << std::endl;
         }
         stop = true;
         cv_queue.notify_all();
@@ -117,7 +117,7 @@ std::vector<Relation> threadedLoad(const std::string& filepath, const size_t& bu
     }
     {
         std::scoped_lock l_cout(m_cout);
-        //std::cout << "MainThread::threadedLoad: finished reading the file into chunks" << std::endl;
+        std::cout << "MainThread::threadedLoad: finished reading the file into chunks" << std::endl;
     }
     stop.store(true);
     cv_queue.notify_all();

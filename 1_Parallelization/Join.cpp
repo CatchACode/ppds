@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <ranges>
 #include <span>
+#include <experimental/simd>
 
 
 /** performs a sorted join, <b>has undefined behaviour if the spans are not sorted!</b>
@@ -35,27 +36,36 @@
 std::vector<ResultRelation> performSortedJoin(const std::span<CastRelation>& castRelation, const std::span<TitleRelation>& titleRelation) {
     std::vector<ResultRelation> results;
 
+    int32_t currentId = 0;
     std::forward_iterator auto l_it = castRelation.begin();
     std::forward_iterator auto r_it = titleRelation.begin();
     while(l_it != castRelation.end() && r_it != titleRelation.end()) {
-        if(l_it->movieId < r_it->imdbId) {
+        if(l_it->movieId < r_it->titleId) {
             ++l_it;
-        } else if (l_it->movieId > r_it->imdbId) {
+        } else if (l_it->movieId > r_it->titleId) {
             ++r_it;
         } else {
-            results.emplace_back(createResultTuple(*l_it, *r_it));
-            ++l_it;
-            ++r_it;
+            std::forward_iterator auto r_start = r_it;
+            std::forward_iterator auto l_start = l_it;
+            currentId = r_it->titleId;
+
+            // Find End of block where both sides share keys
+            while(r_it != titleRelation.end() && r_it->titleId == currentId) {
+                ++r_it;
+            }
+            while(l_it != castRelation.end() && l_it->movieId == currentId) {
+                ++l_it;
+            }
+
+            for(std::forward_iterator auto l_idx = l_start; l_idx != l_it; ++l_idx) {
+                for(std::forward_iterator auto r_idx = r_start; r_idx != r_it; ++r_idx) {
+                    results.emplace_back(createResultTuple(*l_idx, *r_idx));
+                }
+            }
+
         }
     }
     return results;
-}
-
-void inline printResults(const std::vector<ResultRelation>& results) {
-    for(auto const& record: results) {
-        std::cout << resultRelationToString(record) << '\n';
-    }
-    std::cout << std::flush;
 }
 
 std::vector<ResultRelation> performNestedLoopJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
@@ -68,7 +78,6 @@ std::vector<ResultRelation> performNestedLoopJoin(const std::vector<CastRelation
             }
         }
     }
-    //printResults(resultTuples);
     return resultTuples;
 }
 
@@ -76,7 +85,8 @@ std::vector<ResultRelation> performNestedLoopJoin(const std::vector<CastRelation
 
 void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRelation> rightRelation,
                   std::vector<ResultRelation>& results, std::mutex& m_results) {
-    //std::cout << std::this_thread::get_id() << ": Started processing chunk\n";
+    results.reserve((castRelation.size()>rightRelation.size()) ? castRelation.size() : rightRelation.size());
+    std::cout << std::this_thread::get_id() << ": Started processing chunk\n";
     std::forward_iterator auto r_it = std::ranges::lower_bound(
             rightRelation.begin(), rightRelation.end(), TitleRelation{.titleId = castRelation.begin()->movieId},
             [](const TitleRelation& a, const TitleRelation& b) {
@@ -84,29 +94,47 @@ void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRel
             }
     );
     if(r_it == rightRelation.end()) {
-        //std::cout << std::this_thread::get_id() << ": Chunk started with a movieId larger than all TitleRelations.imdbId\n";
+        std::cout << std::this_thread::get_id() << ": Chunk started with a movieId larger than all TitleRelations.imdbId\n"
+        << r_it->titleId << '>' << castRelation[0].movieId << '\n';
     }
     auto l_it = castRelation.begin();
+    int32_t currentId = 0;
     while(l_it != castRelation.end() && r_it != rightRelation.end()) {
         if(l_it->movieId < r_it->titleId) {
             ++l_it;
         } else if (l_it->movieId > r_it->titleId) {
             ++r_it;
         } else {
-            std::scoped_lock l_results(m_results);
-            results.emplace_back(createResultTuple(*l_it, *r_it));
-            ++l_it;
-            ++r_it;
+            std::forward_iterator auto r_start = r_it;
+            std::forward_iterator auto l_start = l_it;
+            currentId = r_it->titleId;
+
+            // Find End of block where both sides share keys
+            while(r_it != rightRelation.end() && r_it->titleId == currentId) {
+                ++r_it;
+            }
+            while(l_it != castRelation.end() && l_it->movieId == currentId) {
+                ++l_it;
+            }
+
+            for(std::forward_iterator auto l_idx = l_start; l_idx != l_it; ++l_idx) {
+                for(std::forward_iterator auto r_idx = r_start; r_idx != r_it; ++r_idx) {
+                    results.emplace_back(createResultTuple(*l_idx, *r_idx));
+                }
+            }
+
         }
     }
-    //std::cout << std::this_thread::get_id() << ": has finished it's chunk\n";
+    results.shrink_to_fit();
+    std::cout << std::this_thread::get_id() << ": has finished it's chunk\n";
 }
 
-std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelationConst, const std::vector<TitleRelation>& rightRelationConst,
+std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelation>& leftRelationConst, const std::vector<TitleRelation>& rightRelationConst,
                                         int numThreads = std::jthread::hardware_concurrency()) {
     // Putting this here allows for early return on very small data sets
     size_t chunkSize = leftRelationConst.size() / numThreads;
-    //std::cout << "chunkSize is: " << chunkSize << '\n';
+    std::cout << "chunkSize is: " << chunkSize << '\n';
+    std::cout << "numThreads is: " << numThreads << '\n';
     if(chunkSize == 0) {
         // numThreads is larger than data size
         return performNestedLoopJoin(leftRelationConst, rightRelationConst, std::jthread::hardware_concurrency());
@@ -120,7 +148,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
     if(numThreads < 2) {
         sortCastRelation(leftRelation.begin(), leftRelation.end());
         sortTitleRelation(rightRelation.begin(), rightRelation.end());
-        //std::cout << "Relations sorted!\n";
+        std::cout << "Relations sorted!\n";
         return performSortedJoin(std::span(leftRelation), std::span(rightRelation));
     } else {
         std::jthread t1(sortCastRelation, leftRelation.begin(), leftRelation.end());
@@ -128,9 +156,10 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
         t1.join();
         t2.join();
     }
-    //std::cout << "Relations sorted!\n";
+    std::cout << "Relations sorted!\n";
 
     std::vector<std::jthread> threads;
+    std::vector<std::vector<ResultRelation>> resultVectors(numThreads);
     auto chunkStart = leftRelation.begin();
     for(int i = 0; i < numThreads; ++i) {
         std::vector<CastRelation>::iterator chunkEnd;
@@ -140,26 +169,45 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
             chunkEnd = std::next(chunkStart, chunkSize);
         }
         std::span<CastRelation> chunkSpan(std::to_address(chunkStart), std::to_address(chunkEnd));
-        threads.push_back(
-                std::jthread(processChunk, chunkSpan, std::span(rightRelation), std::ref(results), std::ref(m_results))
-        );
+        threads.push_back(std::jthread(processChunk, chunkSpan, std::span(rightRelation), std::ref(resultVectors[i]), std::ref(m_results)));
         chunkStart = chunkEnd;
     }
     for(auto& t: threads) {
         t.join();
     }
-    //printResults(results);
+    // Join ResultVectors
+    for(const auto& vector: resultVectors) {
+        results.reserve(results.size() + vector.size());
+        std::move(vector.begin(), vector.end(), std::back_inserter(results));
+    }
+
     return results;
 }
 
+
+
+std::vector<ResultRelation> performJoin(const std::vector<CastRelation> leftRelation, const std::vector<TitleRelation>& rightRelation) {
+    // Construct hashmap for TitleRelations
+    std::map<int32_t, TitleRelation> rightRelationMap;
+    for(const auto& record: rightRelation) {
+        rightRelationMap;
+    }
+    return std::vector<ResultRelation> {};
+}
+
+
+
+
+
+
 TEST(ParallelizationTest, TestJoiningTuples) {
-    auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
-    auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
+    auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform_512mb.csv"));
+    auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform_512mb.csv"));
 
     Timer timer("Parallelized Join execute");
     timer.start();
 
-    auto resultTuples = performJoin(leftRelation, rightRelation);
+    auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation);
 
     timer.pause();
 
@@ -169,16 +217,31 @@ TEST(ParallelizationTest, TestJoiningTuples) {
 }
 
 TEST(ParallelizationTest, TestThreadScaling) {
-    auto leftRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
-    auto rightRelation = threadedLoad<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
-    performJoin(leftRelation, rightRelation); // So Cache is hot?
+    const auto leftRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform_512mb.csv"));
+    const auto rightRelation = threadedLoad<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform_512mb.csv"));
+    auto sink = performThreadedSortJoin(leftRelation, rightRelation); // So Cache is hot?
 
     for(int i = 1; i <= std::thread::hardware_concurrency(); ++i) {
         Timer timer("Parallelized Join Execute");
         timer.start();
-        auto resultTuples = performJoin(leftRelation, rightRelation, i);
+        auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation, i);
         timer.pause();
         std::cout << "Timer for numThreads=" << i <<": " << timer << std::endl;
         std::cout << "\n\n";
     }
+}
+
+TEST(ParallelizationTest, TestIdenticalKeys) {
+    auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_all_join_keys_equal.csv"));
+    auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_all_join_keys_equal.csv"));
+
+    sortCastRelation(leftRelation.begin(), leftRelation.end());
+    sortTitleRelation(rightRelation.begin(), rightRelation.end());
+
+    auto results = performSortedJoin(leftRelation, rightRelation);
+
+    for(const auto& record: results) {
+        std::cout << resultRelationToString(record) << '\n';
+    }
+    std::cout << "\n\n";
 }

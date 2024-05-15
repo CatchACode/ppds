@@ -37,8 +37,8 @@ std::vector<ResultRelation> performNestedLoopJoin(const std::vector<CastRelation
 TEST(NestedLoopTest, TestJoiningTuples) {
     std::cout << "Test reading data from a file.\n";
 
-    const auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
-    const auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
+    const auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform_512mb.csv"));
+    const auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform_512mb.csv"));
 
     const auto resultTuples = performNestedLoopJoin(leftRelation, rightRelation);
 

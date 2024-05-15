@@ -30,7 +30,7 @@
 TEST(NestedLoopTest, TestParsingCastData) {
     std::cout << "Test reading cast data from a file.\n";
 
-    const auto relation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), 10);
+    const auto relation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform_512mb.csv"), 10);
 
     for(const auto& tuple : relation) {
         std::cout << castRelationToString(tuple) << '\n';
@@ -41,7 +41,7 @@ TEST(NestedLoopTest, TestParsingCastData) {
 TEST(NestedLoopTest, TestParsingTitleData) {
     std::cout << "Test reading data title from a file.\n";
 
-    const auto relation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"), 10);
+    const auto relation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform_512mb.csv"), 10);
 
     for(const auto& tuple : relation) {
         std::cout << titleRelationToString(tuple) << '\n';
@@ -190,8 +190,8 @@ std::vector<ResultRelation> performChunkedSortedJoin(std::vector<CastRelation>& 
 TEST(NestedLoopTest, NestedLoopJoin) {
     std::cout << "Test reading data from a file.\n";
 
-    auto leftRelation = threadedLoadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), BLOCK_SIZE);
-    auto rightRelation = threadedLoadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"), BLOCK_SIZE);
+    auto leftRelation = threadedLoadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform_512mb.csv"), BLOCK_SIZE);
+    auto rightRelation = threadedLoadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform_512mb.csv"), BLOCK_SIZE);
 
     const auto resultTuples = performNestedLoopJoin(leftRelation, rightRelation);
 
@@ -211,8 +211,8 @@ TEST(NestedLoopTest, NestedLoopJoin) {
 TEST(NestedLoopTest, SortedJoin) {
     std::cout << "Test reading data from a file.\n";
 
-    auto leftRelation = threadedLoadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), BLOCK_SIZE);
-    auto rightRelation = threadedLoadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"), BLOCK_SIZE);
+    auto leftRelation = threadedLoadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform_512mb.csv"), BLOCK_SIZE);
+    auto rightRelation = threadedLoadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform_512mb.csv"), BLOCK_SIZE);
 
 
     const auto resultTuples = performSortedJoin(leftRelation, rightRelation);
@@ -231,8 +231,8 @@ TEST(NestedLoopTest, SortedJoin) {
 }
 
 TEST(NestedLoopTest, TestChunkedSortJoin) {
-    auto leftRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
-    auto rightRelation = threadedLoad<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
+    auto leftRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform_512mb.csv"));
+    auto rightRelation = threadedLoad<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform_512mb.csv"));
 
     const auto results = performChunkedSortedJoin(leftRelation, rightRelation);
 
@@ -253,8 +253,8 @@ TEST(NestedLoopTest, TestChunkedSortJoin) {
 
 
 TEST(NestedLoopTest, TestHashJoin) {
-    auto leftRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
-    auto rightRelation = threadedLoad<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
+    auto leftRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform_512mb.csv"));
+    auto rightRelation = threadedLoad<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform_512mb.csv"));
 
     const auto results = performHashJoin(leftRelation, rightRelation);
 
@@ -280,8 +280,8 @@ TEST(NestedLoopTest, TestLoadTimes) {
 
 
     auto start = std::chrono::high_resolution_clock::now();
-    auto leftRelation = threadedLoadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), BLOCK_SIZE);
-    auto rightRelation = threadedLoadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"), BLOCK_SIZE);
+    auto leftRelation = threadedLoadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform_512mb.csv"), BLOCK_SIZE);
+    auto rightRelation = threadedLoadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform_512mb.csv"), BLOCK_SIZE);
     auto stop = std::chrono::high_resolution_clock::now();
 
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
@@ -297,8 +297,8 @@ TEST(NestedLoopTest, TestLoadTimes) {
 }
 
 TEST(NestedLoopTest, TestLoadingCorrectness) {
-    auto threadedLoad = threadedLoadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"), BLOCK_SIZE);
-    auto sequentialLoad = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
+    auto threadedLoad = threadedLoadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform_512mb.csv"), BLOCK_SIZE);
+    auto sequentialLoad = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform_512mb.csv"));
 
     std::vector<TitleRelation> missing;
     ASSERT_EQ(threadedLoad.size(), sequentialLoad.size()) << "Loaded different number of relations!\n";
@@ -338,7 +338,7 @@ TEST(NestedLoopTest, TestBlockSize) {
 
 TEST(NestedLoopTest, TestReadingLines) {
     std::vector<std::string> lines;
-    std::ifstream file(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
+    std::ifstream file(DATA_DIRECTORY + std::string("cast_info_uniform_512mb.csv"));
     for(std::string line; std::getline(file, line);) {
         lines.emplace_back(line);
     }
@@ -354,7 +354,7 @@ TEST(NestedLoopTest, TestReadingLines) {
 
 TEST(NestedLoopTest, TestReadingFile) {
     auto readFile = [](size_t readSize) {
-        std::ifstream file(DATA_DIRECTORY + std::string("title_info_uniform.csv"), std::ios::binary | std::ios::in);
+        std::ifstream file(DATA_DIRECTORY + std::string("title_info_uniform_512mb.csv"), std::ios::binary | std::ios::in);
         char buf[readSize + 1];
         memset(&buf, 0, readSize + 1);
         while(file) {
