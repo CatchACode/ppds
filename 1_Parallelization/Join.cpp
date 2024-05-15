@@ -85,7 +85,6 @@ std::vector<ResultRelation> performNestedLoopJoin(const std::vector<CastRelation
 
 void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRelation> rightRelation,
                   std::vector<ResultRelation>& results, std::mutex& m_results) {
-    results.reserve((castRelation.size()>rightRelation.size()) ? castRelation.size() : rightRelation.size());
     std::cout << std::this_thread::get_id() << ": Started processing chunk\n";
     std::forward_iterator auto r_it = std::ranges::lower_bound(
             rightRelation.begin(), rightRelation.end(), TitleRelation{.titleId = castRelation.begin()->movieId},
@@ -119,14 +118,20 @@ void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRel
 
             for(std::forward_iterator auto l_idx = l_start; l_idx != l_it; ++l_idx) {
                 for(std::forward_iterator auto r_idx = r_start; r_idx != r_it; ++r_idx) {
-                    results.emplace_back(createResultTuple(*l_idx, *r_idx));
+                    results.push_back(createResultTuple(*l_idx, *r_idx));
                 }
             }
 
         }
     }
-    results.shrink_to_fit();
     std::cout << std::this_thread::get_id() << ": has finished it's chunk\n";
+}
+
+void mergeVectors(std::vector<std::vector<ResultRelation>>& resultVectors, std::vector<ResultRelation>& results) {
+    for(const auto& vector: resultVectors) {
+        results.reserve(results.size() + vector.size());
+        std::move(vector.begin(), vector.end(), std::back_inserter(results));
+    }
 }
 
 std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelation>& leftRelationConst, const std::vector<TitleRelation>& rightRelationConst,
@@ -169,30 +174,27 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
             chunkEnd = std::next(chunkStart, chunkSize);
         }
         std::span<CastRelation> chunkSpan(std::to_address(chunkStart), std::to_address(chunkEnd));
-        threads.push_back(std::jthread(processChunk, chunkSpan, std::span(rightRelation), std::ref(resultVectors[i]), std::ref(m_results)));
+        threads.emplace_back(processChunk, chunkSpan, std::span(rightRelation), std::ref(resultVectors[i]), std::ref(m_results));
         chunkStart = chunkEnd;
     }
     for(auto& t: threads) {
         t.join();
     }
+    std::cout << "All threads joined!\n";
     // Join ResultVectors
-    for(const auto& vector: resultVectors) {
-        results.reserve(results.size() + vector.size());
-        std::move(vector.begin(), vector.end(), std::back_inserter(results));
-    }
-
+    mergeVectors(resultVectors, results);
     return results;
 }
 
 
 
-std::vector<ResultRelation> performJoin(const std::vector<CastRelation> leftRelation, const std::vector<TitleRelation>& rightRelation) {
-    // Construct hashmap for TitleRelations
-    std::map<int32_t, TitleRelation> rightRelationMap;
-    for(const auto& record: rightRelation) {
-        rightRelationMap;
-    }
-    return std::vector<ResultRelation> {};
+std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation) {
+    std::vector<CastRelation> castRelation(leftRelation);
+    std::vector<TitleRelation> titleRelation(rightRelation);
+    sortCastRelation(castRelation.begin(), castRelation.end());
+    sortTitleRelation(titleRelation.begin(), titleRelation.end());
+
+    return performSortedJoin(castRelation, titleRelation);
 }
 
 
@@ -201,13 +203,16 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation> leftRela
 
 
 TEST(ParallelizationTest, TestJoiningTuples) {
-    auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform_512mb.csv"));
-    auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform_512mb.csv"));
+    const auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
+    const auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
+
+
+
 
     Timer timer("Parallelized Join execute");
     timer.start();
 
-    auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation);
+    auto resultTuples = performJoin(leftRelation, rightRelation);
 
     timer.pause();
 
