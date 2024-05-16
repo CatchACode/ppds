@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Update the package list and install necessary dependencies
 RUN apt-get update && \
-    apt-get install -y software-properties-common wget gnupg build-essential gdb git perf valgrind
+    apt-get install -y software-properties-common wget gnupg build-essential gdb git linux-tools-common linux-tools-generic valgrind
 
 # Add the repository for GCC 11
 RUN add-apt-repository ppa:ubuntu-toolchain-r/test -y && \
