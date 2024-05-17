@@ -20,6 +20,19 @@
 #include <sstream>
 #include <iostream>
 #include <vector>
+#include <execution>
+
+#ifndef L1_CACHE_SIZE
+#define L1_CACHE_SIZE 65536 ///< ~16 KiB per Core
+#endif
+#ifndef L2_CACHE_SIZE
+#define L2_CACHE_SIZE 524288 ///< ~512 KiB per Core
+#endif
+#ifndef L3_CACHE_SIZE
+#define L3_CACHE_SIZE 83886080 ///< ~80 MiB in total
+#endif
+
+
 
 //==--------------------------------------------------------------------==//
 //==------------------ RELATION & RELATION UTILITY----------------------==//
@@ -341,6 +354,15 @@ inline void sortCastRelation(const std::vector<CastRelation>::iterator& begin, c
 inline void sortTitleRelation(const std::vector<TitleRelation>::iterator& begin, const std::vector<TitleRelation>::iterator& end) {
     std::sort(begin, end, [](const auto&a, const auto& b) {return a.titleId < b.titleId;});
 }
+
+inline bool compareTitleRelations(const TitleRelation& a, const TitleRelation& b) {
+    return a.titleId < b.titleId;
+}
+
+inline bool compareCastRelations(const CastRelation& a, const CastRelation& b) {
+    return a.movieId < b.movieId;
+}
+
 
 
 
