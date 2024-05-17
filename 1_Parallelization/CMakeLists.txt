@@ -74,16 +74,17 @@ add_executable(ParallelismExecutable Join.cpp
 
 # Link with Libraries
 find_package(OpenMP REQUIRED)
+find_package(TBB REQUIRED)
 if (OpenMP_CXX_FOUND)
     message(STATUS "OpenMP found")
-    target_link_libraries(1_Parallelization PUBLIC OpenMP::OpenMP_CXX gtest_main)
-    target_link_libraries(ParallelismExecutable OpenMP::OpenMP_CXX gtest_main)
+    target_link_libraries(1_Parallelization PUBLIC TBB::tbb OpenMP::OpenMP_CXX gtest_main)
+    target_link_libraries(ParallelismExecutable TBB::tbb OpenMP::OpenMP_CXX gtest_main)
 else (OpenMP_CXX_FOUND)
     message(STATUS "OpenMP not found")
     message(STATUS "On Ubuntu, install the package by the following command!")
     message(STATUS "sudo apt install libomp-dev")
-    target_link_libraries(1_Parallelization PUBLIC gtest_main)
-    target_link_libraries(ParallelismExecutable gtest_main)
+    target_link_libraries(1_Parallelization PUBLIC TBB::tbb gtest_main)
+    target_link_libraries(ParallelismExecutable TBB::tbb gtest_main)
 endif (OpenMP_CXX_FOUND)
 
 
