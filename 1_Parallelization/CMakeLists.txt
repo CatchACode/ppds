@@ -17,8 +17,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set Optimization Flags
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC -ltbb -DPARALLEL")
-set(CMAKE_CXX_FLAGS_RELEASE "-g -O2 -march=native -mtune=native -fPIC -ltbb -DPARALLEL")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC -DPARALLEL")
+set(CMAKE_CXX_FLAGS_RELEASE "-g -O2 -march=native -mtune=native -fPIC -DPARALLEL")
 
 set(PPDS_PROJECT_DIR "${CMAKE_SOURCE_DIR}/..")
 
