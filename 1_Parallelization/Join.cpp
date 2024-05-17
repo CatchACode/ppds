@@ -188,7 +188,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
 
 
 
-std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation) {
+std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
     std::vector<CastRelation> castRelation(leftRelation);
     std::vector<TitleRelation> titleRelation(rightRelation);
     sortCastRelation(castRelation.begin(), castRelation.end());
