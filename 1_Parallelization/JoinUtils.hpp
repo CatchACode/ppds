@@ -355,6 +355,15 @@ inline void sortTitleRelation(const std::vector<TitleRelation>::iterator& begin,
     std::sort(begin, end, [](const auto&a, const auto& b) {return a.titleId < b.titleId;});
 }
 
+inline bool compareTitleRelations(const TitleRelation& a, const TitleRelation& b) {
+    return a.titleId < b.titleId;
+}
+
+inline bool compareCastRelations(const CastRelation& a, const CastRelation& b) {
+    return a.movieId < b.movieId;
+}
+
+
 
 
 

@@ -186,7 +186,7 @@ std::vector<ResultRelation> performThreadedSortMergeJoin(const std::vector<CastR
     std::vector<ResultRelation> results;
     std::vector<TitleRelation> rightRelation(rightRelationConst);
     std::vector<CastRelation> leftRelation(leftRelationConst);
-
+    return {};
 }
 
 #endif //PPDS_PARALLELISM_SORTMERGEJOIN_H

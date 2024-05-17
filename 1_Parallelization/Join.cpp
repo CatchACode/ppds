@@ -18,6 +18,7 @@
 #include "HashJoin.h"
 #include "SortMergeJoin.h"
 #include "NestedLoopJoin.h"
+#include "MergeSort.h"
 
 #include <unordered_map>
 #include <iostream>
@@ -32,7 +33,7 @@
 
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
-
+    return {};
 }
 
 
@@ -94,23 +95,29 @@ TEST(ParallelizationTest, TestIdenticalKeys) {
 }
 
 TEST(ParalleizationTest, TestOMPMergeSort) {
-    auto leftRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform_512mb.csv"));
-    auto rightRelation = threadedLoad<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform_512mb.csv"));
+    auto leftRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
+    auto rightRelation = threadedLoad<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
 
     Timer timer("OMP MergeSort");
     timer.start();
-    mergeSortCastRelation(leftRelation);
-    mergeSortTitleRelation(rightRelation);
+    mergeSortOMP<CastRelation>(leftRelation, compareCastRelations);
+    mergeSortOMP<TitleRelation>(rightRelation, compareTitleRelations);
     timer.pause();
 
-    std::cout << "Timer OMP: " << timer << std::endl;
+    std::cout << timer << std::endl;
+}
 
-    leftRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform_512mb.csv"));
-    rightRelation = threadedLoad<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform_512mb.csv"));
-    Timer timer2("STD Sort");
-    timer2.start();
-    sortCastRelation(leftRelation.begin(), leftRelation.end());
-    sortTitleRelation(rightRelation.begin(), rightRelation.end());
-    timer2.pause();
-    std::cout << "Timer STD: " << timer2 << std::endl;
+TEST(ParalleizationTest, TestSortByChunks) {
+    auto castRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
+
+    sortByChunks<CastRelation>(castRelation, compareCastRelations);
+
+    for(const auto& record: castRelation) {
+        std::cout << castRelationToString(record) << '\n';
+    }
+    for(int i = 1; i < castRelation.size(); ++i) {
+        if(castRelation[i-1].movieId > castRelation[i].movieId) {
+            std::cout << '\n' << castRelationToString(castRelation[i-1]) << " is larger than " << castRelationToString(castRelation[i]) << "should be at line: " << i << '\n';
+        }
+    }
 }
