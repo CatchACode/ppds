@@ -17,7 +17,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set Optimization Flags
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC ")
 set(CMAKE_CXX_FLAGS_RELEASE "-g -O2 -march=native -mtune=native -fPIC")
 
 set(PPDS_PROJECT_DIR "${CMAKE_SOURCE_DIR}/..")
@@ -60,10 +60,17 @@ endif()
 FetchContent_MakeAvailable(googletest)
 
 # Define the shared library
-add_library(1_Parallelization SHARED Join.cpp)
+add_library(1_Parallelization SHARED Join.cpp
+        HashJoin.h
+        SortMergeJoin.h
+        NestedLoopJoin.h
+        MergeSort.h)
 
 # Define the executable target that uses the shared library
-add_executable(ParallelismExecutable Join.cpp)
+add_executable(ParallelismExecutable Join.cpp
+        HashJoin.h
+        SortMergeJoin.h
+        MergeSort.h)
 
 # Link with Libraries
 find_package(OpenMP REQUIRED)
@@ -78,6 +85,9 @@ else (OpenMP_CXX_FOUND)
     target_link_libraries(1_Parallelization PUBLIC gtest_main)
     target_link_libraries(ParallelismExecutable gtest_main)
 endif (OpenMP_CXX_FOUND)
+
+
+
 
 # If necessary, include gtest include directories
 target_include_directories(1_Parallelization PRIVATE ${gtest_SOURCE_DIR}/include ${gtest_BINARY_DIR})
