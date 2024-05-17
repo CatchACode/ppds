@@ -17,8 +17,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set Optimization Flags
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC ")
-set(CMAKE_CXX_FLAGS_RELEASE "-g -O2 -march=native -mtune=native -fPIC")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC -ltbb -DPARALLEL")
+set(CMAKE_CXX_FLAGS_RELEASE "-g -O2 -march=native -mtune=native -fPIC -ltbb -DPARALLEL")
 
 set(PPDS_PROJECT_DIR "${CMAKE_SOURCE_DIR}/..")
 
@@ -77,14 +77,14 @@ find_package(OpenMP REQUIRED)
 find_package(TBB REQUIRED)
 if (OpenMP_CXX_FOUND)
     message(STATUS "OpenMP found")
-    target_link_libraries(1_Parallelization PUBLIC TBB::tbb OpenMP::OpenMP_CXX gtest_main)
-    target_link_libraries(ParallelismExecutable TBB::tbb OpenMP::OpenMP_CXX gtest_main)
+    target_link_libraries(1_Parallelization PUBLIC OpenMP::OpenMP_CXX gtest_main)
+    target_link_libraries(ParallelismExecutable OpenMP::OpenMP_CXX gtest_main)
 else (OpenMP_CXX_FOUND)
     message(STATUS "OpenMP not found")
     message(STATUS "On Ubuntu, install the package by the following command!")
     message(STATUS "sudo apt install libomp-dev")
-    target_link_libraries(1_Parallelization PUBLIC TBB::tbb gtest_main)
-    target_link_libraries(ParallelismExecutable TBB::tbb gtest_main)
+    target_link_libraries(1_Parallelization PUBLIC gtest_main)
+    target_link_libraries(ParallelismExecutable gtest_main)
 endif (OpenMP_CXX_FOUND)
 
 
