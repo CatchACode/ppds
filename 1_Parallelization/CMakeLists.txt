@@ -74,7 +74,6 @@ add_executable(ParallelismExecutable Join.cpp
 
 # Link with Libraries
 find_package(OpenMP REQUIRED)
-find_package(TBB REQUIRED)
 if (OpenMP_CXX_FOUND)
     message(STATUS "OpenMP found")
     target_link_libraries(1_Parallelization PUBLIC OpenMP::OpenMP_CXX gtest_main)
