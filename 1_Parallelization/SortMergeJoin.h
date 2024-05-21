@@ -74,7 +74,7 @@ std::vector<ResultRelation> performSortMergeJoin(const std::span<CastRelation>& 
 
 void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRelation> rightRelation,
                   std::vector<ResultRelation>& results) {
-    std::cout << std::this_thread::get_id() << ": Started processing chunk\n";
+    //std::cout << std::this_thread::get_id() << ": Started processing chunk\n";
     std::forward_iterator auto r_it = std::ranges::lower_bound(
             rightRelation.begin(), rightRelation.end(), TitleRelation{.titleId = castRelation.begin()->movieId},
             [](const TitleRelation& a, const TitleRelation& b) {
@@ -82,8 +82,8 @@ void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRel
             }
     );
     if(r_it == rightRelation.end()) {
-        std::cout << std::this_thread::get_id() << ": Chunk started with a movieId larger than all TitleRelations.imdbId\n"
-                  << r_it->titleId << '>' << castRelation[0].movieId << '\n';
+        //std::cout << std::this_thread::get_id() << ": Chunk started with a movieId larger than all TitleRelations.imdbId\n"
+        //          << r_it->titleId << '>' << castRelation[0].movieId << '\n';
         return;
     }
     auto l_it = castRelation.begin();
@@ -114,7 +114,7 @@ void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRel
 
         }
     }
-    std::cout << std::this_thread::get_id() << ": has finished it's chunk\n";
+    //std::cout << std::this_thread::get_id() << ": has finished it's chunk\n";
 }
 
 void mergeVectors(const std::vector<std::vector<ResultRelation>>& resultVectors, std::vector<ResultRelation>& results) {
@@ -132,8 +132,8 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
                                                     const int numThreads = std::jthread::hardware_concurrency()) {
     // Putting this here allows for early return on very small data sets
     size_t chunkSize = leftRelationConst.size() / numThreads;
-    std::cout << "chunkSize is: " << chunkSize << '\n';
-    std::cout << "numThreads is: " << numThreads << '\n';
+    //std::cout << "chunkSize is: " << chunkSize << '\n';
+    //std::cout << "numThreads is: " << numThreads << '\n';
     if (chunkSize == 0) {
         // numThreads is larger than data size
         return performNestedLoopJoin(leftRelationConst, rightRelationConst);
@@ -147,7 +147,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     std::vector<ResultRelation> results;
 
 
-    std::cout << "Relations sorted!\n";
+    //std::cout << "Relations sorted!\n";
 
     std::vector<std::jthread> threads;
     std::vector<std::vector<ResultRelation>> resultVectors(numThreads);
@@ -166,7 +166,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     for (auto &t: threads) {
         t.join();
     }
-    std::cout << "All threads joined!\n";
+    //std::cout << "All threads joined!\n";
     // Join ResultVectors
     mergeVectors(resultVectors, results);
     return results;
