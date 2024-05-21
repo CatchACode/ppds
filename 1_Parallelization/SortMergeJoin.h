@@ -83,6 +83,7 @@ void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRel
     if(r_it == rightRelation.end()) {
         std::cout << std::this_thread::get_id() << ": Chunk started with a movieId larger than all TitleRelations.imdbId\n"
                   << r_it->titleId << '>' << castRelation[0].movieId << '\n';
+        return;
     }
     auto l_it = castRelation.begin();
     int32_t currentId = 0;
