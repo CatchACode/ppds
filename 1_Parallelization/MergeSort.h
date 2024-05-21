@@ -94,7 +94,13 @@ void sortByChunks(std::vector<Relation>& relations, const std::function<bool (co
 
 }
 
-
+/** performs worse than just sorting cast and title relations in a single thread with std::sort
+ *
+ * @tparam Relation
+ * @param relations
+ * @param comparator
+ * @param numThreads
+ */
 
 template<typename Relation>
 void inline cheapParallelSort(std::vector<Relation>& relations, std::function<bool (const Relation&, const Relation&)> comparator, const int numThreads = std::jthread::hardware_concurrency()) {
