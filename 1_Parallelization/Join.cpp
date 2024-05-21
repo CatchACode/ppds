@@ -33,7 +33,7 @@
 
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
-    return performThreadedSortJoin(leftRelation, rightRelation);
+    return performThreadedSortJoin(leftRelation, rightRelation, 8);
 }
 
 
@@ -120,4 +120,11 @@ TEST(ParalleizationTest, TestSortByChunks) {
             std::cout << '\n' << castRelationToString(castRelation[i-1]) << " is larger than " << castRelationToString(castRelation[i]) << "should be at line: " << i << '\n';
         }
     }
+}
+
+TEST(ParalleizationTest, TestCheapParallelSort) {
+    auto castRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
+
+    cheapParallelSort<CastRelation>(castRelation, compareCastRelations, 8);
+    assert(std::is_sorted(castRelation.begin(), castRelation.end(), compareCastRelations));
 }

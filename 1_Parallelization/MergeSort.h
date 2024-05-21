@@ -94,4 +94,133 @@ void sortByChunks(std::vector<Relation>& relations, const std::function<bool (co
 
 }
 
+
+
+template<typename Relation>
+void inline cheapParallelSort(std::vector<Relation>& relations, std::function<bool (const Relation&, const Relation&)> comparator, const int numThreads = std::jthread::hardware_concurrency()) {
+    switch (numThreads) {
+        case 1: {
+            std::ranges::sort(relations.begin(), relations.end(), comparator);
+            return;
+        }
+        case 2: {
+            const size_t size = relations.size();
+            auto t1 = std::jthread([&relations, &size, &comparator] {
+                std::ranges::sort(relations.begin(), relations.begin() + (size / 2), comparator);
+            });
+            auto t2 = std::jthread([&relations, &size, &comparator] {
+                std::ranges::sort(relations.begin() + (size / 2), relations.end(), comparator);
+            });
+            t1.join();
+            t2.join();
+            std::ranges::inplace_merge(relations.begin(), relations.begin() + (size / 2), relations.end(), comparator);
+            return;
+        }
+        case 4: {
+            const size_t chunkSize = relations.size() / 4;
+            auto t1 = std::jthread([&relations, &chunkSize, &comparator]{
+                auto t11 = std::jthread([&relations, &chunkSize, &comparator] {
+                        std::ranges::sort(relations.begin(), relations.begin() + chunkSize, comparator);
+                });
+                auto t12 = std::jthread([&relations, &chunkSize, &comparator] {
+                    std::ranges::sort(relations.begin() + chunkSize, relations.begin() + 2 * chunkSize, comparator);
+                });
+
+                t11.join();
+                t12.join();
+                std::ranges::inplace_merge(relations.begin(), relations.begin() + chunkSize, relations.begin() + 2*chunkSize, comparator);
+            });
+
+            auto t2 = std::jthread([&relations, &chunkSize, &comparator] {
+               auto t21 = std::jthread([&relations, &chunkSize, &comparator] {
+                       std::ranges::sort(relations.begin() + 2*chunkSize, relations.begin() +3*chunkSize, comparator);
+               });
+               auto t22 = std::jthread([&relations, &chunkSize, &comparator] {
+                   std::ranges::sort(relations.begin() + 3 * chunkSize, relations.end(), comparator);
+               });
+
+               t21.join();
+               t22.join();
+               std::ranges::inplace_merge(relations.begin() + 2*chunkSize, relations.begin() + 3*chunkSize, relations.end(), comparator);
+            });
+            std::ranges::inplace_merge(relations.begin(), relations.begin() + 2*chunkSize, relations.end(), comparator);
+            return;
+        }
+        case 8: {
+            const size_t chunkSize = relations.size() / 8;
+            auto t1 = std::jthread([&relations, &comparator, &chunkSize] {
+               auto t11 = std::jthread([&relations, &chunkSize, &comparator] {
+                    auto t111 = std::jthread([&relations, &chunkSize, &comparator] {
+                        std::ranges::sort(relations.begin(), relations.begin() + chunkSize, comparator);
+                    });
+                    auto t112 = std::jthread([&relations, &chunkSize, &comparator] {
+                        std::ranges::sort(relations.begin() + chunkSize, relations.begin() + 2 * chunkSize, comparator);
+                    });
+
+                    t111.join();
+                    t112.join();
+                    std::ranges::inplace_merge(relations.begin(), relations.begin() + chunkSize, relations.begin() + 2*chunkSize, comparator);
+               });
+               auto t12 = std::jthread([&relations, &chunkSize, &comparator] {
+                  auto t121 = std::jthread([&relations, &chunkSize, &comparator] {
+                          std::ranges::sort(relations.begin() + 2*chunkSize, relations.begin() + 3*chunkSize, comparator);
+                  });
+                  auto t122 = std::jthread([&relations, &chunkSize, &comparator] {
+                          std::ranges::sort(relations.begin() + 3*chunkSize, relations.begin() + 4*chunkSize, comparator);
+                  });
+
+                  t121.join();
+                  t122.join();
+                  std::ranges::inplace_merge(relations.begin() +2*chunkSize, relations.begin() +3*chunkSize, relations.begin() +4*chunkSize, comparator);
+               });
+
+               t11.join();
+               t12.join();
+               std::ranges::inplace_merge(relations.begin(), relations.begin() + 2*chunkSize, relations.begin() + 4*chunkSize, comparator);
+            });
+            auto t2 = std::jthread([&relations, &comparator, &chunkSize] {
+                auto t21 = std::jthread([&relations, &chunkSize, &comparator] {
+                    auto t211 = std::jthread([&relations, &chunkSize, &comparator] {
+                            std::ranges::sort(relations.begin() +4*chunkSize, relations.begin() + 5*chunkSize, comparator);
+                    });
+                    auto t212 = std::jthread([&relations, &chunkSize, &comparator] {
+                            std::ranges::sort(relations.begin() +5*chunkSize, relations.begin() + 6*chunkSize, comparator);
+                    });
+
+                    t211.join();
+                    t212.join();
+                    std::ranges::inplace_merge(relations.begin() + 4*chunkSize, relations.begin() + 5*chunkSize, relations.begin() + 6*chunkSize, comparator);
+                });
+                auto t22 = std::jthread([&relations, &chunkSize, &comparator] {
+                    auto t221 = std::jthread([&relations, &chunkSize, &comparator] {
+                            std::ranges::sort(relations.begin() + 6*chunkSize, relations.begin() + 7*chunkSize, comparator);
+                    });
+                    auto t222 = std::jthread([&relations, &chunkSize, &comparator] {
+                            std::ranges::sort(relations.begin() + 7*chunkSize, relations.end(), comparator);
+                    });
+
+                    t221.join();
+                    t222.join();
+                    std::ranges::inplace_merge(relations.begin() +6*chunkSize, relations.begin() +7*chunkSize, relations.end(), comparator);
+                });
+
+                t21.join();
+                t22.join();
+                std::ranges::inplace_merge(relations.begin() +4*chunkSize, relations.begin() + 6*chunkSize, relations.end(), comparator);
+            });
+            t1.join();
+            t2.join();
+
+            std::ranges::inplace_merge(relations.begin(), relations.begin() + 4*chunkSize, relations.end(), comparator);
+            return;
+        }
+        default:
+            std::cout << "cheapParallelMerge: no valid numThread! simply sorting now\n";
+            std::ranges::sort(relations.begin(), relations.end(), comparator);
+            return;
+    }
+
+}
+
+
 #endif //PPDS_PARALLELISM_MERGESORT_H

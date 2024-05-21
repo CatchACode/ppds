@@ -7,6 +7,7 @@
 
 #include "JoinUtils.hpp"
 #include "NestedLoopJoin.h"
+#include "MergeSort.h"
 
 #include <span>
 #include <thread>
@@ -23,7 +24,7 @@
 
 
 
-enum SortMergeJoinType : uint8_t {
+enum class SortMergeJoinType : uint8_t {
     SMJ = 1, ///< single threaded sort merge join
     TSMJ = 2, ///< multi-threaded sort merge join, where the leftRelation is divided in chunks by the number of threads
     TSMJv2 = 3, ///< multi-threaded sort merge join,
@@ -72,7 +73,7 @@ std::vector<ResultRelation> performSortMergeJoin(const std::span<CastRelation>& 
 }
 
 void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRelation> rightRelation,
-                  std::vector<ResultRelation>& results, std::mutex& m_results) {
+                  std::vector<ResultRelation>& results) {
     std::cout << std::this_thread::get_id() << ": Started processing chunk\n";
     std::forward_iterator auto r_it = std::ranges::lower_bound(
             rightRelation.begin(), rightRelation.end(), TitleRelation{.titleId = castRelation.begin()->movieId},
@@ -116,19 +117,19 @@ void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRel
     std::cout << std::this_thread::get_id() << ": has finished it's chunk\n";
 }
 
-void mergeVectors(std::vector<std::vector<ResultRelation>>& resultVectors, std::vector<ResultRelation>& results) {
+void mergeVectors(const std::vector<std::vector<ResultRelation>>& resultVectors, std::vector<ResultRelation>& results) {
     size_t size = 0;
     for(const auto& vector : resultVectors) {
         size += vector.size();
     }
     results.reserve(size);
     for(const auto& vector: resultVectors) {
-        std::move(vector.begin(), vector.end(), std::back_inserter(results));
+        std::ranges::move(vector.begin(), vector.end(), std::back_inserter(results));
     }
 }
 
 std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelation>& leftRelationConst, const std::vector<TitleRelation>& rightRelationConst,
-                                                    int numThreads = std::jthread::hardware_concurrency()) {
+                                                    const int numThreads = std::jthread::hardware_concurrency()) {
     // Putting this here allows for early return on very small data sets
     size_t chunkSize = leftRelationConst.size() / numThreads;
     std::cout << "chunkSize is: " << chunkSize << '\n';
@@ -140,20 +141,11 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
 
     std::vector<CastRelation> leftRelation(leftRelationConst);
     std::vector<TitleRelation> rightRelation(rightRelationConst);
+    cheapParallelSort<CastRelation>(leftRelation, [](const CastRelation& a, const CastRelation& b) {return a.movieId < b.movieId;}, numThreads);
+    cheapParallelSort<TitleRelation>(rightRelation, compareTitleRelations, numThreads);
 
     std::vector<ResultRelation> results;
-    std::mutex m_results;
-    if (numThreads < 2) {
-        sortCastRelation(leftRelation.begin(), leftRelation.end());
-        sortTitleRelation(rightRelation.begin(), rightRelation.end());
-        std::cout << "Relations sorted!\n";
-        return performNestedLoopJoin(leftRelation, rightRelation);
-    } else {
-        std::jthread t1(sortCastRelation, leftRelation.begin(), leftRelation.end());
-        std::jthread t2(sortTitleRelation, rightRelation.begin(), rightRelation.end());
-        t1.join();
-        t2.join();
-    }
+
 
     std::cout << "Relations sorted!\n";
 
@@ -168,8 +160,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
             chunkEnd = std::next(chunkStart, chunkSize);
         }
         std::span<CastRelation> chunkSpan(std::to_address(chunkStart), std::to_address(chunkEnd));
-        threads.emplace_back(processChunk, chunkSpan, std::span(rightRelation), std::ref(resultVectors[i]),
-                             std::ref(m_results));
+        threads.emplace_back(processChunk, chunkSpan, std::span(rightRelation), std::ref(resultVectors[i]));
         chunkStart = chunkEnd;
     }
     for (auto &t: threads) {
@@ -184,7 +175,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
 
 std::vector<ResultRelation> performThreadedSortMergeJoin(const std::vector<CastRelation>& leftRelationConst,
                                                          const std::vector<TitleRelation>& rightRelationConst,
-                                                         int numThreads = std::thread::hardware_concurrency()) {
+                                                         int numThreads = std::jthread::hardware_concurrency()) {
     std::vector<ResultRelation> results;
     std::vector<TitleRelation> rightRelation(rightRelationConst);
     std::vector<CastRelation> leftRelation(leftRelationConst);
