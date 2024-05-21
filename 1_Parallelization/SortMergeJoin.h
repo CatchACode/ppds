@@ -145,8 +145,9 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     cheapParallelSort<CastRelation>(leftRelation, [](const CastRelation& a, const CastRelation& b) {return a.movieId < b.movieId;}, numThreads);
     cheapParallelSort<TitleRelation>(rightRelation, compareTitleRelations, numThreads);
     */
-    std::sort(leftRelation.begin(), leftRelation.end(), compareCastRelations);
-    std::sort(rightRelation.begin(), rightRelation.end(), compareTitleRelations);
+
+    auto t1 = std::jthread([&leftRelation]{std::sort(leftRelation.begin(), leftRelation.end(), compareCastRelations);});
+    auto t2 = std::jthread([&rightRelation]{std::sort(rightRelation.begin(), rightRelation.end(), compareTitleRelations);});
 
     std::vector<ResultRelation> results;
 
