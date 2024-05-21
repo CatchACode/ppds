@@ -33,13 +33,7 @@
 
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
-    std::vector<CastRelation> leftR(leftRelation);
-    std::vector<TitleRelation> rightR(rightRelation);
-
-    std::sort(std::execution::par, leftR.begin(), leftR.end(), [](const CastRelation& a, const CastRelation& b) {return a.movieId < b.movieId;});
-    std::sort(std::execution::par, rightR.begin(), rightR.end(), [](const TitleRelation& a, const TitleRelation& b) {return a.titleId < b.titleId;});
-
-    return performSortMergeJoin(std::span(leftR), std::span(rightR));
+    return performThreadedSortJoin(leftRelation, rightRelation);
 }
 
 

@@ -138,7 +138,6 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
 
     std::vector<ResultRelation> results;
     std::mutex m_results;
-    /*
     if (numThreads < 2) {
         sortCastRelation(leftRelation.begin(), leftRelation.end());
         sortTitleRelation(rightRelation.begin(), rightRelation.end());
@@ -150,8 +149,6 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
         t1.join();
         t2.join();
     }
-     */
-
 
     std::cout << "Relations sorted!\n";
 
