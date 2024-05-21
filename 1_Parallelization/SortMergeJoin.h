@@ -106,7 +106,7 @@ void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRel
 
             for(std::forward_iterator auto l_idx = l_start; l_idx != l_it; ++l_idx) {
                 for(std::forward_iterator auto r_idx = r_start; r_idx != r_it; ++r_idx) {
-                    results.push_back(createResultTuple(*l_idx, *r_idx));
+                    results.emplace_back(createResultTuple(*l_idx, *r_idx));
                 }
             }
 
@@ -116,8 +116,12 @@ void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRel
 }
 
 void mergeVectors(std::vector<std::vector<ResultRelation>>& resultVectors, std::vector<ResultRelation>& results) {
+    size_t size = 0;
+    for(const auto& vector : resultVectors) {
+        size += vector.size();
+    }
+    results.reserve(size);
     for(const auto& vector: resultVectors) {
-        results.reserve(results.size() + vector.size());
         std::move(vector.begin(), vector.end(), std::back_inserter(results));
     }
 }
