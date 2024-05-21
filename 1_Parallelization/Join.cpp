@@ -41,7 +41,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
         return performSortMergeJoin(leftR, rightR);
     }
 
-    return performThreadedSortJoin(leftRelation, rightRelation, 8);
+    return performThreadedSortJoin(leftRelation, rightRelation, numThreads);
 }
 
 
@@ -60,7 +60,7 @@ TEST(ParallelizationTest, TestJoiningTuples) {
     Timer timer("Parallelized Join execute");
     timer.start();
 
-    auto resultTuples = performJoin(leftRelation, rightRelation);
+    auto resultTuples = performJoin(leftRelation, rightRelation, 1);
 
     timer.pause();
 
