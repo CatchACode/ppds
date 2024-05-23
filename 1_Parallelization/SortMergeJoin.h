@@ -125,17 +125,6 @@ void processChunk(std::unique_ptr<threadArgs> args) {
     }
 }
 
-void mergeVectors(const std::vector<std::vector<ResultRelation>>& resultVectors, std::vector<ResultRelation>& results) {
-    size_t size = 0;
-    for(const auto& vector : resultVectors) {
-        size += vector.size();
-    }
-    results.reserve(size);
-    for(const auto& vector: resultVectors) {
-        std::ranges::move(vector.begin(), vector.end(), std::back_inserter(results));
-    }
-}
-
 std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelation>& leftRelationConst, const std::vector<TitleRelation>& rightRelationConst,
                                                     const int numThreads = std::jthread::hardware_concurrency()) {
     ThreadPool threadPool(numThreads);
