@@ -8,6 +8,7 @@
 
 #include <map>
 #include <unordered_map>
+#include <span>
 #include "JoinUtils.hpp"
 
 /**
@@ -52,7 +53,42 @@ std::vector<ResultRelation> performSHJ_UNORDERED_MAP(const std::vector<CastRelat
 }
 
 std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
-    return {};
+    size_t chunkSize = rightRelation.size() / numThreads;
+
+    std::vector<ResultRelation> results;
+    std::mutex m_results;
+
+    std::vector<std::jthread> threads;
+
+    auto chunkStart = rightRelation.begin();
+    for(int i = 0; i < numThreads; ++i) {
+        std::vector<TitleRelation>::const_iterator chunkEnd;
+        if (i == (numThreads - 1)) {
+            chunkEnd = rightRelation.end();
+        } else {
+            chunkEnd = std::next(chunkStart, chunkSize);
+        }
+        std::span<const TitleRelation> chunkSpan(std::to_address(chunkStart), std::to_address(chunkEnd));
+        threads.emplace_back([&results, &m_results, chunkSpan, &leftRelation] {
+            std::unordered_map<int32_t, TitleRelation> map;
+            map.reserve(chunkSpan.size());
+            for(const TitleRelation& record: chunkSpan) {
+                map[record.titleId] = record;
+            }
+            for(const CastRelation& record: leftRelation) {
+                if(map.contains(record.movieId)) {
+                    std::scoped_lock lock(m_results);
+                    results.emplace_back(createResultTuple(record, map[record.movieId]));
+                }
+            }
+        });
+        chunkStart = chunkEnd;
+    }
+    for(auto& thread: threads) {
+        thread.join();
+    }
+    return results;
+
 }
 
 

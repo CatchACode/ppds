@@ -75,7 +75,7 @@ std::vector<ResultRelation> performSortMergeJoin(const std::span<CastRelation>& 
 struct threadArgs {
     std::span<CastRelation> castRelation;
     std::span<TitleRelation> rightRelation;
-    std::vector<ResultRelation> results;
+    std::vector<ResultRelation>& results;
     bool& sorted;
     std::condition_variable& cv_sorted;
     std::mutex& m_sorted;
@@ -114,9 +114,9 @@ void processChunk(std::unique_ptr<threadArgs> args) {
                 ++l_it;
             }
 
+            std::lock_guard lock(args->m_results);
             for(std::forward_iterator auto l_idx = l_start; l_idx != l_it; ++l_idx) {
                 for(std::forward_iterator auto r_idx = r_start; r_idx != r_it; ++r_idx) {
-                    std::lock_guard lock(args->m_results);
                     args->results.emplace_back(createResultTuple(*l_idx, *r_idx));
                 }
             }
@@ -127,7 +127,6 @@ void processChunk(std::unique_ptr<threadArgs> args) {
 
 std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelation>& leftRelationConst, const std::vector<TitleRelation>& rightRelationConst,
                                                     const int numThreads = std::jthread::hardware_concurrency()) {
-    ThreadPool threadPool(numThreads);
     size_t chunkSize = leftRelationConst.size() / numThreads;
     if (chunkSize == 0) {
         // numThreads is larger than data size
@@ -151,7 +150,6 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
 
 
     std::vector<std::jthread> threads;
-    std::vector<std::vector<ResultRelation>> resultVectors(numThreads);
     auto chunkStart = leftRelation.begin();
     for (int i = 0; i < numThreads; ++i) {
         std::vector<CastRelation>::iterator chunkEnd;

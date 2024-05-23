@@ -33,11 +33,8 @@
 
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
-    return performThreadedSortJoin(leftRelation, rightRelation, numThreads);
+    return performCHJ_MAP(leftRelation, rightRelation, numThreads);
 }
-
-
-
 
 
 
@@ -52,8 +49,8 @@ TEST(ParallelizationTest, TestJoiningTuples) {
     Timer timer("Parallelized Join execute");
     timer.start();
 
-    auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation);
-
+    //auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation); // 8457
+    auto resultTuples = performCHJ_MAP(leftRelation, rightRelation); //34230
     timer.pause();
 
     std::cout << "Timer: " << timer << std::endl;
@@ -86,7 +83,8 @@ TEST(ParallelizationTest, TestIdenticalKeys) {
     sortCastRelation(leftRelation.begin(), leftRelation.end());
     sortTitleRelation(rightRelation.begin(), rightRelation.end());
 
-    auto results = performHashJoin(SHJ_UNORDERED_MAP, leftRelation, rightRelation);
+    //auto results = performHashJoin(SHJ_UNORDERED_MAP, leftRelation, rightRelation);
+    auto results = performCHJ_MAP(leftRelation, rightRelation, 12);
 
     for(const auto& record: results) {
         std::cout << resultRelationToString(record) << '\n';
