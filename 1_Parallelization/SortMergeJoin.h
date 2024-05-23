@@ -73,7 +73,7 @@ std::vector<ResultRelation> performSortMergeJoin(const std::span<CastRelation>& 
 }
 
 void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRelation> rightRelation,
-                  std::vector<ResultRelation>& results) {
+                  std::vector<ResultRelation>& results, bool& sorted, std::condition_variable& cv_sorted, std::mutex& m_sorted) {
     std::ranges::sort(castRelation.begin(), castRelation.end(), compareCastRelations);
     //std::cout << std::this_thread::get_id() << ": Started processing chunk\n";
     std::forward_iterator auto r_it = std::ranges::lower_bound(
@@ -82,6 +82,10 @@ void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRel
                 return a.titleId < b.titleId;
             }
     );
+    std::unique_lock lock(m_sorted);
+    cv_sorted.wait(lock, [&sorted]{return sorted;});
+    std::cout << "TitleRelation should be sorted!\n";
+
     if(r_it == rightRelation.end()) {
         //std::cout << std::this_thread::get_id() << ": Chunk started with a movieId larger than all TitleRelations.imdbId\n"
         //          << r_it->titleId << '>' << castRelation[0].movieId << '\n';
@@ -140,18 +144,18 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
 
     std::vector<CastRelation> leftRelation(leftRelationConst);
     std::vector<TitleRelation> rightRelation(rightRelationConst);
-    //merge_sort(threadPool, leftRelation.begin(), leftRelation.end(), compareCastRelations, numThreads);
-    //merge_sort(threadPool, rightRelation.begin(), rightRelation.end(), compareTitleRelations, numThreads);
-    /*
-    auto t1 = std::jthread([&leftRelation] {
-        std::sort(leftRelation.begin(), leftRelation.end(), compareCastRelations);
-    });
-     */
-    auto t2 = std::jthread([&rightRelation] {
+    bool sorted = false;
+    std::condition_variable cv_sorted;
+    std::mutex m_sorted;
+
+    auto t2 = std::jthread([&rightRelation, &sorted, &cv_sorted] {
         std::sort(rightRelation.begin(), rightRelation.end(), compareTitleRelations);
+        sorted = true;
+        cv_sorted.notify_all();
+        std::cout << "TitleRelation is sorted!\n";
     });
     //t1.join();
-    t2.join(); // Make all threads wait until t2 finishes, but waiting to join here stalls the dividing chunks -> therefore stalls sorting the chunks!
+    //t2.join(); // Make all threads wait until t2 finishes, but waiting to join here stalls the dividing chunks -> therefore stalls sorting the chunks!
     std::vector<ResultRelation> results;
 
 
@@ -168,9 +172,11 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
             chunkEnd = std::next(chunkStart, chunkSize);
         }
         std::span<CastRelation> chunkSpan(std::to_address(chunkStart), std::to_address(chunkEnd));
-        threads.emplace_back(processChunk, chunkSpan, std::span(rightRelation), std::ref(resultVectors[i]));
+        threads.emplace_back(processChunk, chunkSpan, std::span(rightRelation), std::ref(resultVectors[i]),
+                             std::ref(sorted), std::ref(cv_sorted), std::ref(m_sorted));
         chunkStart = chunkEnd;
     }
+    t2.join();
     for (auto &t: threads) {
         t.join();
     }
