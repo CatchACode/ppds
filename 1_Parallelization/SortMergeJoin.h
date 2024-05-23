@@ -75,7 +75,6 @@ std::vector<ResultRelation> performSortMergeJoin(const std::span<CastRelation>& 
 void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRelation> rightRelation,
                   std::vector<ResultRelation>& results, bool& sorted, std::condition_variable& cv_sorted, std::mutex& m_sorted) {
     std::ranges::sort(castRelation.begin(), castRelation.end(), compareCastRelations);
-    //std::cout << std::this_thread::get_id() << ": Started processing chunk\n";
     std::forward_iterator auto r_it = std::ranges::lower_bound(
             rightRelation.begin(), rightRelation.end(), TitleRelation{.titleId = castRelation.begin()->movieId},
             [](const TitleRelation& a, const TitleRelation& b) {
@@ -86,11 +85,6 @@ void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRel
     cv_sorted.wait(lock, [&sorted]{return sorted;});
     std::cout << "TitleRelation should be sorted!\n";
 
-    if(r_it == rightRelation.end()) {
-        //std::cout << std::this_thread::get_id() << ": Chunk started with a movieId larger than all TitleRelations.imdbId\n"
-        //          << r_it->titleId << '>' << castRelation[0].movieId << '\n';
-        return;
-    }
     auto l_it = castRelation.begin();
     int32_t currentId = 0;
     while(l_it != castRelation.end() && r_it != rightRelation.end()) {
@@ -185,15 +179,4 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     mergeVectors(resultVectors, results);
     return results;
 }
-
-
-std::vector<ResultRelation> performThreadedSortMergeJoin(const std::vector<CastRelation>& leftRelationConst,
-                                                         const std::vector<TitleRelation>& rightRelationConst,
-                                                         int numThreads = std::jthread::hardware_concurrency()) {
-    std::vector<ResultRelation> results;
-    std::vector<TitleRelation> rightRelation(rightRelationConst);
-    std::vector<CastRelation> leftRelation(leftRelationConst);
-    return {};
-}
-
 #endif //PPDS_PARALLELISM_SORTMERGEJOIN_H

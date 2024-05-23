@@ -76,6 +76,7 @@ std::vector<ResultRelation> performHashJoin(enum HashJoinType joinType, const st
             return performSHJ_UNORDERED_MAP(leftRelation, rightRelation);
         }
     }
+    return {};
 }
 
 #endif //PPDS_PARALLELISM_HASHJOIN_H
