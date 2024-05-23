@@ -272,8 +272,8 @@ std::string replaceDoubleBackslashes(const std::string& input) {
     result.reserve(input.length()); // Reserve space to avoid multiple allocations
     size_t i = 0;
     while (i < input.length()) {
-        if (i < input.length() - 1 && input[i] == '\\' && input[i + 1] == '\\') {
-            result += '\\';
+        if (i < input.length() - 1 && input[i] == '/' && input[i + 1] == '/') {
+            result += '/';
             i += 2; // Skip the next character as well
         } else {
             result += input[i];
@@ -287,6 +287,7 @@ std::string replaceDoubleBackslashes(const std::string& input) {
     template <typename Relation>
     std::vector<Relation> load(const std::string& filename, const size_t numberOfTuples = SIZE_MAX) {
         std::string r_filename = replaceDoubleBackslashes(filename);
+
       std::vector<Relation> data;
       std::ifstream file(r_filename);
       if (!file.is_open()) {
