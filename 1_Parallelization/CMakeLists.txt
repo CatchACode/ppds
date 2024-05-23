@@ -65,15 +65,14 @@ add_library(1_Parallelization SHARED Join.cpp
         SortMergeJoin.h
         NestedLoopJoin.h
         MergeSort.h
-        ThreadPool.h
-        HashMap.h)
+        )
 
 # Define the executable target that uses the shared library
 add_executable(ParallelismExecutable Join.cpp
         HashJoin.h
         SortMergeJoin.h
         MergeSort.h
-        HashMap.h)
+        )
 
 # Link with Libraries
 find_package(OpenMP REQUIRED)

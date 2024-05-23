@@ -151,7 +151,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
         std::sort(rightRelation.begin(), rightRelation.end(), compareTitleRelations);
     });
     //t1.join();
-    t2.join();
+    t2.join(); // Make all threads wait until t2 finishes, but waiting to join here stalls the dividing chunks -> therefore stalls sorting the chunks!
     std::vector<ResultRelation> results;
 
 
