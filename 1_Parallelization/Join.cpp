@@ -33,7 +33,7 @@
 
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
-    return performThreadedSortJoin(leftRelation, rightRelation, numThreads);
+    return performSHJ_MAP(leftRelation, rightRelation);
 }
 
 
@@ -52,7 +52,7 @@ TEST(ParallelizationTest, TestJoiningTuples) {
     Timer timer("Parallelized Join execute");
     timer.start();
 
-    auto resultTuples = performJoin(leftRelation, rightRelation, 1);
+    auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation);
 
     timer.pause();
 
@@ -100,31 +100,21 @@ TEST(ParalleizationTest, TestOMPMergeSort) {
 
     Timer timer("OMP MergeSort");
     timer.start();
-    mergeSortOMP<CastRelation>(leftRelation, compareCastRelations);
-    mergeSortOMP<TitleRelation>(rightRelation, compareTitleRelations);
     timer.pause();
 
     std::cout << timer << std::endl;
-}
-
-TEST(ParalleizationTest, TestSortByChunks) {
-    auto castRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
-
-    sortByChunks<CastRelation>(castRelation, compareCastRelations);
-
-    for(const auto& record: castRelation) {
-        std::cout << castRelationToString(record) << '\n';
-    }
-    for(int i = 1; i < castRelation.size(); ++i) {
-        if(castRelation[i-1].movieId > castRelation[i].movieId) {
-            std::cout << '\n' << castRelationToString(castRelation[i-1]) << " is larger than " << castRelationToString(castRelation[i]) << "should be at line: " << i << '\n';
-        }
-    }
 }
 
 TEST(ParalleizationTest, TestCheapParallelSort) {
     auto castRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
 
     cheapParallelSort<CastRelation>(castRelation, compareCastRelations, 8);
+    assert(std::is_sorted(castRelation.begin(), castRelation.end(), compareCastRelations));
+}
+
+TEST(ParalleizationTest, TestMergeSortGPT) {
+    auto castRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
+    ThreadPool threadPool(std::jthread::hardware_concurrency());
+    merge_sort(threadPool, castRelation.begin(), castRelation.end(), compareCastRelations, std::jthread::hardware_concurrency());
     assert(std::is_sorted(castRelation.begin(), castRelation.end(), compareCastRelations));
 }

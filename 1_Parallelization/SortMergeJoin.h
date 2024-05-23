@@ -74,6 +74,7 @@ std::vector<ResultRelation> performSortMergeJoin(const std::span<CastRelation>& 
 
 void processChunk(const std::span<CastRelation> castRelation, std::span<TitleRelation> rightRelation,
                   std::vector<ResultRelation>& results) {
+    std::ranges::sort(castRelation.begin(), castRelation.end(), compareCastRelations);
     //std::cout << std::this_thread::get_id() << ": Started processing chunk\n";
     std::forward_iterator auto r_it = std::ranges::lower_bound(
             rightRelation.begin(), rightRelation.end(), TitleRelation{.titleId = castRelation.begin()->movieId},
@@ -130,10 +131,8 @@ void mergeVectors(const std::vector<std::vector<ResultRelation>>& resultVectors,
 
 std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelation>& leftRelationConst, const std::vector<TitleRelation>& rightRelationConst,
                                                     const int numThreads = std::jthread::hardware_concurrency()) {
-    // Putting this here allows for early return on very small data sets
+    ThreadPool threadPool(numThreads);
     size_t chunkSize = leftRelationConst.size() / numThreads;
-    //std::cout << "chunkSize is: " << chunkSize << '\n';
-    //std::cout << "numThreads is: " << numThreads << '\n';
     if (chunkSize == 0) {
         // numThreads is larger than data size
         return performNestedLoopJoin(leftRelationConst, rightRelationConst);
@@ -141,14 +140,18 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
 
     std::vector<CastRelation> leftRelation(leftRelationConst);
     std::vector<TitleRelation> rightRelation(rightRelationConst);
+    //merge_sort(threadPool, leftRelation.begin(), leftRelation.end(), compareCastRelations, numThreads);
+    //merge_sort(threadPool, rightRelation.begin(), rightRelation.end(), compareTitleRelations, numThreads);
     /*
-    cheapParallelSort<CastRelation>(leftRelation, [](const CastRelation& a, const CastRelation& b) {return a.movieId < b.movieId;}, numThreads);
-    cheapParallelSort<TitleRelation>(rightRelation, compareTitleRelations, numThreads);
-    */
-
-    auto t1 = std::jthread([&leftRelation]{std::sort(leftRelation.begin(), leftRelation.end(), compareCastRelations);});
-    auto t2 = std::jthread([&rightRelation]{std::sort(rightRelation.begin(), rightRelation.end(), compareTitleRelations);});
-
+    auto t1 = std::jthread([&leftRelation] {
+        std::sort(leftRelation.begin(), leftRelation.end(), compareCastRelations);
+    });
+     */
+    auto t2 = std::jthread([&rightRelation] {
+        std::sort(rightRelation.begin(), rightRelation.end(), compareTitleRelations);
+    });
+    //t1.join();
+    t2.join();
     std::vector<ResultRelation> results;
 
 

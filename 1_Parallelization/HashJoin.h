@@ -51,6 +51,22 @@ std::vector<ResultRelation> performSHJ_UNORDERED_MAP(const std::vector<CastRelat
     return results;
 }
 
+std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
+
+}
+
+
+
+
+
+/** Has to remain at the both!
+ *
+ * @param joinType
+ * @param leftRelation
+ * @param rightRelation
+ * @return
+ */
+
 std::vector<ResultRelation> performHashJoin(enum HashJoinType joinType, const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation) {
     switch (joinType) {
         case SHJ_MAP: {
