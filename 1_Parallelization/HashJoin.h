@@ -70,15 +70,15 @@ std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& left
         }
         std::span<const TitleRelation> chunkSpan(std::to_address(chunkStart), std::to_address(chunkEnd));
         threads.emplace_back([&results, &m_results, chunkSpan, &leftRelation] {
-            std::unordered_map<int32_t, TitleRelation> map;
+            std::unordered_map<int32_t, const TitleRelation*> map;
             map.reserve(chunkSpan.size());
             for(const TitleRelation& record: chunkSpan) {
-                map[record.titleId] = record;
+                map[record.titleId] = &record;
             }
             for(const CastRelation& record: leftRelation) {
                 if(map.contains(record.movieId)) {
                     std::scoped_lock lock(m_results);
-                    results.emplace_back(createResultTuple(record, map[record.movieId]));
+                    results.emplace_back(createResultTuple(record, *map[record.movieId]));
                 }
             }
         });

@@ -74,8 +74,8 @@ TEST(ParallelizationTest, TestThreadScaling) {
 }
 
 TEST(ParallelizationTest, TestIdenticalKeys) {
-    auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_all_join_keys_equal.csv"));
-    auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_all_join_keys_equal.csv"));
+    auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_all_join_keys_equal.csv"), 20000);
+    auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_all_join_keys_equal.csv"), 20000);
 
     std::cout << "Sizeof leftRelation: " << sizeof(leftRelation) << '\n';
     std::cout << "Sizeof rightReleation: " << sizeof(rightRelation) << '\n';
