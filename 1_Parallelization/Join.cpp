@@ -59,17 +59,20 @@ TEST(ParallelizationTest, TestJoiningTuples) {
 }
 
 TEST(ParallelizationTest, TestThreadScaling) {
-    const auto leftRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform_512mb.csv"));
-    const auto rightRelation = threadedLoad<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform_512mb.csv"));
+    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform_512mb.csv"), 20000);
+    const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform_512mb.csv"), 20000);
     auto sink = performThreadedSortJoin(leftRelation, rightRelation); // So Cache is hot?
 
     for(int i = 1; i <= std::thread::hardware_concurrency(); ++i) {
-        Timer timer("Parallelized Join Execute");
-        timer.start();
-        auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation, i);
-        timer.pause();
-        std::cout << "Timer for numThreads=" << i <<": " << timer << std::endl;
-        std::cout << "\n\n";
+        for(int j = 0; j < 10; ++j) {
+            Timer timer("Parallelized Join Execute");
+            timer.start();
+            auto resultTuples = performCHJ_MAP(leftRelation, rightRelation, i);
+            timer.pause();
+            std::cout << "Run " << j << " with " << i <<" Threads: " << timer << std::endl;
+        }
+        std::cout << '\n';
+
     }
 }
 

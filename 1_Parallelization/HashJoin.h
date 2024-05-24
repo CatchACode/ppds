@@ -15,9 +15,10 @@
  * Enum Class to select which type of hash-join to execute
  */
 
-enum HashJoinType : uint8_t {
+enum class HashJoinType : uint8_t {
     SHJ_MAP = 1, ///< single-threaded-hash-join on a std::map
     SHJ_UNORDERED_MAP = 2, ///< single-threaded-hash-join on a std::unordered_map
+    CHJ_MAP = 3, ///< multithreaded-hash-join where the dataset is divide into size / numthreads chunks for the threads
 };
 
 
@@ -25,13 +26,13 @@ enum HashJoinType : uint8_t {
 std::vector<ResultRelation> performSHJ_MAP(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation) {
     std::vector<ResultRelation> results;
     // Build HashMap
-    std::map<int32_t, TitleRelation> map;
+    std::map<int32_t, const TitleRelation*> map;
     for(const TitleRelation& record: rightRelation) {
-        map[record.titleId] = record;
+        map[record.titleId] = &record;
     }
     for(const CastRelation& castRelation: leftRelation) {
         if(map.contains(castRelation.movieId)) {
-            results.emplace_back(createResultTuple(castRelation, map[castRelation.movieId]));
+            results.emplace_back(createResultTuple(castRelation, *map[castRelation.movieId]));
         }
     }
     return results;
@@ -40,22 +41,23 @@ std::vector<ResultRelation> performSHJ_MAP(const std::vector<CastRelation>& left
 std::vector<ResultRelation> performSHJ_UNORDERED_MAP(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation) {
     std::vector<ResultRelation> results;
     // Build HashMap
-    std::unordered_map<int32_t, TitleRelation> map;
+    std::unordered_map<int32_t, const TitleRelation*> map;
     for(const TitleRelation& record: rightRelation) {
-        map[record.titleId] = record;
+        map[record.titleId] = &record;
     }
     for(const CastRelation& castRelation: leftRelation) {
         if(map.contains(castRelation.movieId)) {
-            results.emplace_back(createResultTuple(castRelation, map[castRelation.movieId]));
+            results.emplace_back(createResultTuple(castRelation, *map[castRelation.movieId]));
         }
     }
     return results;
 }
 
-std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
-    size_t chunkSize = rightRelation.size() / numThreads;
+std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, const int numThreads = std::jthread::hardware_concurrency()) {
+    const size_t chunkSize = rightRelation.size() / numThreads;
 
     std::vector<ResultRelation> results;
+    results.reserve(845626);
     std::mutex m_results;
 
     std::vector<std::jthread> threads;
@@ -68,7 +70,7 @@ std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& left
         } else {
             chunkEnd = std::next(chunkStart, chunkSize);
         }
-        std::span<const TitleRelation> chunkSpan(std::to_address(chunkStart), std::to_address(chunkEnd));
+        const std::span<const TitleRelation> chunkSpan(std::to_address(chunkStart), std::to_address(chunkEnd));
         threads.emplace_back([&results, &m_results, chunkSpan, &leftRelation] {
             std::unordered_map<int32_t, const TitleRelation*> map;
             map.reserve(chunkSpan.size());
@@ -87,6 +89,7 @@ std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& left
     for(auto& thread: threads) {
         thread.join();
     }
+    std::cout << "You need to reserve " << results.size() << std::endl;
     return results;
 
 }
@@ -103,13 +106,17 @@ std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& left
  * @return
  */
 
-std::vector<ResultRelation> performHashJoin(enum HashJoinType joinType, const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation) {
+std::vector<ResultRelation> performHashJoin(enum HashJoinType joinType, const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, const int numThreads = std::jthread::hardware_concurrency()) {
     switch (joinType) {
-        case SHJ_MAP: {
+        case HashJoinType::SHJ_MAP: {
             return performSHJ_MAP(leftRelation, rightRelation);
         }
-        case SHJ_UNORDERED_MAP: {
+        case HashJoinType::SHJ_UNORDERED_MAP: {
             return performSHJ_UNORDERED_MAP(leftRelation, rightRelation);
+        }
+
+        case HashJoinType::CHJ_MAP:{
+            return performCHJ_MAP(leftRelation, rightRelation, numThreads);
         }
     }
     return {};
