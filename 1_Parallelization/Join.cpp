@@ -49,8 +49,9 @@ TEST(ParallelizationTest, TestJoiningTuples) {
     Timer timer("Parallelized Join execute");
     timer.start();
 
-    //auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation); // 8457
-    auto resultTuples = performCHJ_MAP(leftRelation, rightRelation); //34230
+    //auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation, 8); // 8457
+    auto resultTuples = performCacheSizedThreadedHashJoin(leftRelation, rightRelation); //34230
+
     timer.pause();
 
     std::cout << "Timer: " << timer << std::endl;

@@ -146,6 +146,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
         cv_sorted.notify_all();
     });
     std::vector<ResultRelation> results;
+    results.reserve(845626);
 
 
 

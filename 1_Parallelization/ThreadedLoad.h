@@ -69,7 +69,7 @@ void workerThread(std::mutex& m_cout, const std::atomic<bool>& stop, std::queue<
 
 template<typename Relation>
 std::vector<Relation> threadedLoad(const std::string& filepath, const size_t& bufferSize = BLOCK_SIZE) {
-    //std::cout << "Loading " << filepath << std::endl;
+    std::cout << "Loading " << filepath << std::endl;
     std::vector<Relation> data;
     std::queue<std::string> chunks;
     std::mutex m_data;
