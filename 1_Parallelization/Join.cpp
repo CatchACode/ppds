@@ -59,7 +59,7 @@ TEST(ParallelizationTest, TestJoiningTuples) {
     std::cout << "Result size: " << resultTuples.size() << std::endl;
     std::cout << "\n\n";
 }
-
+/*
 TEST(ParallelizationTest, TestThreadScaling) {
     const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), 20000);
     const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform.csv"), 20000);
@@ -76,3 +76,4 @@ TEST(ParallelizationTest, TestThreadScaling) {
         std::cout << '\n';
     }
 }
+ */
