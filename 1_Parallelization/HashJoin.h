@@ -108,7 +108,6 @@ struct ThreadArgs {
 };
 
 void workerThreadChunk(std::unique_ptr<ThreadArgs> args) {
-    size_t chunkNum = 0;
     while(!args.get()->stop || !args.get()->chunks.empty()) {
         std::unique_lock l_chunks(args.get()->m_chunks);
         args.get()->cv_queue.wait(l_chunks, [&args] {return args->stop || !args->chunks.empty();});
@@ -116,20 +115,17 @@ void workerThreadChunk(std::unique_ptr<ThreadArgs> args) {
             auto chunk = args.get()->chunks.front();
             args->chunks.pop();
             l_chunks.unlock();
-
+            // Build HashMap
             std::unordered_map<int32_t, const TitleRelation*> map;
             map.reserve(chunk.size());
-
-            for(const TitleRelation& record: chunk) {
-                map[record.titleId] = &record;
-            }
-
-            for(const CastRelation& record: args->leftRelation) {
+            std::ranges::for_each(chunk, [&map](const TitleRelation& record) {map[record.titleId] = &record;});
+            // Probe HashMap
+            std::ranges::for_each(args->leftRelation, [&map, &args](const CastRelation& record) {
                 if(map.contains(record.movieId)) {
-                    std::scoped_lock l_results(args.get()->m_results);
+                    std::lock_guard l_results(args->m_results);
                     args->results.emplace_back(createResultTuple(record, *map[record.movieId]));
                 }
-            }
+            });
         }
     }
 }
