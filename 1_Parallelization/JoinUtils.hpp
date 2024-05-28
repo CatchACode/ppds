@@ -22,10 +22,21 @@
 #include <vector>
 #include <execution>
 
+/*
+static const size_t L1_CACHE_SIZE =     hwinfo::getAllCPUs()[0].L1CacheSize_Bytes(); ///< ~64 KiB per Core
+static const size_t L2_CACHE_SIZE =    hwinfo::getAllCPUs()[0].L2CacheSize_Bytes(); ///< ~512 KiB per Core
+static const size_t L3_CACHE_SIZE = hwinfo::getAllCPUs()[0].L3CacheSize_Bytes(); ///< 2*6MiB shared
+
+void inline cacheSizes() {
+    std::cout << "L1 Cache: " << L1_CACHE_SIZE << std::endl;
+    std::cout << "L2 Cache: " << L2_CACHE_SIZE << std::endl;
+    std::cout << "L3 Cache: " << L3_CACHE_SIZE << std::endl;
+}
+*/
+
 constexpr const size_t L1_CACHE_SIZE =     65536; ///< ~64 KiB per Core
 constexpr const size_t L2_CACHE_SIZE =    524288; ///< ~512 KiB per Core
 constexpr const size_t L3_CACHE_SIZE = 2*6*1024*1024; ///< 2*6MiB shared
-
 
 /*
 constexpr const size_t L1_CACHE_SIZE = 65536;     ///< ~16 KiB per Core

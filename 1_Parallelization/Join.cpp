@@ -32,6 +32,7 @@
 
 
 
+
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
     return performCHJ_MAP(leftRelation, rightRelation, numThreads);
 }
@@ -39,8 +40,8 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
 
 
 TEST(ParallelizationTest, TestJoiningTuples) {
-    const auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
-    const auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
+    const auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform1gb.csv"), 20000);
+    const auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"), 20000);
 
     std::cout << "Sizeof leftRelation: " << leftRelation.size()*sizeof(CastRelation) / (1024*1024) << '\n';
     std::cout << "Sizeof rightReleation: " << rightRelation.size()*sizeof(TitleRelation) / (1024*1024) << '\n';
@@ -50,8 +51,8 @@ TEST(ParallelizationTest, TestJoiningTuples) {
     timer.start();
 
     //auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation, 8); // 8457
-    auto resultTuples = performCacheSizedThreadedHashJoin(leftRelation, rightRelation, 8); //5797
-    //auto resultTuples = performCHJ_MAP(leftRelation, rightRelation); // 4996.84
+    //auto resultTuples = performCacheSizedThreadedHashJoin(leftRelation, rightRelation, 8); //5797
+    auto resultTuples = performCHJ_MAP(leftRelation, rightRelation); // 4996.84
 
     timer.pause();
 

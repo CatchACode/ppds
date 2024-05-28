@@ -9,6 +9,7 @@
 #include <map>
 #include <unordered_map>
 #include <span>
+
 #include "JoinUtils.hpp"
 
 /**
@@ -93,8 +94,7 @@ std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& left
     return results;
 
 }
-constexpr const size_t test = sizeof(CastRelation*);
-constexpr const size_t HASHMAP_SIZE = L2_CACHE_SIZE / (sizeof(CastRelation*) + sizeof(int32_t));
+static const size_t HASHMAP_SIZE = L2_CACHE_SIZE / (sizeof(CastRelation*) + sizeof(int32_t));
 
 struct ThreadArgs {
     int threadId;
@@ -140,9 +140,12 @@ void workerThreadChunk(std::unique_ptr<ThreadArgs> args) {
 }
 
 std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, const int numThreads = std::jthread::hardware_concurrency()) {
+
+    /*
     if(rightRelation.size() / numThreads < HASHMAP_SIZE) {
         return performCHJ_MAP(leftRelation, rightRelation, numThreads);
     }
+    */
     std::vector<ResultRelation> results;
     std::mutex m_results;
     std::vector<std::jthread> threads;

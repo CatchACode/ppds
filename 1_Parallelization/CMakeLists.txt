@@ -31,7 +31,6 @@ if(NOT DEFINED SOURCE_DIRECTORY)
     set(SOURCE_DIRECTORY "${CMAKE_SOURCE_DIR}")
 endif()
 
-
 # Determine block size
 # Might not be possible for static library...
 set(BLOCK_SIZE 4096)
@@ -58,6 +57,18 @@ if(NOT googletest_POPULATED)
     add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
 endif()
 FetchContent_MakeAvailable(googletest)
+
+
+# Fetch HWiNFO
+#FetchContent_Declare(
+#        hwinfo
+#        GIT_REPOSITORY  https://github.com/lfreist/hwinfo
+#        GIT_TAG         main
+#)
+
+# Make FetchContent download the content
+#FetchContent_MakeAvailable(hwinfo)
+
 
 # Define the shared library
 add_library(1_Parallelization SHARED Join.cpp
