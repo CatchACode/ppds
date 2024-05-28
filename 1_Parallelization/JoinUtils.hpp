@@ -22,21 +22,16 @@
 #include <vector>
 #include <execution>
 
-//#ifndef L1_CACHE_SIZE
-//#define L1_CACHE_SIZE 65536 ///< ~16 KiB per Core
-//#endif
-//#ifndef L2_CACHE_SIZE
-//#define L2_CACHE_SIZE 524288 ///< ~512 KiB per Core
-//#endif
-//#ifndef L3_CACHE_SIZE
-//#define L3_CACHE_SIZE 83886080 ///< ~80 MiB in total
-//#endif
+constexpr const size_t L1_CACHE_SIZE =  65536; ///< ~16 KiB per Core
+constexpr const size_t L2_CACHE_SIZE = 524288; ///< ~512 KiB per Core
+constexpr const size_t L3_CACHE_SIZE = 83886080; ///< ~80 MiB in total
 
 
+/*
 constexpr size_t L1_CACHE_SIZE = 65536;     ///< ~16 KiB per Core
 constexpr size_t L2_CACHE_SIZE = 16777216;    ///< 512KiB per Core
 constexpr size_t L3_CACHE_SIZE = 83886000;  ///< ~80 MiB per Core
-
+*/
 
 
 
