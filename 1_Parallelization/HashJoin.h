@@ -108,17 +108,14 @@ struct ThreadArgs {
 };
 
 void workerThreadChunk(std::unique_ptr<ThreadArgs> args) {
-    //std::cout << "thread " << args.get()->threadId << " started!" << std::endl;
     size_t chunkNum = 0;
     while(!args.get()->stop || !args.get()->chunks.empty()) {
         std::unique_lock l_chunks(args.get()->m_chunks);
-        args.get()->cv_queue.wait(l_chunks, [&args] {return args->stop || args->chunks.empty();});
+        args.get()->cv_queue.wait(l_chunks, [&args] {return args->stop || !args->chunks.empty();});
         if(!args->chunks.empty()) {
             auto chunk = args.get()->chunks.front();
             args->chunks.pop();
-            //chunkNum = args->numChunks--;
             l_chunks.unlock();
-            //std::cout << "Thread" << args->threadId <<" working on " << chunkNum << std::endl;
 
             std::unordered_map<int32_t, const TitleRelation*> map;
             map.reserve(chunk.size());
@@ -135,16 +132,10 @@ void workerThreadChunk(std::unique_ptr<ThreadArgs> args) {
             }
         }
     }
-    //std::cout << "Thread " << args.get()->threadId << " finished!" << std::endl;
 }
 
 std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, const int numThreads = std::jthread::hardware_concurrency()) {
 
-    /*
-    if(rightRelation.size() / numThreads < HASHMAP_SIZE) {
-        return performCHJ_MAP(leftRelation, rightRelation, numThreads);
-    }
-    */
     std::vector<ResultRelation> results;
     std::mutex m_results;
     std::vector<std::jthread> threads;
@@ -155,6 +146,13 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
     std::atomic_size_t numChunks = 0;
     std::cout << "HashMapSIze: " << HASHMAP_SIZE << std::endl;
     results.reserve(leftRelation.size());
+
+    for(int i = 0; i < numThreads; ++i) {
+        threads.emplace_back(std::jthread(workerThreadChunk, std::make_unique<ThreadArgs>(i, std::ref(chunks), std::ref(m_chunks),
+                                                                                          std::ref(cv_queue), std::ref(results),
+                                                                                          std::ref(m_results), std::ref(leftRelation),
+                                                                                          std::ref(stop), std::ref(numChunks))));
+    };
 
     auto chunkStart = rightRelation.begin();
     auto chunkEnd = rightRelation.begin();
@@ -169,17 +167,10 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
             std::scoped_lock l_chunks(m_chunks);
             chunks.emplace(chunkSpan);
             cv_queue.notify_one();
-            //numChunks++;
         }
         chunkStart = chunkEnd;
     }
-    //std::cout << "Size of chunks: " <<  chunks.size() << std::endl;
-    for(int i = 0; i < numThreads; ++i) {
-        threads.emplace_back(std::jthread(workerThreadChunk, std::make_unique<ThreadArgs>(i, std::ref(chunks), std::ref(m_chunks),
-                                                                                          std::ref(cv_queue), std::ref(results),
-                                                                                          std::ref(m_results), std::ref(leftRelation),
-                                                                                          std::ref(stop), std::ref(numChunks))));
-    };
+
 
     stop.store(true);
     cv_queue.notify_all();
