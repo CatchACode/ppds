@@ -93,7 +93,8 @@ std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& left
     return results;
 
 }
-constexpr const size_t HASHMAP_SIZE = (L2_CACHE_SIZE) / (sizeof(CastRelation) + sizeof(int32_t));
+constexpr const size_t test = sizeof(CastRelation*);
+constexpr const size_t HASHMAP_SIZE = (L2_CACHE_SIZE) / (sizeof(CastRelation*) + sizeof(int32_t));
 
 struct ThreadArgs {
     int threadId;
@@ -116,7 +117,7 @@ void workerThreadChunk(std::unique_ptr<ThreadArgs> args) {
         if(!args->chunks.empty()) {
             auto chunk = args.get()->chunks.front();
             args->chunks.pop();
-            chunkNum = args->numChunks--;
+            //chunkNum = args->numChunks--;
             l_chunks.unlock();
             //std::cout << "Thread" << args->threadId <<" working on " << chunkNum << std::endl;
 
@@ -166,7 +167,7 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
             std::scoped_lock l_chunks(m_chunks);
             chunks.emplace(chunkSpan);
             cv_queue.notify_one();
-            numChunks++;
+            //numChunks++;
         }
         chunkStart = chunkEnd;
     }
