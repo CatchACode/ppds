@@ -94,7 +94,7 @@ std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& left
 
 }
 constexpr const size_t test = sizeof(CastRelation*);
-constexpr const size_t HASHMAP_SIZE = (L2_CACHE_SIZE) / (sizeof(CastRelation*) + sizeof(int32_t));
+constexpr const size_t HASHMAP_SIZE = L2_CACHE_SIZE / (sizeof(CastRelation*) + sizeof(int32_t));
 
 struct ThreadArgs {
     int threadId;
@@ -155,7 +155,7 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
     results.reserve(leftRelation.size());
 
     auto chunkStart = rightRelation.begin();
-    std::vector<TitleRelation>::const_iterator chunkEnd = rightRelation.begin();
+    auto chunkEnd = rightRelation.begin();
     while(chunkEnd != rightRelation.end()) {
         if(std::distance(chunkEnd, rightRelation.end()) > HASHMAP_SIZE) {
             chunkEnd = std::next(chunkEnd, HASHMAP_SIZE);
