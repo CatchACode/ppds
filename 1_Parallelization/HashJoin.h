@@ -93,10 +93,10 @@ std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& left
     return results;
 
 }
-
-constexpr const size_t HASHMAP_SIZE = (L2_CACHE_SIZE / sizeof(CastRelation));
+constexpr const size_t HASHMAP_SIZE = (L2_CACHE_SIZE) / (sizeof(CastRelation) + sizeof(int32_t));
 
 struct ThreadArgs {
+    int threadId;
     std::queue<std::span<const TitleRelation>>& chunks;
     std::mutex& m_chunks;
     std::condition_variable& cv_queue;
@@ -104,53 +104,56 @@ struct ThreadArgs {
     std::mutex& m_results;
     const std::vector<CastRelation>& leftRelation;
     std::atomic_bool& stop;
+    std::atomic_size_t& numChunks;
 };
 
 void workerThreadChunk(std::unique_ptr<ThreadArgs> args) {
-    std::cout << "thread started!" << std::endl;
+    std::cout << "thread " << args.get()->threadId << " started!" << std::endl;
+    size_t chunkNum = 0;
     while(!args.get()->stop || !args.get()->chunks.empty()) {
         std::unique_lock l_chunks(args.get()->m_chunks);
-        args.get()->cv_queue.wait(l_chunks, [&args] {return args.get()->stop || args.get()->chunks.empty();});
-        if(!args.get()->chunks.empty()) {
+        args.get()->cv_queue.wait(l_chunks, [&args] {return args->stop || args->chunks.empty();});
+        if(!args->chunks.empty()) {
             auto chunk = args.get()->chunks.front();
-            args.get()->chunks.pop();
+            args->chunks.pop();
+            chunkNum = args->numChunks--;
             l_chunks.unlock();
-            std::cout << "Acquired a new chunk" << std::endl;
+            std::cout << "Thread" << args->threadId <<" working on " << chunkNum << std::endl;
+
             std::unordered_map<int32_t, const TitleRelation*> map;
             map.reserve(chunk.size());
+
             for(const TitleRelation& record: chunk) {
                 map[record.titleId] = &record;
             }
-            for(const CastRelation& record: args.get()->leftRelation) {
+
+            for(const CastRelation& record: args->leftRelation) {
                 if(map.contains(record.movieId)) {
-                    std::lock_guard l_results(args.get()->m_results);
-                    args.get()->results.emplace_back(createResultTuple(record, *map[record.movieId]));
+                    std::scoped_lock l_results(args.get()->m_results);
+                    args->results.emplace_back(createResultTuple(record, *map[record.movieId]));
                 }
             }
-            std::cout << "Finished a chunk!" << std::endl;
         }
-        std::cout << "chunks empty!" << std::endl;
     }
-    std::cout << "Thread finished!" << std::endl;
+    std::cout << "Thread " << args.get()->threadId << " finished!" << std::endl;
 }
 
 std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, const int numThreads = std::jthread::hardware_concurrency()) {
+    if(rightRelation.size() / numThreads < HASHMAP_SIZE) {
+        return performCHJ_MAP(leftRelation, rightRelation, numThreads);
+    }
     std::vector<ResultRelation> results;
     std::mutex m_results;
-    std::vector<std::jthread> threads(numThreads);
+    std::vector<std::jthread> threads;
     std::atomic_bool stop = false;
     std::queue<std::span<const TitleRelation>> chunks;
     std::mutex m_chunks;
     std::condition_variable cv_queue;
-
+    std::atomic_size_t numChunks = 0;
+    std::cout << "HashMapSIze: " << HASHMAP_SIZE << std::endl;
     results.reserve(leftRelation.size());
 
-    for(int i = 0; i < numThreads; ++i) {
-        threads[i] = std::jthread(workerThreadChunk, std::make_unique<ThreadArgs>(std::ref(chunks), std::ref(m_chunks),
-                                                                                  std::ref(cv_queue), std::ref(results),
-                                                                                  std::ref(m_results), std::ref(leftRelation),
-                                                                                  std::ref(stop)));
-    };
+
     auto chunkStart = rightRelation.begin();
     std::vector<TitleRelation>::const_iterator chunkEnd = rightRelation.begin();
     while(chunkEnd != rightRelation.end()) {
@@ -164,8 +167,19 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
             std::scoped_lock l_chunks(m_chunks);
             chunks.emplace(chunkSpan);
             cv_queue.notify_one();
+            numChunks++;
         }
+        chunkStart = chunkEnd;
     }
+    std::cout << "Size of chunks: " <<  chunks.size() << std::endl;
+    for(int i = 0; i < numThreads; ++i) {
+        threads.emplace_back(std::jthread(workerThreadChunk, std::make_unique<ThreadArgs>(i, std::ref(chunks), std::ref(m_chunks),
+                                                                                          std::ref(cv_queue), std::ref(results),
+                                                                                          std::ref(m_results), std::ref(leftRelation),
+                                                                                          std::ref(stop), std::ref(numChunks))));
+    };
+
+
     stop.store(true);
     cv_queue.notify_all();
     for(auto& thread: threads) {
@@ -173,9 +187,6 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
     }
     return results;
 }
-
-
-
 
 /** Has to remain at the both!
  *

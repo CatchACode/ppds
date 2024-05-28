@@ -39,8 +39,8 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
 
 
 TEST(ParallelizationTest, TestJoiningTuples) {
-    const auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
-    const auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
+    const auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform1gb.csv"));
+    const auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
 
     std::cout << "Sizeof leftRelation: " << leftRelation.size()*sizeof(CastRelation) / (1024*1024) << '\n';
     std::cout << "Sizeof rightReleation: " << rightRelation.size()*sizeof(TitleRelation) / (1024*1024) << '\n';
@@ -50,7 +50,8 @@ TEST(ParallelizationTest, TestJoiningTuples) {
     timer.start();
 
     //auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation, 8); // 8457
-    auto resultTuples = performCacheSizedThreadedHashJoin(leftRelation, rightRelation); //34230
+    auto resultTuples = performCacheSizedThreadedHashJoin(leftRelation, rightRelation, 8); //5797
+    //auto resultTuples = performCHJ_MAP(leftRelation, rightRelation); // 4996.84
 
     timer.pause();
 
@@ -97,8 +98,8 @@ TEST(ParallelizationTest, TestIdenticalKeys) {
 }
 
 TEST(ParalleizationTest, TestOMPMergeSort) {
-    auto leftRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
-    auto rightRelation = threadedLoad<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
+    auto leftRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform1gb.csv"));
+    auto rightRelation = threadedLoad<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
 
     Timer timer("OMP MergeSort");
     timer.start();
@@ -108,14 +109,14 @@ TEST(ParalleizationTest, TestOMPMergeSort) {
 }
 
 TEST(ParalleizationTest, TestCheapParallelSort) {
-    auto castRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
+    auto castRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform1gb.csv"));
 
     cheapParallelSort<CastRelation>(castRelation, compareCastRelations, 8);
     assert(std::is_sorted(castRelation.begin(), castRelation.end(), compareCastRelations));
 }
 
 TEST(ParalleizationTest, TestMergeSortGPT) {
-    auto castRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
+    auto castRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform1gb.csv"));
     ThreadPool threadPool(std::jthread::hardware_concurrency());
     merge_sort(threadPool, castRelation.begin(), castRelation.end(), compareCastRelations, std::jthread::hardware_concurrency());
     assert(std::is_sorted(castRelation.begin(), castRelation.end(), compareCastRelations));
