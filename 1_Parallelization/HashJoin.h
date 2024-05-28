@@ -197,14 +197,15 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
 
 std::vector<ResultRelation> performHashJoin(enum HashJoinType joinType, const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, const int numThreads = std::jthread::hardware_concurrency()) {
     switch (joinType) {
-        case HashJoinType::SHJ_MAP: {
+        using enum HashJoinType;
+        case SHJ_MAP: {
             return performSHJ_MAP(leftRelation, rightRelation);
         }
-        case HashJoinType::SHJ_UNORDERED_MAP: {
+        case SHJ_UNORDERED_MAP: {
             return performSHJ_UNORDERED_MAP(leftRelation, rightRelation);
         }
 
-        case HashJoinType::CHJ_MAP:{
+        case CHJ_MAP:{
             return performCHJ_MAP(leftRelation, rightRelation, numThreads);
         }
     }
