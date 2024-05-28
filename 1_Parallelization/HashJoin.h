@@ -90,7 +90,6 @@ std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& left
     for(auto& thread: threads) {
         thread.join();
     }
-    std::cout << "You need to reserve " << results.size() << std::endl;
     return results;
 
 }
