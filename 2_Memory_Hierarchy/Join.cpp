@@ -23,8 +23,6 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     omp_set_num_threads(numThreads);
     std::vector<ResultRelation> resultTuples;
 
-    // TODO: Implement Sort-Merge Join
-    // IMPORTANT: You can assume for this benchmark that the join keys are sorted in both relations.
-    
+
     return resultTuples;
 }

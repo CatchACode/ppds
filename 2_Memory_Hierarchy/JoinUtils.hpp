@@ -21,6 +21,33 @@
 #include <iostream>
 #include <vector>
 
+
+/*
+static const size_t L1_CACHE_SIZE =     hwinfo::getAllCPUs()[0].L1CacheSize_Bytes(); ///< ~64 KiB per Core
+static const size_t L2_CACHE_SIZE =    hwinfo::getAllCPUs()[0].L2CacheSize_Bytes(); ///< ~512 KiB per Core
+static const size_t L3_CACHE_SIZE = hwinfo::getAllCPUs()[0].L3CacheSize_Bytes(); ///< 2*6MiB shared
+
+void inline cacheSizes() {
+    std::cout << "L1 Cache: " << L1_CACHE_SIZE << std::endl;
+    std::cout << "L2 Cache: " << L2_CACHE_SIZE << std::endl;
+    std::cout << "L3 Cache: " << L3_CACHE_SIZE << std::endl;
+}
+*/
+
+constexpr const size_t L1_CACHE_SIZE =     65536; ///< ~64 KiB per Core
+constexpr const size_t L2_CACHE_SIZE =    524288; ///< ~512 KiB per Core
+constexpr const size_t L3_CACHE_SIZE = 2*6*1024*1024; ///< 2*6MiB shared
+
+/*
+constexpr const size_t L1_CACHE_SIZE = 65536;     ///< ~16 KiB per Core
+constexpr const size_t L2_CACHE_SIZE = 16777216;    ///< 512KiB per Core
+constexpr const size_t L3_CACHE_SIZE = 83886000;  ///< ~80 MiB per Core
+*/
+
+
+
+
+
 //==--------------------------------------------------------------------==//
 //==------------------ RELATION & RELATION UTILITY----------------------==//
 //==--------------------------------------------------------------------==//
@@ -323,5 +350,13 @@ static constexpr size_t NUM_FIELD_CAST_RELATION = 7;
 
       return result;
     }
+
+inline bool compareTitleRelations(const TitleRelation& a, const TitleRelation& b) {
+    return a.titleId < b.titleId;
+}
+
+inline bool compareCastRelations(const CastRelation& a, const CastRelation& b) {
+    return a.movieId < b.movieId;
+}
 
 #endif //JOINUTIL_HPP

@@ -55,10 +55,14 @@ endif()
 FetchContent_MakeAvailable(googletest)
 
 # Define the shared library
-add_library(${PROJECT_ROOT} SHARED Join.cpp)
+add_library(${PROJECT_ROOT} SHARED Join.cpp
+        SortMergeJoin.h
+        HashJoin.h)
 
 # Define the executable target that uses the shared library
-add_executable(${PROJECT_EXECUTABLE} Join.cpp)
+add_executable(${PROJECT_EXECUTABLE} Join.cpp
+        SortMergeJoin.h
+        HashJoin.h)
 
 # Link with Libraries
 find_package(OpenMP REQUIRED)

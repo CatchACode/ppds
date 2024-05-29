@@ -45,7 +45,6 @@ constexpr const size_t L3_CACHE_SIZE = 83886000;  ///< ~80 MiB per Core
 */
 
 
-
 //==--------------------------------------------------------------------==//
 //==------------------ RELATION & RELATION UTILITY----------------------==//
 //==--------------------------------------------------------------------==//
@@ -279,32 +278,13 @@ static constexpr size_t NUM_FIELD_CAST_RELATION = 7;
       return true;
     }
 
-std::string replaceDoubleBackslashes(const std::string& input) {
-        std::cout << "running!\n";
-    std::string result;
-    result.reserve(input.length()); // Reserve space to avoid multiple allocations
-    size_t i = 0;
-    while (i < input.length()) {
-        if (i < input.length() - 1 && input[i] == '/' && input[i + 1] == '/') {
-            result += '/';
-            i += 2; // Skip the next character as well
-        } else {
-            result += input[i];
-            i++;
-        }
-    }
-    return result;
-}
-
-
     template <typename Relation>
     std::vector<Relation> load(const std::string& filename, const size_t numberOfTuples = SIZE_MAX) {
-        std::string r_filename = replaceDoubleBackslashes(filename);
 
       std::vector<Relation> data;
-      std::ifstream file(r_filename);
+      std::ifstream file(filename);
       if (!file.is_open()) {
-        std::cerr << "Error: Failed to open file " << r_filename << std::endl;
+        std::cerr << "Error: Failed to open file " << filename << std::endl;
         exit(-1);
       }
 
