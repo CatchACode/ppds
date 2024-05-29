@@ -186,7 +186,7 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
     return results;
 }
 
-/** Has to remain at the both!
+/** Has to remain at the bottom!
  *
  * @param joinType
  * @param leftRelation
