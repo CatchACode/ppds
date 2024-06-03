@@ -54,6 +54,30 @@ std::vector<ResultRelation> performSHJ_UNORDERED_MAP(const std::vector<CastRelat
     return results;
 }
 
+std::vector<ResultRelation> perform2THJ(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation) {
+    std::vector<ResultRelation> results;
+    results.reserve(leftRelation.size());
+    // Divide rightRelation into two
+    const std::span<const TitleRelation> span1(std::to_address(rightRelation.begin()), std::to_address(rightRelation.begin() + (rightRelation.size() / 2)));
+    const std::span<const TitleRelation> span2(std::to_address(rightRelation.begin()) + (rightRelation.size() / 2), std::to_address(rightRelation.end()));
+    std::atomic_size_t results_index;
+    auto join_half = [&results, &results_index, &leftRelation](const std::span<const TitleRelation>& span) {
+        std::unordered_map<int32_t, const TitleRelation*> map;
+        map.reserve(span.size());
+        // Build map
+        std::ranges::for_each(span, [&map](const TitleRelation& record){map[record.titleId] = &record;});
+        std::ranges::for_each(leftRelation, [&map, &results, &results_index](const CastRelation& record) {
+           if(map.contains(record.movieId)) {
+               results.emplace(results.begin() + results_index++, createResultTuple(record, *map[record.movieId]));
+           }
+        });
+    };
+    std::jthread otherHalf(join_half, std::ref(span1));
+    join_half(span2);
+    otherHalf.join();
+    return results;
+}
+
 std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, const int numThreads = std::jthread::hardware_concurrency()) {
     const size_t chunkSize = rightRelation.size() / numThreads;
 
@@ -137,6 +161,9 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
     if(HASHMAP_SIZE > rightRelation.size() / numThreads) {
         // Cache Size is too large to split into more than hashmapSize * numThreads
         std::cout << "Performing CHJ as it is not possible to create <= numThread cache sized HashMaps!" << std::endl;
+        if (numThreads == 2) {
+            return perform2THJ(leftRelation, rightRelation);
+        }
         return performCHJ_MAP(leftRelation, rightRelation, numThreads);
     }
     std::vector<ResultRelation> results;
@@ -173,9 +200,6 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
                                                                                           std::ref(m_results), std::ref(leftRelation),
                                                                                           std::ref(stop))));
     };
-
-
-
 
     stop.store(true);
     cv_queue.notify_all();
