@@ -132,6 +132,7 @@ std::vector<Relation> threadedLoad(const std::string& filepath, const size_t& bu
     for(auto& t: threads) {
         t.join();
     }
+    std::cout << "Loaded " << data.size() << " tuples from file!" << std::endl;
     return data;
 }
 
