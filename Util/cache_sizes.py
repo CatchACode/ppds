@@ -4,6 +4,7 @@ import re
 import argparse
 import os
 import platform
+import sys
 
 
 def get_cpu_cache_size_linux(level: int) -> int:
@@ -62,16 +63,20 @@ def get_cpu_cache_size_linux(level: int) -> int:
     except subprocess.CalledProcessError as e:
         print(f"An error occurred while running lscpu: {e}")
         return None
-
+    except Exception as e:
+        print(-1)
 
 
 def get_cpu_cache_size_windows(level: int) -> int:
     return None
 
+
 def get_cpu_cache_size_darwin(level: int) -> int:
     try:
-        performance_cores = int(subprocess.check_output(["sysctl", "-n", "hw.perflevel0.physicalcpu"], text=True).strip())
-        efficiency_cores = int(subprocess.check_output(["sysctl", "-n", "hw.perflevel1.physicalcpu"], text=True).strip())
+        performance_cores = int(
+            subprocess.check_output(["sysctl", "-n", "hw.perflevel0.physicalcpu"], text=True).strip())
+        efficiency_cores = int(
+            subprocess.check_output(["sysctl", "-n", "hw.perflevel1.physicalcpu"], text=True).strip())
 
         level_map = {
             '1': ['hw.perflevel0.l1dcachesize', 'hw.perflevel0.l1icachesize'],
@@ -100,7 +105,8 @@ def get_cpu_cache_size_darwin(level: int) -> int:
     except subprocess.CalledProcessError as e:
         print(f"An error occurred while running sysctl: {e}")
         return None
-
+    except Exception as e:
+        print(-1)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Get CPU cache size per instance for a specified level.')
@@ -113,11 +119,9 @@ if __name__ == "__main__":
         cache_size = get_cpu_cache_size_linux(level)
     elif platform.system() == 'Darwin':
         cache_size = get_cpu_cache_size_darwin(level)
-    else:
-        print("Unsupported operating system.")
-        cache_size = None
 
     if cache_size is not None:
         print(cache_size)
+        exit(cache_size)
     else:
-        print("Failed to retrieve CPU cache size.")
+        exit(-1)
