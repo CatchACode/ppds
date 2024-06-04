@@ -4,7 +4,7 @@ import re
 def get_cpu_cache_sizes():
     try:
         # Run the lscpu command
-        result = subprocess.run(['lscpu'], stdout=subprocess.PIPE, text=True, check=True)
+        result = subprocess.run(['lscpu', '-B'], stdout=subprocess.PIPE, text=True, check=True)
         output = result.stdout
 
         # Initialize cache sizes dictionary
