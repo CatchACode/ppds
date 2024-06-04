@@ -35,10 +35,32 @@ endif()
 # Might not be possible for static library...
 set(BLOCK_SIZE 4096)
 
+# Set cache sizes
+execute_process(
+        COMMAND python3 "${PPDS_PROJECT_DIR}/Util/cache_sizes.py 1"
+        OUTPUT_VARIABLE SCRIPT_OUTPUT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+set(L1_CACHE_SIZE SCRIPT_OUTPUT)
+execute_process(
+        COMMAND python3 "${PPDS_PROJECT_DIR}/Util/cache_sizes.py 2"
+        OUTPUT_VARIABLE SCRIPT_OUTPUT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+set(L2_CACHE_SIZE SCRIPT_OUTPUT)
+execute_process(
+        COMMAND python3 "${PPDS_PROJECT_DIR}/Util/cache_sizes.py 3"
+        OUTPUT_VARIABLE SCRIPT_OUTPUT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+set(L3_CACHE_SIZE SCRIPT_OUTPUT)
 
 # Pass the block size to the source code as a preprocessor definition
 message("Block Size is ${BLOCK_SIZE}")
 message("Data directory is ${DATA_DIRECTORY}")
+message("L1 cache size is ${L1_CACHE_SIZE}")
+message("L2 cache size is ${L2_CACHE_SIZE}")
+message("L3 cache size is ${L3_CACHE_SIZE}")
 
 # Load gtest
 include(FetchContent)
