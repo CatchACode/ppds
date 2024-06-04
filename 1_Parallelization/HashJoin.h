@@ -54,6 +54,7 @@ std::vector<ResultRelation> performSHJ_UNORDERED_MAP(const std::vector<CastRelat
     return results;
 }
 
+
 std::vector<ResultRelation> perform2THJ(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation) {
     std::vector<ResultRelation> results;
     results.reserve(leftRelation.size());
@@ -84,8 +85,20 @@ std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& left
     std::vector<ResultRelation> results;
     results.reserve(leftRelation.size());
     std::mutex m_results;
+    std::atomic_size_t results_index = 0;
 
     std::vector<std::jthread> threads;
+
+    auto joinChunk = [&results, &leftRelation, &results_index](const std::span<const TitleRelation> chunk) {
+        std::unordered_map<int32_t, const TitleRelation*> map;
+        map.reserve(chunk.size());
+        std::ranges::for_each(chunk, [&map](const TitleRelation& record){map[record.titleId] = &record;});
+        std::ranges::for_each(leftRelation, [&map, &results, &results_index](const CastRelation& record) {
+            if(map.contains(record.movieId)) {
+                results.emplace(results.begin() + (results_index++), createResultTuple(record, *map[record.movieId]));
+            }
+        });
+    };
 
     auto chunkStart = rightRelation.begin();
     for(int i = 0; i < numThreads; ++i) {
@@ -96,19 +109,7 @@ std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& left
             chunkEnd = std::next(chunkStart, chunkSize);
         }
         const std::span<const TitleRelation> chunkSpan(std::to_address(chunkStart), std::to_address(chunkEnd));
-        threads.emplace_back([&results, &m_results, chunkSpan, &leftRelation] {
-            // Build HashMap
-            std::unordered_map<int32_t, const TitleRelation*> map;
-            map.reserve(chunkSpan.size());
-            std::ranges::for_each(chunkSpan, [&map](const TitleRelation& record){map[record.titleId] = &record;});
-            // Probe
-            std::ranges::for_each(leftRelation, [&map, &m_results, &results](const CastRelation& record) {
-                if(map.contains(record.movieId)) {
-                    std::lock_guard l_results(m_results);
-                    results.emplace_back(createResultTuple(record, *map[record.movieId]));
-                }
-            });
-        });
+        threads.emplace_back(joinChunk, chunkSpan);
         chunkStart = chunkEnd;
     }
     for(auto& thread: threads) {
