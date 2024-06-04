@@ -105,7 +105,7 @@ def get_cpu_cache_size_darwin(level: int) -> int:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Get CPU cache size per instance for a specified level.')
     parser.add_argument('level', type=str, help='The cache level to retrieve (1, 2, or 3)')
-    print("Running script to get CPU cache size per instance for a specified level.")
+    #print("Running script to get CPU cache size per instance for a specified level.")
 
     args = parser.parse_args()
     level = args.level

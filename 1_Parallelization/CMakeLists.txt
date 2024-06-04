@@ -35,25 +35,44 @@ endif()
 # Might not be possible for static library...
 set(BLOCK_SIZE 4096)
 
+set(CACHE_SCRIPT_PATH "${PPDS_PROJECT_DIR}/Util/cache_sizes.py")
+
 # Set cache sizes
 execute_process(
-        COMMAND python3 "${PPDS_PROJECT_DIR}/Util/cache_sizes.py 1"
+        COMMAND python3 ${CACHE_SCRIPT_PATH} 1
+        RESULT_VARIABLE SCRIPT_RESULT
         OUTPUT_VARIABLE SCRIPT_OUTPUT
+        ERROR_VARIABLE SCRIPT_ERROR
         OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-set(L1_CACHE_SIZE SCRIPT_OUTPUT)
+message(STATUS "Python script result: ${SCRIPT_RESULT}")
+message(STATUS "Output from Python script: ${SCRIPT_OUTPUT}")
+message(STATUS "Error from Python script: ${SCRIPT_ERROR}")
+set(L1_CACHE_SIZE ${SCRIPT_OUTPUT})
+
 execute_process(
-        COMMAND python3 "${PPDS_PROJECT_DIR}/Util/cache_sizes.py 2"
+        COMMAND python3 ${CACHE_SCRIPT_PATH} 2
+        RESULT_VARIABLE SCRIPT_RESULT
         OUTPUT_VARIABLE SCRIPT_OUTPUT
+        ERROR_VARIABLE SCRIPT_ERROR
         OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-set(L2_CACHE_SIZE SCRIPT_OUTPUT)
+message(STATUS "Python script result: ${SCRIPT_RESULT}")
+message(STATUS "Output from Python script: ${SCRIPT_OUTPUT}")
+message(STATUS "Error from Python script: ${SCRIPT_ERROR}")
+set(L2_CACHE_SIZE ${SCRIPT_OUTPUT})
+
 execute_process(
-        COMMAND python3 "${PPDS_PROJECT_DIR}/Util/cache_sizes.py 3"
+        COMMAND python3 ${CACHE_SCRIPT_PATH} 3
+        RESULT_VARIABLE SCRIPT_RESULT
         OUTPUT_VARIABLE SCRIPT_OUTPUT
+        ERROR_VARIABLE SCRIPT_ERROR
         OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-set(L3_CACHE_SIZE SCRIPT_OUTPUT)
+message(STATUS "Python script result: ${SCRIPT_RESULT}")
+message(STATUS "Output from Python script: ${SCRIPT_OUTPUT}")
+message(STATUS "Error from Python script: ${SCRIPT_ERROR}")
+set(L3_CACHE_SIZE ${SCRIPT_OUTPUT})
 
 # Pass the block size to the source code as a preprocessor definition
 message("Block Size is ${BLOCK_SIZE}")
