@@ -7,16 +7,16 @@ import platform
 import sys
 
 
-def get_phyiscal_core_count():
+def get_phyiscal_core_count() -> int:
     if platform.system() == 'Linux':
         lscpu = subprocess.check_output(['lscpu']).decode().strip()
         for line in lscpu.split('\n'):
             if "Core(s) per socket:" in line:
-                return line.split(":")[1].strip()
+                return int(line.split(":")[1].strip())
         return -1
     elif platform.system() == 'Darwin':
         line = subprocess.check_output(['sysctl', 'hw.perflevel0.physicalcpu']).decode().strip()
-        return line.split(":")[1].strip()
+        return int(line.split(":")[1].strip())
 
 
 
