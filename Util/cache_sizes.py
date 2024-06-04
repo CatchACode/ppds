@@ -117,7 +117,7 @@ def get_processor_name():
         command =["sysctl", "-n", "machdep.cpu.brand_string"]
         return subprocess.check_output(command).strip().decode()
     elif platform.system() == "Linux":
-        command = ["cat", "/proc/cpuinfo"]
+        command = "cat /proc/cpuinfo"
         all_info = subprocess.check_output(command, shell=True).decode().strip()
         for line in all_info.split("\n"):
             if "model name" in line:
@@ -135,8 +135,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     level = args.level
     if level == "4":
-        print(get_processor_name())
-        exit(1)
+        print(subprocess.check_output("cat /proc/cpuinfo").decode().strip())
     if platform.system() == 'Linux':
         cache_size = get_cpu_cache_size_linux(level)
     elif platform.system() == 'Darwin':
