@@ -108,6 +108,25 @@ def get_cpu_cache_size_darwin(level: int) -> int:
     except Exception as e:
         print(-1)
 
+
+def get_processor_name():
+    if platform.system() == "Windows":
+        return platform.processor()
+    elif platform.system() == "Darwin":
+        os.environ['PATH'] = os.environ['PATH'] + os.pathsep + '/usr/sbin'
+        command =["sysctl", "-n", "machdep.cpu.brand_string"]
+        return subprocess.check_output(command).strip().decode()
+    elif platform.system() == "Linux":
+        command = ["cat", "/proc/cpuinfo"]
+        all_info = subprocess.check_output(command, shell=True).decode().strip()
+        for line in all_info.split("\n"):
+            if "model name" in line:
+                return re.sub( ".*model name.*:", "", line,1)
+    return ""
+
+
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Get CPU cache size per instance for a specified level.')
     parser.add_argument('level', type=str, help='The cache level to retrieve (1, 2, or 3)')
@@ -116,7 +135,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     level = args.level
     if level == "4":
-        print(platform.processor())
+        print(get_processor_name())
         exit(1)
     if platform.system() == 'Linux':
         cache_size = get_cpu_cache_size_linux(level)

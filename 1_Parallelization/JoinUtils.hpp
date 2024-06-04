@@ -385,6 +385,7 @@ void inline printCacheSizes() {
     std::cout << "L2 cache size: " << L2_CACHE_SIZE << std::endl;
     std::cout << "L3 cache size: " << L3_CACHE_SIZE << std::endl;
     std::cout << "Hash map size: " << HASHMAP_SIZE << std::endl;
+    std::cout << "CPU: " << CPU_NAME << std::endl;
 }
 
 

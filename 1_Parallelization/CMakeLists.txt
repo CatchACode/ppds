@@ -103,7 +103,7 @@ file(APPEND "${CMAKE_BINARY_DIR}/generated_variables.h" "static constexpr const 
 file(APPEND "${CMAKE_BINARY_DIR}/generated_variables.h" "static constexpr const size_t L2_CACHE_SIZE = ${L2_CACHE_SIZE};\n")
 file(APPEND "${CMAKE_BINARY_DIR}/generated_variables.h" "static constexpr const size_t L3_CACHE_SIZE = ${L3_CACHE_SIZE};\n")
 file(APPEND "${CMAKE_BINARY_DIR}/generated_variables.h" "static constexpr const size_t BLOCK_SIZE = ${BLOCK_SIZE};\n")
-file(APPEND "${CMAKE_BINARY_DIR}/generated_variables.h" "static constexpr const std::string CPU_NAME = \"${CPU_NAME}\";\n")
+file(APPEND "${CMAKE_BINARY_DIR}/generated_variables.h" "static constexpr const char* CPU_NAME = \"${CPU_NAME}\\0\";\n")
 
 
 
