@@ -33,11 +33,11 @@ void inline cacheSizes() {
     std::cout << "L3 Cache: " << L3_CACHE_SIZE << std::endl;
 }
 */
-
+/*
 constexpr const size_t L1_CACHE_SIZE =     65536; ///< ~64 KiB per Core
 constexpr const size_t L2_CACHE_SIZE =    512*1024; ///< ~512 KiB per Core
 constexpr const size_t L3_CACHE_SIZE = 2*6*1024*1024; ///< 2*6MiB shared
-
+*/
 /*
 constexpr const size_t L1_CACHE_SIZE = 65536;     ///< ~16 KiB per Core
 constexpr const size_t L2_CACHE_SIZE = 16777216;    ///< 512KiB per Core

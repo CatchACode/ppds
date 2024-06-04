@@ -38,6 +38,10 @@ set(BLOCK_SIZE 4096)
 set(CACHE_SCRIPT_PATH "${PPDS_PROJECT_DIR}/Util/cache_sizes.py")
 
 # Set cache sizes
+set(L1_CACHE_SIZE 0)
+set(L2_CACHE_SIZE 0)
+set(L3_CACHE_SIZE 0)
+
 execute_process(
         COMMAND python3 ${CACHE_SCRIPT_PATH} 1
         RESULT_VARIABLE SCRIPT_RESULT
@@ -80,6 +84,14 @@ message("Data directory is ${DATA_DIRECTORY}")
 message("L1 cache size is ${L1_CACHE_SIZE}")
 message("L2 cache size is ${L2_CACHE_SIZE}")
 message("L3 cache size is ${L3_CACHE_SIZE}")
+
+file(WRITE "${CMAKE_BINARY_DIR}/generated_variables.h" "#pragma once\n")
+file(APPEND "${CMAKE_BINARY_DIR}/generated_variables.h" "constexpr const size_t L1_CACHE_SIZE = ${L1_CACHE_SIZE};\n")
+file(APPEND "${CMAKE_BINARY_DIR}/generated_variables.h" "constexpr const size_t L2_CACHE_SIZE = ${L2_CACHE_SIZE};\n")
+file(APPEND "${CMAKE_BINARY_DIR}/generated_variables.h" "constexpr const size_t L3_CACHE_SIZE = ${L3_CACHE_SIZE};\n")
+
+
+
 
 # Load gtest
 include(FetchContent)
@@ -144,8 +156,8 @@ endif (OpenMP_CXX_FOUND)
 
 
 # If necessary, include gtest include directories
-target_include_directories(1_Parallelization PRIVATE ${gtest_SOURCE_DIR}/include ${gtest_BINARY_DIR})
-target_include_directories(ParallelismExecutable PRIVATE ${gtest_SOURCE_DIR}/include ${gtest_BINARY_DIR})
+target_include_directories(1_Parallelization PRIVATE ${gtest_SOURCE_DIR}/include ${gtest_BINARY_DIR} ${CMAKE_BINARY_DIR})
+target_include_directories(ParallelismExecutable PRIVATE ${gtest_SOURCE_DIR}/include ${gtest_BINARY_DIR} ${CMAKE_BINARY_DIR})
 
 # Add compile definitions
 target_compile_definitions(1_Parallelization PRIVATE

@@ -15,10 +15,6 @@
 
 #include "JoinUtils.hpp"
 
-#ifndef BLOCK_SIZE
-#define BLOCK_SIZE 4096
-#endif
-
 
 template<typename Relation>
 void inline processLine(std::string& line, std::vector<Relation>& data, std::mutex& m_data,
