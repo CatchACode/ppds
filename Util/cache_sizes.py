@@ -7,10 +7,23 @@ import platform
 import sys
 
 
+def get_phyiscal_core_count():
+    if platform.system() == 'Linux':
+        lscpu = subprocess.check_output(['lscpu']).decode().strip()
+        for line in lscpu.split('\n'):
+            if "Core(s) per socket:" in line:
+                return line.split(":")[1].strip()
+        return -1
+    elif platform.system() == 'Darwin':
+        line = subprocess.check_output(['sysctl', 'hw.perflevel0.physicalcpu']).decode().strip()
+        return line.split(":")[1].strip()
+
+
+
 def get_cpu_cache_size_linux(level: int) -> int:
     try:
         # Get number of processors
-        num_cores = os.cpu_count();
+        num_cores = get_phyiscal_core_count()
         if num_cores is None:
             raise RuntimeError('No available CPU cores.')
 
