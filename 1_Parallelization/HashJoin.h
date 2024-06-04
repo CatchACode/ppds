@@ -90,13 +90,14 @@ std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& left
 
     std::vector<std::jthread> threads;
 
-    auto joinChunk = [&results, &leftRelation, &results_index](const std::span<const TitleRelation> chunk) {
+    auto joinChunk = [&results, &leftRelation, &results_index, &m_results](const std::span<const TitleRelation> chunk) {
         std::unordered_map<int32_t, const TitleRelation*> map;
         map.reserve(chunk.size());
         std::ranges::for_each(chunk, [&map](const TitleRelation& record){map[record.titleId] = &record;});
-        std::ranges::for_each(leftRelation, [&map, &results, &results_index](const CastRelation& record) {
+        std::ranges::for_each(leftRelation, [&map, &results, &results_index, &m_results](const CastRelation& record) {
             if(map.contains(record.movieId)) {
-                results.emplace(results.begin() + (results_index++), createResultTuple(record, *map[record.movieId]));
+                std::lock_guard l_results(m_results);
+                results.emplace_back(createResultTuple(record, *map[record.movieId]));
             }
         });
     };
