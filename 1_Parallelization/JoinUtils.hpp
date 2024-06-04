@@ -388,6 +388,11 @@ void inline printCacheSizes() {
     std::cout << "CPU: " << CPU_NAME << std::endl;
 }
 
+template <typename Relation>
+std::vector<Relation> findDiff(const std::vector<Relation> a, const std::vector<Relation> b) {
+
+}
+
 
 
 

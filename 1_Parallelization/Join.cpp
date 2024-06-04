@@ -72,6 +72,10 @@ TEST(ParallelizationTest, TestJoinCorrectness) {
 
     auto results1 = performCHJ_MAP(leftRelation, rightRelation, 8);
     auto results2 = performSHJ_UNORDERED_MAP(leftRelation, rightRelation);
+
+    if(results1.size() != results2.size()) {
+        std::cout << "results1.size(): " << results1.size() << "!= results2.size(): " << results2.size();
+    }
 }
 
 
