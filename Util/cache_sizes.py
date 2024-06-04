@@ -8,7 +8,7 @@ def get_cpu_cache_sizes():
         output = result.stdout
 
         # Initialize cache sizes dictionary
-        cache_sizes = {}
+        cache_sizes = []
 
         # Split the output into lines and parse each line for cache sizes
         lines = output.splitlines()
@@ -29,7 +29,7 @@ def get_cpu_cache_sizes():
                 else:
                     size_bytes = size
 
-                cache_sizes[cache_type] = f"{size_bytes} bytes"
+                cache_sizes.append(size_bytes)
 
         return cache_sizes
 
@@ -40,7 +40,7 @@ def get_cpu_cache_sizes():
 if __name__ == "__main__":
     cache_sizes = get_cpu_cache_sizes()
     if cache_sizes:
-        for cache, size in cache_sizes.items():
-            print(f"{cache}: {size}")
+        for size in cache_sizes:
+            print(size)
     else:
         print("Failed to retrieve CPU cache sizes.")
