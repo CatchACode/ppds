@@ -115,10 +115,15 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     level = args.level
+    if level == "4":
+        print(platform.processor())
+        exit(1)
     if platform.system() == 'Linux':
         cache_size = get_cpu_cache_size_linux(level)
     elif platform.system() == 'Darwin':
         cache_size = get_cpu_cache_size_darwin(level)
+
+
 
     if cache_size is not None:
         print(cache_size)

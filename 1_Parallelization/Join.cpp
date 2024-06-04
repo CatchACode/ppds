@@ -28,7 +28,6 @@
 #include <algorithm>
 #include <ranges>
 #include <span>
-//#include <experimental/simd>
 
 
 
