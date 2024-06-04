@@ -117,11 +117,12 @@ def get_processor_name():
         command =["sysctl", "-n", "machdep.cpu.brand_string"]
         return subprocess.check_output(command).strip().decode()
     elif platform.system() == "Linux":
-        command = "lscpu"
-        all_info = subprocess.check_output(command, shell=True).decode().strip()
+        command = ["lscpu"]
+        all_info = subprocess.check_output(command).decode().strip()
         for line in all_info.split("\n"):
-            if "model name" in line:
-                return re.sub( ".*model name.*:", "", line,1)
+            if "Model name" in line:
+                return line.split(":")[1].strip()
+
     return ""
 
 
