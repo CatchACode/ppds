@@ -33,6 +33,7 @@
 
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
+    printCacheSizes();
     return performCacheSizedThreadedHashJoin(leftRelation, rightRelation, numThreads);
     //return perform2THJ(leftRelation, rightRelation);
 }
@@ -56,7 +57,7 @@ TEST(ParallelizationTest, TestJoiningTuples) {
 
     //auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation, 8); // 8457
     //auto resultTuples = perform2THJ(leftRelation, rightRelation); //5797
-    auto resultTuples = performCHJ_MAP(leftRelation, rightRelation); // 4996.84
+    auto resultTuples = performJoin(leftRelation, rightRelation, 8); // 4996.84
 
     timer.pause();
 
