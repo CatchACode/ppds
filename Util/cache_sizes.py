@@ -135,7 +135,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     level = args.level
     if level == "4":
-        print(subprocess.check_output("cat /proc/cpuinfo").decode().strip())
+        print(subprocess.check_output("lscpu").decode().strip())
     if platform.system() == 'Linux':
         cache_size = get_cpu_cache_size_linux(level)
     elif platform.system() == 'Darwin':
