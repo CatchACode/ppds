@@ -2,10 +2,16 @@
 import subprocess
 import re
 import argparse
+import os
 
 
 def get_cpu_cache_size(level: int) -> int:
     try:
+        # Get number of processors
+        num_cores = os.cpu_count();
+        if num_cores is None:
+            raise RuntimeError('No available CPU cores.')
+
         # Run the lscpu command
         result = subprocess.run(['lscpu', '-B'], stdout=subprocess.PIPE, text=True, check=True)
         output = result.stdout
@@ -47,6 +53,9 @@ def get_cpu_cache_size(level: int) -> int:
 
         # Sum up the cache sizes for the same level if there are multiple entries like L1d and L1i
         total_cache_size = sum(cache_sizes)
+        if level != 3:
+            total_cache_size = total_cache_size / num_cores;
+
         return total_cache_size
 
     except subprocess.CalledProcessError as e:
@@ -54,8 +63,9 @@ def get_cpu_cache_size(level: int) -> int:
         return None
 
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Get CPU cache size for a specified level.')
+    parser = argparse.ArgumentParser(description='Get CPU cache size per instance for a specified level.')
     parser.add_argument('level', type=str, help='The cache level to retrieve (1, 2, or 3)')
 
     args = parser.parse_args()
