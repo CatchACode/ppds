@@ -136,6 +136,7 @@ if __name__ == "__main__":
     level = args.level
     if level == "4":
         print(get_processor_name())
+        exit(0)
     if platform.system() == 'Linux':
         cache_size = get_cpu_cache_size_linux(level)
     elif platform.system() == 'Darwin':
