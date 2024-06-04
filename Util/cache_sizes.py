@@ -3,9 +3,10 @@ import subprocess
 import re
 import argparse
 import os
+import platform
 
 
-def get_cpu_cache_size(level: int) -> int:
+def get_cpu_cache_size_linux(level: int) -> int:
     try:
         # Get number of processors
         num_cores = os.cpu_count();
@@ -64,12 +65,57 @@ def get_cpu_cache_size(level: int) -> int:
 
 
 
+def get_cpu_cache_size_windows(level: int) -> int:
+    return None
+
+def get_cpu_cache_size_darwin(level: int) -> int:
+    try:
+        performance_cores = int(subprocess.check_output(["sysctl", "-n", "hw.perflevel0.physicalcpu"], text=True).strip())
+        efficiency_cores = int(subprocess.check_output(["sysctl", "-n", "hw.perflevel1.physicalcpu"], text=True).strip())
+
+        level_map = {
+            '1': ['hw.perflevel0.l1dcachesize', 'hw.perflevel0.l1icachesize'],
+            '2': ['hw.perflevel0.l2cachesize'],
+            '3': ['hw.perflevel0.l3cachesize']
+        }
+
+        if level not in level_map:
+            print(f"Invalid level: {level}. Valid levels are 1, 2, 3.")
+            return None
+
+        cache_sizes = []
+
+        for cache_key in level_map[level]:
+            result = subprocess.run(['sysctl', cache_key], stdout=subprocess.PIPE, text=True, check=True)
+            output = result.stdout
+            size = int(output.split(":")[1].strip())
+            cache_sizes.append(size)
+
+        total_cache_size = sum(cache_sizes)
+        if level != 3:
+            total_cache_size = total_cache_size / performance_cores
+
+        return total_cache_size
+
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred while running sysctl: {e}")
+        return None
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Get CPU cache size per instance for a specified level.')
     parser.add_argument('level', type=str, help='The cache level to retrieve (1, 2, or 3)')
 
     args = parser.parse_args()
-    cache_size = get_cpu_cache_size(args.level)
+    level = args.level
+    if platform.system() == 'Linux':
+        cache_size = get_cpu_cache_size_linux(level)
+    elif platform.system() == 'Darwin':
+        cache_size = get_cpu_cache_size_darwin(level)
+    else:
+        print("Unsupported operating system.")
+        cache_size = None
+
     if cache_size is not None:
         print(cache_size)
     else:
