@@ -46,12 +46,6 @@ constexpr const size_t L2_CACHE_SIZE = 16777216;    ///< 512KiB per Core
 constexpr const size_t L3_CACHE_SIZE = 83886000;  ///< ~80 MiB per Core
 */
 
-void inline printCacheSizes() {
-    std::cout << "L1 cache size: " << L1_CACHE_SIZE << std::endl;
-    std::cout << "L2 cache size: " << L2_CACHE_SIZE << std::endl;
-    std::cout << "L3 cache size: " << L3_CACHE_SIZE << std::endl;
-}
-
 
 
 //==--------------------------------------------------------------------==//
@@ -108,6 +102,8 @@ static constexpr size_t NUM_FIELD_CAST_RELATION = 7;
       int32_t nrOrder;
       int32_t roleId;
     };
+
+static constexpr size_t HASHMAP_SIZE = L2_CACHE_SIZE / (sizeof(CastRelation*) + sizeof(int32_t));
 
     inline bool operator==(const ResultRelation& lhs, const ResultRelation& rhs) {
       return lhs.titleId == rhs.titleId &&
@@ -382,6 +378,13 @@ inline bool compareTitleRelations(const TitleRelation& a, const TitleRelation& b
 
 inline bool compareCastRelations(const CastRelation& a, const CastRelation& b) {
     return a.movieId < b.movieId;
+}
+
+void inline printCacheSizes() {
+    std::cout << "L1 cache size: " << L1_CACHE_SIZE << std::endl;
+    std::cout << "L2 cache size: " << L2_CACHE_SIZE << std::endl;
+    std::cout << "L3 cache size: " << L3_CACHE_SIZE << std::endl;
+    std::cout << "Hash map size: " << HASHMAP_SIZE << std::endl;
 }
 
 

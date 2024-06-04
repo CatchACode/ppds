@@ -120,7 +120,6 @@ std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& left
     return results;
 
 }
-static const size_t HASHMAP_SIZE = L2_CACHE_SIZE / (sizeof(CastRelation*) + sizeof(int32_t));
 
 struct ThreadArgs {
     int threadId;
