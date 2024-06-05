@@ -33,10 +33,11 @@
 
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
-    printCacheSizes();
-    //return performCHJ_MAP(leftRelation, rightRelation, numThreads);
-    return performCacheSizedThreadedHashJoin(leftRelation, rightRelation, numThreads);
-    //return perform2THJ(leftRelation, rightRelation);
+    if(numThreads == 1) {
+        return performSHJ_UNORDERED_MAP(leftRelation, rightRelation);
+    } else {
+        return performCHJ_MAP(leftRelation, rightRelation, numThreads);
+    }
 }
 
 std::vector<ResultRelation> findDiff2(const std::vector<ResultRelation> a, const std::vector<ResultRelation> b) {
@@ -70,6 +71,8 @@ TEST(ParallelizationTest, TestJoiningTuples) {
     const auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
     const auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
 
+    printCacheSizes();
+
     std::cout << "Sizeof leftRelation: " << leftRelation.size()*sizeof(CastRelation) / (1024*1024) << '\n';
     std::cout << "Sizeof rightReleation: " << rightRelation.size()*sizeof(TitleRelation) / (1024*1024) << '\n';
 
@@ -77,9 +80,10 @@ TEST(ParallelizationTest, TestJoiningTuples) {
     Timer timer("Parallelized Join execute");
     timer.start();
 
-    auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation, 8); // 8457
+    //auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation, 8); // 8457
     //auto resultTuples = perform2THJ(leftRelation, rightRelation); //5797
-    //auto resultTuples = performJoin(leftRelation, rightRelation, 8); // 4996.84
+    auto resultTuples = performJoin(leftRelation, rightRelation, 8); // 4996.84
+
 
     timer.pause();
 

@@ -159,7 +159,6 @@ if __name__ == "__main__":
 
 
     if cache_size is not None:
-        print(cache_size)
-        exit(cache_size)
+        print(int(cache_size))
     else:
         exit(-1)
