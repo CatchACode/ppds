@@ -39,6 +39,27 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
     //return perform2THJ(leftRelation, rightRelation);
 }
 
+std::vector<ResultRelation> findDiff2(const std::vector<ResultRelation> a, const std::vector<ResultRelation> b) {
+    std::vector<ResultRelation> results;
+    auto compare = [](const ResultRelation& a, const ResultRelation& b) {
+        return a.titleId == b.titleId;
+    };
+
+    for(const auto& record1: a) {
+        bool found = false;
+        for(const auto& record2: b) {
+            if(compare(record1, record2)) {
+                found = true;
+                break;
+            }
+        }
+        if(!found) {
+            results.emplace_back(record1);
+        }
+    }
+    return results;
+}
+
 
 
 TEST(ParallelizationTest, TestJoiningTuples) {
