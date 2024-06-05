@@ -105,20 +105,22 @@ std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& left
             // Build HashMap
             std::unordered_map<int32_t, const TitleRelation*> map;
             map.reserve(chunkSpan.size());
-            std::ranges::for_each(chunkSpan, [&map](const TitleRelation& record){map[record.titleId] = &record;});
-            // Probe
-            std::ranges::for_each(leftRelation, [&map, &m_results, &results](const CastRelation& record) {
+            for(const auto& record: chunkSpan) {
+                map[record.titleId] = &record;
+            }
+            for(const auto& record : leftRelation) {
                 if(map.contains(record.movieId)) {
                     std::lock_guard l_results(m_results);
                     results.emplace_back(createResultTuple(record, *map[record.movieId]));
                 }
-            });
+            }
         });
         chunkStart = chunkEnd;
     }
     for(auto& thread: threads) {
         thread.join();
     }
+    std::cout << "results size:" << results.size() << std::endl;
     return results;
 
 }
@@ -164,11 +166,11 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
 
     if(HASHMAP_SIZE > rightRelation.size() / numThreads) {
         // Cache Size is too large to split into more than hashmapSize * numThreads
-        std::cout << "Performing CHJ as it is not possible to create <= numThread cache sized HashMaps!" << std::endl;
         if (numThreads == 2) {
             std::cout << "Performing 2THJ!" << std::endl;
             return perform2THJ(leftRelation, rightRelation);
         }
+        std::cout << "Performing CHJ as it is not possible to create <= numThread cache sized HashMaps!" << std::endl;
         return performCHJ_MAP(leftRelation, rightRelation, numThreads);
     }
     std::vector<ResultRelation> results;
