@@ -22,6 +22,23 @@
 #include <vector>
 #include <execution>
 
+
+#ifndef L1_CACHE_SIZE
+#define L1_CACHE_SIZE 65526
+#endif
+#ifndef L2_CACHE_SIZE
+#define L2_CACHE_SIZE 262144
+#endif
+#ifndef L3_CACHE_SIZE
+#define L3_CACHE_SIZE 2097152
+#endif
+#ifndef CPU_NAME
+#define "Custom Cmake"
+#endif
+#ifndef BLOCK_SIZE
+#define BLOCK_SIZE 4096
+#endif
+
 /*
 static const size_t L1_CACHE_SIZE =     hwinfo::getAllCPUs()[0].L1CacheSize_Bytes(); ///< ~64 KiB per Core
 static const size_t L2_CACHE_SIZE =    hwinfo::getAllCPUs()[0].L2CacheSize_Bytes(); ///< ~512 KiB per Core
