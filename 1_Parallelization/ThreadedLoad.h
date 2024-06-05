@@ -14,7 +14,6 @@
 #include <mutex>
 
 #include "JoinUtils.hpp"
-#include "generated_variables.h"
 
 
 template<typename Relation>

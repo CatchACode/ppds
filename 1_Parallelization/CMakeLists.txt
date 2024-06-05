@@ -98,12 +98,12 @@ message("L2 cache size is ${L2_CACHE_SIZE}")
 message("L3 cache size is ${L3_CACHE_SIZE}")
 message("CPU is ${CPU_NAME}")
 
-file(WRITE "${CMAKE_SOURCE_DIR}/generated_variables.h" "#pragma once\n")
-file(APPEND "${CMAKE_SOURCE_DIR}/generated_variables.h" "static constexpr const size_t L1_CACHE_SIZE = ${L1_CACHE_SIZE};\n")
-file(APPEND "${CMAKE_SOURCE_DIR}/generated_variables.h" "static constexpr const size_t L2_CACHE_SIZE = ${L2_CACHE_SIZE};\n")
-file(APPEND "${CMAKE_SOURCE_DIR}/generated_variables.h" "static constexpr const size_t L3_CACHE_SIZE = ${L3_CACHE_SIZE};\n")
-file(APPEND "${CMAKE_SOURCE_DIR}/generated_variables.h" "static constexpr const size_t BLOCK_SIZE = ${BLOCK_SIZE};\n")
-file(APPEND "${CMAKE_SOURCE_DIR}/generated_variables.h" "static constexpr const char* CPU_NAME = \"${CPU_NAME}\\0\";\n")
+#file(WRITE "${CMAKE_SOURCE_DIR}/generated_variables.h" "#pragma once\n")
+#file(APPEND "${CMAKE_SOURCE_DIR}/generated_variables.h" "static constexpr const size_t L1_CACHE_SIZE = ${L1_CACHE_SIZE};\n")
+#file(APPEND "${CMAKE_SOURCE_DIR}/generated_variables.h" "static constexpr const size_t L2_CACHE_SIZE = ${L2_CACHE_SIZE};\n")
+#file(APPEND "${CMAKE_SOURCE_DIR}/generated_variables.h" "static constexpr const size_t L3_CACHE_SIZE = ${L3_CACHE_SIZE};\n")
+#file(APPEND "${CMAKE_SOURCE_DIR}/generated_variables.h" "static constexpr const size_t BLOCK_SIZE = ${BLOCK_SIZE};\n")
+#file(APPEND "${CMAKE_SOURCE_DIR}/generated_variables.h" "static constexpr const char* CPU_NAME = \"${CPU_NAME}\\0\";\n")
 
 
 
@@ -144,7 +144,6 @@ add_library(1_Parallelization SHARED Join.cpp
         SortMergeJoin.h
         NestedLoopJoin.h
         MergeSort.h
-        generated_variables.h
         )
 
 # Define the executable target that uses the shared library
@@ -152,7 +151,6 @@ add_executable(ParallelismExecutable Join.cpp
         HashJoin.h
         SortMergeJoin.h
         MergeSort.h
-        generated_variables.h
         )
 
 # Link with Libraries
@@ -180,9 +178,19 @@ target_include_directories(ParallelismExecutable PRIVATE ${gtest_SOURCE_DIR}/inc
 target_compile_definitions(1_Parallelization PRIVATE
     DATA_DIRECTORY="${DATA_DIRECTORY}"
     SOURCE_DIRECTORY="${SOURCE_DIRECTORY}"
+        CPU_NAME="${CPU_NAME}"
+        L1_CACHE_SIZE=${L1_CACHE_SIZE}
+        L2_CACHE_SIZE=${L2_CACHE_SIZE}
+        L3_CACHE_SIZE=${L3_CACHE_SIZE}
+        BLOCK_SIZE=${BLOCK_SIZE}
     )
 
 target_compile_definitions(ParallelismExecutable PRIVATE
     DATA_DIRECTORY="${DATA_DIRECTORY}"
     SOURCE_DIRECTORY="${SOURCE_DIRECTORY}"
+        CPU_NAME="${CPU_NAME}"
+        L1_CACHE_SIZE=${L1_CACHE_SIZE}
+        L2_CACHE_SIZE=${L2_CACHE_SIZE}
+        L3_CACHE_SIZE=${L3_CACHE_SIZE}
+        BLOCK_SIZE=${BLOCK_SIZE}
     )

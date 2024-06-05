@@ -22,8 +22,6 @@
 #include <vector>
 #include <execution>
 
-#include "generated_variables.h"
-
 /*
 static const size_t L1_CACHE_SIZE =     hwinfo::getAllCPUs()[0].L1CacheSize_Bytes(); ///< ~64 KiB per Core
 static const size_t L2_CACHE_SIZE =    hwinfo::getAllCPUs()[0].L2CacheSize_Bytes(); ///< ~512 KiB per Core

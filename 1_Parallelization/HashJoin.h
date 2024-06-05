@@ -11,7 +11,6 @@
 #include <span>
 
 #include "JoinUtils.hpp"
-#include "generated_variables.h"
 
 /**
  * Enum Class to select which type of hash-join to execute
