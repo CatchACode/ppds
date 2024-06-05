@@ -88,7 +88,6 @@ std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& left
     std::vector<ResultRelation> results;
     results.reserve(leftRelation.size());
     std::mutex m_results;
-    std::atomic_size_t results_index = 0;
 
     std::vector<std::jthread> threads;
 

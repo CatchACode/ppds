@@ -390,7 +390,7 @@ void inline printCacheSizes() {
 
 
 
-std::vector<ResultRelation> findDiff(const std::vector<ResultRelation> a, const std::vector<ResultRelation> b) {
+std::vector<ResultRelation> findDiff2(const std::vector<ResultRelation> a, const std::vector<ResultRelation> b) {
     std::vector<ResultRelation> results;
     auto compare = [](const ResultRelation& a, const ResultRelation& b) {
         return a.titleId == b.titleId;
