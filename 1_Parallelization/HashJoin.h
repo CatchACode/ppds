@@ -151,7 +151,8 @@ void workerThreadChunk(std::unique_ptr<ThreadArgs> args) {
             // Probe HashMap
             std::ranges::for_each(args->leftRelation, [&map, &args](const CastRelation& record) {
                 if(map.contains(record.movieId)) {
-                    auto index = args->results.begin() + args->result_index++;
+                    auto offset = args->result_index.fetch_add(1);
+                    auto index = args->results.begin() + offset;
                     args->results.emplace(index, createResultTuple(record, *map[record.movieId]));
                 }
             });
