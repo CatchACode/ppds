@@ -17,8 +17,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set Optimization Flags
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC -DPARALLEL -funsafe-math-optimizations")
-set(CMAKE_CXX_FLAGS_RELEASE "-g -Ofast -march=native -mtune=native -fPIC -funsafe-math-optimizations")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC -DPARALLEL -funsafe-math-optimizations -Wall")
+set(CMAKE_CXX_FLAGS_RELEASE "-g -Ofast -march=native -mtune=native -fPIC -funsafe-math-optimizations -Wall")
 
 set(PPDS_PROJECT_DIR "${CMAKE_SOURCE_DIR}/..")
 

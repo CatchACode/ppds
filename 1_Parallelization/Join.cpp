@@ -21,7 +21,6 @@
 #include "MergeSort.h"
 
 #include <unordered_map>
-#include <unordered_set>
 #include <iostream>
 #include <gtest/gtest.h>
 #include <omp.h>
@@ -29,48 +28,20 @@
 #include <algorithm>
 #include <ranges>
 #include <span>
+//#include <experimental/simd>
+
 
 
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
-    if(numThreads == 1) {
-        return performSHJ_UNORDERED_MAP(leftRelation, rightRelation);
-    } else {
-        return performCacheSizedThreadedHashJoin(leftRelation, rightRelation, numThreads);
-    }
-}
-
-std::vector<ResultRelation> findDiff2(const std::vector<ResultRelation> a, const std::vector<ResultRelation> b) {
-    std::vector<ResultRelation> results;
-    auto compare = [](const ResultRelation& a, const ResultRelation& b) {
-        return a.titleId == b.titleId;
-    };
-
-    for(const auto& record1: a) {
-        bool found = false;
-        for(const auto& record2: b) {
-            if(compare(record1, record2)) {
-                found = true;
-                break;
-            }
-        }
-        if(!found) {
-            results.emplace_back(record1);
-        }
-    }
-    return results;
+    return performCacheSizedThreadedHashJoin(leftRelation, rightRelation, numThreads);
 }
 
 
 
 TEST(ParallelizationTest, TestJoiningTuples) {
-    //const auto leftRelation = threadedLoad<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
-    //const auto rightRelation   = threadedLoad<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
-
-
     const auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
     const auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
-
     printCacheSizes();
 
     std::cout << "Sizeof leftRelation: " << leftRelation.size()*sizeof(CastRelation) / (1024*1024) << '\n';
@@ -81,9 +52,8 @@ TEST(ParallelizationTest, TestJoiningTuples) {
     timer.start();
 
     //auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation, 8); // 8457
-    //auto resultTuples = perform2THJ(leftRelation, rightRelation); //5797
-    auto resultTuples = performJoin(leftRelation, rightRelation, 8); // 4996.84
-
+    auto resultTuples = performCacheSizedThreadedHashJoin(leftRelation, rightRelation, 8); //5797
+    //auto resultTuples = performCHJ_MAP(leftRelation, rightRelation, 8); // 4996.84
 
     timer.pause();
 
@@ -91,34 +61,6 @@ TEST(ParallelizationTest, TestJoiningTuples) {
     std::cout << "Result size: " << resultTuples.size() << std::endl;
     std::cout << "\n\n";
 }
-
-TEST(ParallelizationTest, TestJoinCorrectness) {
-    const auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), 20000);
-    const auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"), 20000);
-
-    auto results1 = performCHJ_MAP(leftRelation, rightRelation, 8);
-    auto results2 = performSHJ_UNORDERED_MAP(leftRelation, rightRelation);
-
-    if(results1.size() != results2.size()) {
-        std::cout << "results1.size(): " << results1.size() << "!= results2.size(): " << results2.size();
-    }
-    auto r1r2 = findDiff2(results1, results2);
-    if(r1r2.size() != 0) {
-        std::cout << "These elements where in not in both vectors!" << std::endl;
-        for(const auto& record: r1r2) {
-            std::cout << resultRelationToString(record) << std::endl;
-        }
-    }
-    auto r2r1 = findDiff2(results2, results1);
-    if(r2r1.size() != 0) {
-        std::cout << "These elements where in not in both vectors!" << std::endl;
-        for(const auto& record: r1r2) {
-            std::cout << resultRelationToString(record) << std::endl;
-        }
-    }
-}
-
-
 /*
 TEST(ParallelizationTest, TestThreadScaling) {
     const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), 20000);
