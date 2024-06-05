@@ -166,6 +166,7 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
     }
 
     if(HASHMAP_SIZE > rightRelation.size() / numThreads) {
+        std::cout << "rightRelation.size() / numThreads == 0 is " << (rightRelation.size() / numThreads == 0) << std::endl;
         HASHMAP_SIZE = (rightRelation.size() / numThreads == 0) ? 1 : rightRelation.size() / numThreads + 1;
     }
     std::cout << "Hash map size is now: " << HASHMAP_SIZE << std::endl;
