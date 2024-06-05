@@ -163,10 +163,6 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
     }
 
     if(HASHMAP_SIZE > rightRelation.size() / numThreads) {
-        HASHMAP_SIZE = std::max(static_cast<size_t>(rightRelation.size() / numThreads), static_cast<size_t>(1));
-
-        std::cout << "Hash map size is now: " << HASHMAP_SIZE << std::endl;
-        /*
         // Cache Size is too large to split into more than hashmapSize * numThreads
         std::cout << "Performing CHJ as it is not possible to create <= numThread cache sized HashMaps!" << std::endl;
         if (numThreads == 2) {
@@ -174,7 +170,6 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
             return perform2THJ(leftRelation, rightRelation);
         }
         return performCHJ_MAP(leftRelation, rightRelation, numThreads);
-         */
     }
     std::vector<ResultRelation> results;
     std::mutex m_results;
