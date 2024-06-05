@@ -46,12 +46,14 @@ std::vector<ResultRelation> performSHJ_UNORDERED_MAP(const std::vector<CastRelat
     // Build HashMap
     std::unordered_map<int32_t, const TitleRelation*> map;
     map.reserve(rightRelation.size());
-    std::ranges::for_each(rightRelation, [&map](const TitleRelation& record) {map[record.titleId] = &record;});
-    std::ranges::for_each(leftRelation, [&map, &results](const CastRelation& record){
+    for(const auto& record: rightRelation) {
+        map[record.titleId] = &record;
+    }
+    for(const auto& record: leftRelation) {
         if(map.contains(record.movieId)) {
             results.emplace_back(createResultTuple(record, *map[record.movieId]));
         }
-    });
+    }
     return results;
 }
 
@@ -100,11 +102,13 @@ std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& left
             chunkEnd = std::next(chunkStart, chunkSize);
         }
         const std::span<const TitleRelation> chunkSpan(std::to_address(chunkStart), std::to_address(chunkEnd));
-        threads.emplace_back([&results, &leftRelation, &m_results, chunkSpan]() {
+        threads.emplace_back([&results, &m_results, chunkSpan, &leftRelation] {
+            // Build HashMap
             std::unordered_map<int32_t, const TitleRelation*> map;
             map.reserve(chunkSpan.size());
             std::ranges::for_each(chunkSpan, [&map](const TitleRelation& record){map[record.titleId] = &record;});
-            std::ranges::for_each(leftRelation, [&map, &results, &m_results](const CastRelation& record) {
+            // Probe
+            std::ranges::for_each(leftRelation, [&map, &m_results, &results](const CastRelation& record) {
                 if(map.contains(record.movieId)) {
                     std::lock_guard l_results(m_results);
                     results.emplace_back(createResultTuple(record, *map[record.movieId]));

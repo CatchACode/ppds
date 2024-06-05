@@ -21,6 +21,7 @@
 #include "MergeSort.h"
 
 #include <unordered_map>
+#include <unordered_set>
 #include <iostream>
 #include <gtest/gtest.h>
 #include <omp.h>
@@ -74,6 +75,20 @@ TEST(ParallelizationTest, TestJoinCorrectness) {
 
     if(results1.size() != results2.size()) {
         std::cout << "results1.size(): " << results1.size() << "!= results2.size(): " << results2.size();
+    }
+    auto r1r2 = findDiff(results1, results2);
+    if(r1r2.size() != 0) {
+        std::cout << "These elements where in not in both vectors!" << std::endl;
+        for(const auto& record: r1r2) {
+            std::cout << resultRelationToString(record) << std::endl;
+        }
+    }
+    auto r2r1 = findDiff(results2, results1);
+    if(r2r1.size() != 0) {
+        std::cout << "These elements where in not in both vectors!" << std::endl;
+        for(const auto& record: r1r2) {
+            std::cout << resultRelationToString(record) << std::endl;
+        }
     }
 }
 
