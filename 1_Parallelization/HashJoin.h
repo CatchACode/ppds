@@ -133,6 +133,7 @@ struct ThreadArgs {
     std::mutex& m_results;
     const std::vector<CastRelation>& leftRelation;
     std::atomic_bool& stop;
+    std::atomic_size_t& result_index;
 };
 
 void workerThreadChunk(std::unique_ptr<ThreadArgs> args) {
@@ -150,8 +151,8 @@ void workerThreadChunk(std::unique_ptr<ThreadArgs> args) {
             // Probe HashMap
             std::ranges::for_each(args->leftRelation, [&map, &args](const CastRelation& record) {
                 if(map.contains(record.movieId)) {
-                    std::lock_guard l_results(args->m_results);
-                    args->results.emplace_back(createResultTuple(record, *map[record.movieId]));
+                    auto index = args->results.begin() + args->result_index++;
+                    args->results.emplace(index, createResultTuple(record, *map[record.movieId]));
                 }
             });
         }
@@ -164,14 +165,9 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
     }
 
     if(HASHMAP_SIZE > rightRelation.size() / numThreads) {
-        // Cache Size is too large to split into more than hashmapSize * numThreads
-        if (numThreads == 2) {
-            std::cout << "Performing 2THJ!" << std::endl;
-            return perform2THJ(leftRelation, rightRelation);
-        }
-        std::cout << "Performing CHJ as it is not possible to create <= numThread cache sized HashMaps!" << std::endl;
-        return performCHJ_MAP(leftRelation, rightRelation, numThreads);
+        HASHMAP_SIZE = (rightRelation.size() / numThreads == 0) ? 1 : rightRelation.size() / numThreads;
     }
+    std::cout << "Hash map size is now: " << HASHMAP_SIZE << std::endl;
     std::vector<ResultRelation> results;
     std::mutex m_results;
     std::vector<std::jthread> threads;
@@ -181,6 +177,7 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
     std::condition_variable cv_queue;
     results.reserve(leftRelation.size());
     size_t numChunks = 0;
+    std::atomic_size_t results_index = 0;
 
     auto chunkStart = rightRelation.begin();
     auto chunkEnd = rightRelation.begin();
@@ -204,7 +201,7 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
         threads.emplace_back(std::jthread(workerThreadChunk, std::make_unique<ThreadArgs>(i, std::ref(chunks), std::ref(m_chunks),
                                                                                           std::ref(cv_queue), std::ref(results),
                                                                                           std::ref(m_results), std::ref(leftRelation),
-                                                                                          std::ref(stop))));
+                                                                                          std::ref(stop), std::ref(results_index))));
     };
 
     stop.store(true);

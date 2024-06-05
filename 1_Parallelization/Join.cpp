@@ -36,7 +36,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
     if(numThreads == 1) {
         return performSHJ_UNORDERED_MAP(leftRelation, rightRelation);
     } else {
-        return performCHJ_MAP(leftRelation, rightRelation, numThreads);
+        return performCacheSizedThreadedHashJoin(leftRelation, rightRelation, numThreads);
     }
 }
 
