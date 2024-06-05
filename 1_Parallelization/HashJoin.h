@@ -164,10 +164,10 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
     if(numThreads == 1) {
         return performSHJ_UNORDERED_MAP(leftRelation, rightRelation);
     }
-
-    if(HASHMAP_SIZE > rightRelation.size() / numThreads) {
+    size_t hashmap_size = HASHMAP_SIZE;
+    if(hashmap_size > rightRelation.size() / numThreads) {
         std::cout << "rightRelation.size() / numThreads == 0 is " << (rightRelation.size() / numThreads == 0) << std::endl;
-        HASHMAP_SIZE = (rightRelation.size() / numThreads == 0) ? 1 : rightRelation.size() / numThreads + 1;
+        hashmap_size = (rightRelation.size() / numThreads == 0) ? 1 : rightRelation.size() / numThreads + 1;
         std::cout << "Hash map size changed!" << std::endl;
     }
     std::cout << "Hash map size is now: " << HASHMAP_SIZE << std::endl;
@@ -185,8 +185,8 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
     auto chunkStart = rightRelation.begin();
     auto chunkEnd = rightRelation.begin();
     while(chunkEnd != rightRelation.end()) {
-        if(std::distance(chunkEnd, rightRelation.end()) > (long long int)HASHMAP_SIZE) {
-            chunkEnd = std::next(chunkEnd, (long long int)HASHMAP_SIZE);
+        if(std::distance(chunkEnd, rightRelation.end()) > (long long int)hashmap_size) {
+            chunkEnd = std::next(chunkEnd, (long long int)hashmap_size);
         } else {
             chunkEnd = rightRelation.end();
         }
