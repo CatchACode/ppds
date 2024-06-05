@@ -34,7 +34,7 @@
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
     printCacheSizes();
-    performCHJ_MAP(leftRelation, rightRelation, numThreads);
+    return performCHJ_MAP(leftRelation, rightRelation, numThreads);
     //return performCacheSizedThreadedHashJoin(leftRelation, rightRelation, numThreads);
     //return perform2THJ(leftRelation, rightRelation);
 }
