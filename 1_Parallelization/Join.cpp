@@ -53,7 +53,7 @@ TEST(ParallelizationTest, TestJoiningTuples) {
     timer.start();
 
     //auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation, 8); // 8457
-    auto resultTuples = performCacheSizedThreadedHashJoin(leftRelation, rightRelation, 8); //5797
+    auto resultTuples = performCacheSizedThreadedHashJoin(leftRelation, rightRelation, 2); //5797
     //auto resultTuples = performCHJ_MAP(leftRelation, rightRelation, 8); // 4996.84
 
     timer.pause();
