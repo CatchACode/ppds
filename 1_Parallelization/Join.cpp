@@ -77,9 +77,9 @@ TEST(ParallelizationTest, TestJoiningTuples) {
     Timer timer("Parallelized Join execute");
     timer.start();
 
-    //auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation, 8); // 8457
+    auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation, 8); // 8457
     //auto resultTuples = perform2THJ(leftRelation, rightRelation); //5797
-    auto resultTuples = performJoin(leftRelation, rightRelation, 8); // 4996.84
+    //auto resultTuples = performJoin(leftRelation, rightRelation, 8); // 4996.84
 
     timer.pause();
 
