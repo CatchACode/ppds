@@ -34,6 +34,17 @@
 static int test_counter = 0;
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
+    if(test_counter == 3) {
+        std::cout << "\n\n\n\n";
+        for(const auto& record: leftRelation) {
+            std::cout << castRelationToString(record) << '\n';
+        }
+        std::cout << "\n\n";
+        for(const auto& record: rightRelation) {
+            std::cout << titleRelationToString(record) << '\n';
+        }
+        std::cout << "\n\n\n\n";
+    }
     std::cout << "Running test: " << test_counter++ << std::endl;
     printCacheSizes();
     return performCacheSizedThreadedHashJoin(leftRelation, rightRelation, numThreads);

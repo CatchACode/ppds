@@ -33,9 +33,9 @@ default_output_size=$half_mebi_byte
 #default_output_size=$one_hundret_mebi_byte
 fldr_name="data"
 
-#[ ! -d "$fldr_name" ] && mkdir -p "$fldr_name"
-#echo "Deleting all data in $fldr_name..."
-#rm -rf $fldr_name/*
+[ ! -d "$fldr_name" ] && mkdir -p "$fldr_name"
+echo "Deleting all data in $fldr_name..."
+rm -rf $fldr_name/*uniform.csv
 
 echo "Creating the data files now..."
 cd generator_code
