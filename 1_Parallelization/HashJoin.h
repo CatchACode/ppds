@@ -119,7 +119,6 @@ std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& left
     for(auto& thread: threads) {
         thread.join();
     }
-    std::cout << "results size:" << results.size() << std::endl;
     return results;
 
 }
@@ -137,7 +136,6 @@ struct ThreadArgs {
 };
 
 void workerThreadChunk(ThreadArgs args) {
-    std::cout << "Thread started" << std::endl;
     while(!args.stop || !args.chunks.empty()) {
         std::unique_lock l_chunks(args.m_chunks);
         args.cv_queue.wait(l_chunks, [&args] {return args.stop || !args.chunks.empty();});
@@ -158,7 +156,6 @@ void workerThreadChunk(ThreadArgs args) {
             });
         }
     }
-    std::cout << "Thread done!" << std::endl;
     std::cout << std::flush;
 }
 
