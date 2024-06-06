@@ -56,6 +56,10 @@ def main():
 		generator = TitleGenerator(args.min_value, args.max_value, args.key_field_name, args.id_field_name)
 		numberOfRecords = calcNumberOfRecords(args.output_file_size, TITLE["size"])
 		schema = TITLE["schema"]
+	elif args.generator_type == 'MatchRate':
+		generator = MatchRateCastInfoGenerator(args.min_value, args.max_value, args.key_field_name, args.id_field_name, args.match_rate)
+		numberOfRecords = calcNumberOfRecords(args.output_file_size, CAST_INFO["size"])
+		schema = CAST_INFO["schema"]
 	else:
 		printFail(f"Invalid generator type {args.generator_type}")
 		exit(-1)
