@@ -156,7 +156,6 @@ void workerThreadChunk(ThreadArgs args) {
             });
         }
     }
-    std::cout << std::flush;
 }
 
 std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, const unsigned int numThreads = std::jthread::hardware_concurrency()) {
