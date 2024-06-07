@@ -22,5 +22,7 @@
 #include "HashJoin.h"
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    return performCHJ_MAP(castRelation, titleRelation, numThreads);
+    return performSHJ_UNORDERED_MAP(castRelation, titleRelation);
 }
+
+
