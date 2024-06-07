@@ -22,14 +22,14 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set Optimization Flags
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC -march=native -mtune=native")
 set(CMAKE_CXX_FLAGS_RELEASE "-g -O2 -march=native -mtune=native -fPIC")
 
 set(PPDS_PROJECT_DIR "${CMAKE_SOURCE_DIR}/..")
 
 include_directories(${PPDS_PROJECT_DIR}/Util/include)
 if(NOT DEFINED DATA_DIRECTORY)
-    set(DATA_DIRECTORY "${PPDS_PROJECT_DIR}/../data/")
+    set(DATA_DIRECTORY "${PPDS_PROJECT_DIR}/DataGenerators/data/")
 endif()
 
 if(NOT DEFINED SOURCE_DIRECTORY)

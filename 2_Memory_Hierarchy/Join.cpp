@@ -23,7 +23,6 @@
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
     std::vector<ResultRelation> results;
-    results.reserve(castRelation.size());
     for(const auto& castRecord: castRelation) {
         for(const auto& titleRecord: titleRelation) {
             if(castRecord.movieId == titleRecord.titleId) {
@@ -31,6 +30,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
             }
         }
     }
+    return results;
 }
 
 
