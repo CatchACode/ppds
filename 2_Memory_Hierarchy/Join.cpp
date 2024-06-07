@@ -19,10 +19,8 @@
 #include <gtest/gtest.h>
 #include <omp.h>
 
+#include "HashJoin.h"
+
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    omp_set_num_threads(numThreads);
-    std::vector<ResultRelation> resultTuples;
-
-
-    return resultTuples;
+    return performCHJ_MAP(castRelation, titleRelation, numThreads);
 }
