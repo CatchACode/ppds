@@ -37,7 +37,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
     std::cout << "Running test: " << test_counter++ << std::endl;
     printCacheSizes();
     //return performCacheSizedThreadedHashJoin(leftRelation, rightRelation, numThreads);
-    return performCHJ_MAP(leftRelation, rightRelation, numThreads)
+    return performCHJ_MAP(leftRelation, rightRelation, numThreads);
 }
 
 
