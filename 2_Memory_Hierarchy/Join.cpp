@@ -22,7 +22,25 @@
 #include "HashJoin.h"
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    return performSHJ_UNORDERED_MAP(castRelation, titleRelation);
+    std::vector<ResultRelation> results;
+    results.reserve(castRelation.size());
+    for(const auto& castRecord: castRelation) {
+        for(const auto& titleRecord: titleRelation) {
+            if(castRecord.movieId == titleRecord.titleId) {
+                results.emplace_back(createResultTuple(castRecord, titleRecord));
+            }
+        }
+    }
+}
+
+
+TEST(MemoryHierarchyTest, TestJoiningTuples) {
+    const auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
+    const auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
+    auto results = performJoin(leftRelation, rightRelation, 8);
+
+    std::cout << "Result size: " << results.size() << std::endl;
+    std::cout << "\n\n";
 }
 
 
