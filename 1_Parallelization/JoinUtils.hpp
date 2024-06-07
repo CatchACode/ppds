@@ -22,7 +22,6 @@
 #include <vector>
 #include <execution>
 
-/*
 #ifndef L1_CACHE_SIZE
 #define L1_CACHE_SIZE 65526
 #endif
@@ -38,7 +37,6 @@
 #ifndef BLOCK_SIZE
 #define BLOCK_SIZE 4096
 #endif
-*/
 
 
 //==--------------------------------------------------------------------==//
