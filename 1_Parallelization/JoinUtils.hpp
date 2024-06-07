@@ -93,7 +93,8 @@ static constexpr size_t NUM_FIELD_CAST_RELATION = 7;
       int32_t roleId;
     };
 
-static constexpr size_t HASHMAP_SIZE = size_t(L2_CACHE_SIZE) / (sizeof(CastRelation*) + sizeof(int32_t));
+//static constexpr size_t HASHMAP_SIZE = size_t(L2_CACHE_SIZE) / (sizeof(CastRelation*) + sizeof(int32_t));
+static constexpr size_t HASHMAP_SIZE = 256*1024 / (sizeof(CastRelation*) + sizeof(int32_t));
 
     inline bool operator==(const ResultRelation& lhs, const ResultRelation& rhs) {
       return lhs.titleId == rhs.titleId &&
