@@ -34,8 +34,8 @@
 static int test_counter = 0;
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
-    std::cout << "Running test: " << test_counter++ << std::endl;
-    printCacheSizes();
+    //std::cout << "Running test: " << test_counter++ << std::endl;
+    //printCacheSizes();
     //return performCacheSizedThreadedHashJoin(leftRelation, rightRelation, numThreads);
     return performCHJ_MAP(leftRelation, rightRelation, numThreads);
 }
