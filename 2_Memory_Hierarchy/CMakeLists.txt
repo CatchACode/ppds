@@ -50,6 +50,7 @@ FetchContent_Declare(
         USES_TERMINAL_DOWNLOAD TRUE
         GIT_PROGRESS TRUE
         DOWNLOAD_NO_EXTRACT FALSE
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 FetchContent_MakeAvailable(Boost)
 
