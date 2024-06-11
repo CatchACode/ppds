@@ -124,6 +124,9 @@ void processChunk(std::unique_ptr<threadArgs> args) {
 std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation,
                                                     const int numThreads = std::jthread::hardware_concurrency()) {
     size_t chunkSize = leftRelation.size() / numThreads;
+    assert(std::is_sorted(leftRelation.begin(), leftRelation.end(), compareCastRelations));
+    assert(std::is_sorted(rightRelation.begin(), rightRelation.end(), compareTitleRelations));
+
     std::cout << "chunkSize: " << chunkSize << std::endl;
     if (chunkSize == 0) {
         // numThreads is larger than data size
