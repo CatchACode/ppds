@@ -57,12 +57,14 @@ FetchContent_MakeAvailable(googletest)
 # Define the shared library
 add_library(${PROJECT_ROOT} SHARED Join.cpp
         SortMergeJoin.h
-        HashJoin.h)
+        HashJoin.h
+        NestedLoopJoin.h)
 
 # Define the executable target that uses the shared library
 add_executable(${PROJECT_EXECUTABLE} Join.cpp
         SortMergeJoin.h
-        HashJoin.h)
+        HashJoin.h
+        NestedLoopJoin.h)
 
 # Link with Libraries
 find_package(OpenMP REQUIRED)
