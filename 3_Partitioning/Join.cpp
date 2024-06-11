@@ -25,6 +25,20 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
 
     // TODO: Implement your join
     // The benchmark will test it against skewed key distributions
+    for(const auto& l: castRelation) {
+        for(const auto& r : titleRelation) {
+            if(l.movieId == r.titleId) {
+                resultTuples.emplace_back(createResultTuple(l, r));
+            }
+        }
+    }
 
     return resultTuples;
+}
+
+TEST(PartioningTest, TestJoiningTuples) {
+    const auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
+    const auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
+
+    auto results = performJoin(leftRelation, rightRelation, 1);
 }
