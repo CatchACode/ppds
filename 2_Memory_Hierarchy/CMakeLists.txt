@@ -40,6 +40,20 @@ endif()
 include(FetchContent)
 include(ExternalProject)
 
+set(BOOST_INCLUDE_LIBRARIES sort)
+set(BOOST_ENABLE_CMAKE ON)
+
+Set(FETCHCONTENT_QUIET FALSE)
+FetchContent_Declare(
+        Boost
+        URL https://github.com/boostorg/boost/releases/download/boost-1.85.0/boost-1.85.0-cmake.7z # downloading a zip release speeds up the download
+        USES_TERMINAL_DOWNLOAD TRUE
+        GIT_PROGRESS TRUE
+        DOWNLOAD_NO_EXTRACT FALSE
+)
+FetchContent_MakeAvailable(Boost)
+
+
 FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest
@@ -48,11 +62,14 @@ FetchContent_Declare(
 
 FetchContent_GetProperties(googletest)
 if(NOT googletest_POPULATED)
+    message(STATUS "googletest not populated!")
     FetchContent_Populate(googletest)
     set(BUILD_SHARED_LIBS TRUE)  # Forces shared libraries, which implies -fPIC
     add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
 endif()
 FetchContent_MakeAvailable(googletest)
+
+
 
 # Define the shared library
 add_library(${PROJECT_ROOT} SHARED Join.cpp SortMergeJoin.h HashJoin.h NestedLoopJoin.h)
@@ -64,19 +81,23 @@ add_executable(${PROJECT_EXECUTABLE} Join.cpp SortMergeJoin.h HashJoin.h NestedL
 find_package(OpenMP REQUIRED)
 if (OpenMP_CXX_FOUND)
     message(STATUS "OpenMP found")
-    target_link_libraries(${PROJECT_ROOT} PUBLIC OpenMP::OpenMP_CXX gtest_main)
-    target_link_libraries(${PROJECT_EXECUTABLE} OpenMP::OpenMP_CXX gtest_main)
+    target_link_libraries(${PROJECT_ROOT} PUBLIC OpenMP::OpenMP_CXX gtest_main Boost::sort)
+    target_link_libraries(${PROJECT_EXECUTABLE} OpenMP::OpenMP_CXX gtest_main Boost::sort)
 else (OpenMP_CXX_FOUND)
     message(STATUS "OpenMP not found")
     message(STATUS "On Ubuntu, install the package by the following command!")
     message(STATUS "sudo apt install libomp-dev")
-    target_link_libraries(${PROJECT_ROOT} PUBLIC gtest_main)
-    target_link_libraries(${PROJECT_EXECUTABLE} gtest_main)
+    target_link_libraries(${PROJECT_ROOT} PUBLIC gtest_main Boost::sort)
+    target_link_libraries(${PROJECT_EXECUTABLE} gtest_main Boost::sort)
 endif (OpenMP_CXX_FOUND)
 
+
+
+
+
 # If necessary, include gtest include directories
-target_include_directories(${PROJECT_ROOT} PRIVATE ${gtest_SOURCE_DIR}/include ${gtest_BINARY_DIR})
-target_include_directories(${PROJECT_EXECUTABLE} PRIVATE ${gtest_SOURCE_DIR}/include ${gtest_BINARY_DIR})
+target_include_directories(${PROJECT_ROOT} PRIVATE ${gtest_SOURCE_DIR}/include ${gtest_BINARY_DIR} Boost::sort)
+target_include_directories(${PROJECT_EXECUTABLE} PRIVATE ${gtest_SOURCE_DIR}/include ${gtest_BINARY_DIR} Boost::sort)
 
 # Add compile definitions
 target_compile_definitions(${PROJECT_ROOT} PRIVATE

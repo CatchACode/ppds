@@ -16,9 +16,9 @@
 #include "JoinUtils.hpp"
 #include <unordered_map>
 #include <iostream>
+#include <boost/sort/sort.hpp>
 #include <gtest/gtest.h>
 #include <omp.h>
-
 #include "HashJoin.h"
 #include "NestedLoopJoin.h"
 #include "SortMergeJoin.h"
@@ -46,10 +46,10 @@ protected:
 
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    if(runCounter != 2) {
-        assert(std::is_sorted(castRelation.begin(), castRelation.end(), compareCastRelations));
-        assert(std::is_sorted(titleRelation.begin(), titleRelation.end(), compareTitleRelations));
-    }
+    std::vector<CastRelation> leftRelation(castRelation);
+    boost::sort::block_indirect_sort(leftRelation.begin(), leftRelation.end(), compareCastRelations, numThreads);
+    assert(std::is_sorted(leftRelation.begin(), leftRelation.end(), compareCastRelations));
+    assert(std::is_sorted(titleRelation.begin(), titleRelation.end(), compareTitleRelations));
     std::cout << "run: " << runCounter++ << '\n';
     std::cout << "numThreads: " << numThreads << std::endl;
 
