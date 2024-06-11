@@ -16,7 +16,6 @@
 #include "JoinUtils.hpp"
 #include <unordered_map>
 #include <iostream>
-#include <boost/sort/sort.hpp>
 #include <gtest/gtest.h>
 #include <omp.h>
 #include "HashJoin.h"
