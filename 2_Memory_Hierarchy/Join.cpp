@@ -50,9 +50,13 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
 
 
 TEST_F(MemoryHierarchyTest, TestJoiningTuples) {
+    Timer timer("ThreadedSort");
+    timer.start();
     const auto results = performJoin(leftRelationSorted, rightRelationSorted, 8);
 
+    timer.pause();
     std::cout << "Result size: " << results.size() << std::endl;
+    std::cout << "Join time: " << printString(timer) << std::endl;
     std::cout << "\n\n";
 }
 
