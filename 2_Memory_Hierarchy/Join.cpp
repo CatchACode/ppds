@@ -21,17 +21,10 @@
 
 #include "HashJoin.h"
 #include "NestedLoopJoin.h"
+#include "SortMergeJoin.h"
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    std::vector<ResultRelation> results;
-    for(const auto& castRecord: castRelation) {
-        for(const auto& titleRecord: titleRelation) {
-            if(castRecord.movieId == titleRecord.titleId) {
-                results.emplace_back(createResultTuple(castRecord, titleRecord));
-            }
-        }
-    }
-    return results;
+    return performThreadedSortJoin(castRelation, titleRelation, numThreads);
 }
 
 
