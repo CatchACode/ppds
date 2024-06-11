@@ -127,6 +127,9 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     std::cout << "chunkSize: " << chunkSize << std::endl;
     if (chunkSize == 0) {
         // numThreads is larger than data size
+        std::cout << "performing has join!\n" << std::endl;
+        std::cout << "numThreads: " << numThreads << std::endl;
+        std::cout << "leftRelation.size(): " << leftRelation.size() << std::endl;
         return performHashJoin(HashJoinType::SHJ_UNORDERED_MAP, leftRelation, rightRelation);
     }
 
