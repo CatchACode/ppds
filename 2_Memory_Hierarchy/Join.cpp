@@ -23,15 +23,34 @@
 #include "NestedLoopJoin.h"
 #include "SortMergeJoin.h"
 
+class MemoryHierarchyTest : public ::testing::Test {
+protected:
+    const std::vector<CastRelation> leftRelation;
+    const std::vector<TitleRelation> rightRelation;
+    const std::vector<CastRelation> leftRelationSorted;
+    const std::vector<TitleRelation> rightRelationSorted;
+
+    void SetUp() override {
+        auto l_v = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
+        const_cast<std::vector<CastRelation>&>(leftRelation) = l_v;
+        sortCastRelations(l_v);
+        const_cast<std::vector<CastRelation>&>(leftRelationSorted) = l_v;
+        auto r_v = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
+        const_cast<std::vector<TitleRelation>&>(rightRelation) = r_v;
+        sortTitleRelations(r_v);
+        const_cast<std::vector<TitleRelation>&>(rightRelationSorted) = r_v;
+    }
+};
+
+
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
+    std::cout << "numThreads: " << numThreads << std::endl;
     return performThreadedSortJoin(castRelation, titleRelation, numThreads);
 }
 
 
-TEST(MemoryHierarchyTest, TestJoiningTuples) {
-    const auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
-    const auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
-    auto results = performJoin(leftRelation, rightRelation, 8);
+TEST_F(MemoryHierarchyTest, TestJoiningTuples) {
+    const auto results = performJoin(leftRelationSorted, rightRelationSorted, 8);
 
     std::cout << "Result size: " << results.size() << std::endl;
     std::cout << "\n\n";
@@ -41,7 +60,7 @@ TEST(MemoryHierarchyTest, TestJoiningTuples) {
  * Tests if the join algorithmus returns the correct amount of Tuples, and that the individual tuples are part of a correct
  * join algorithm, using uniform data!
  */
-TEST(ParallelizationTest, TestAmoutUniform) {
+TEST_F(MemoryHierarchyTest, TestAmoutUniform) {
     std::cout   << "##########################################################################################\n"
                 << "# Testing if join algorithm contains wrong or duplicate records when using uniform data! #\n"
                 << "##########################################################################################\n";
@@ -103,7 +122,7 @@ TEST(ParallelizationTest, TestAmoutUniform) {
  * Tests if the join algorithmus returns the correct amount of Tuples, and that the individual tuples are part of a correct
  * join algorithm, using a dataset where each title record matches to one cast record!
  */
-TEST(ParallelizationTest, TestAmoutOnlyMatches1to1) {
+TEST_F(MemoryHierarchyTest, TestAmoutOnlyMatches1to1) {
     std::cout   << "##########################################################################################\n"
                 << "# Testing if join algorithm contains wrong or duplicate records when using uniform data! #\n"
                 << "##########################################################################################\n";
@@ -164,7 +183,7 @@ TEST(ParallelizationTest, TestAmoutOnlyMatches1to1) {
  * Tests if the join algorithmus returns the correct amount of Tuples, and that the individual tuples are part of a correct
  * join algorithm!
  */
-TEST(ParallelizationTest, TestAmoutOnlyMatches1toMany) {
+TEST_F(MemoryHierarchyTest, TestAmoutOnlyMatches1toMany) {
     std::cout   << "##########################################################################################\n"
                 << "# Testing if join algorithm contains wrong or duplicate records when using uniform data! #\n"
                 << "##########################################################################################\n";

@@ -359,4 +359,13 @@ inline bool compareCastRelations(const CastRelation& a, const CastRelation& b) {
     return a.movieId < b.movieId;
 }
 
+inline void sortTitleRelations(std::vector<TitleRelation>& vector) {
+        std::sort(vector.begin(), vector.end(), compareTitleRelations);
+    }
+
+    inline void sortCastRelations(std::vector<CastRelation>& vector) {
+        std::sort(vector.begin(), vector.end(), compareCastRelations);
+    }
+
+
 #endif //JOINUTIL_HPP
