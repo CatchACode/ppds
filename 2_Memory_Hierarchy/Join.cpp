@@ -23,7 +23,6 @@
 #include "NestedLoopJoin.h"
 #include "SortMergeJoin.h"
 
-static int runCounter = 0;
 
 class MemoryHierarchyTest : public ::testing::Test {
 protected:
@@ -47,10 +46,6 @@ protected:
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
     std::vector<CastRelation> leftRelation(castRelation);
-    boost::sort::block_indirect_sort(leftRelation.begin(), leftRelation.end(), compareCastRelations, numThreads);
-    assert(std::is_sorted(leftRelation.begin(), leftRelation.end(), compareCastRelations));
-    assert(std::is_sorted(titleRelation.begin(), titleRelation.end(), compareTitleRelations));
-    std::cout << "run: " << runCounter++ << '\n';
     std::cout << "numThreads: " << numThreads << std::endl;
 
     return performThreadedSortJoin(castRelation, titleRelation, numThreads);
