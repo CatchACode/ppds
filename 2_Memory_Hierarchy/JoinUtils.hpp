@@ -34,9 +34,9 @@ void inline cacheSizes() {
 }
 */
 
-constexpr const size_t L1_CACHE_SIZE =     65536; ///< ~64 KiB per Core
-constexpr const size_t L2_CACHE_SIZE =    524288; ///< ~512 KiB per Core
-constexpr const size_t L3_CACHE_SIZE = 2*6*1024*1024; ///< 2*6MiB shared
+constexpr const size_t L1_CACHE_SIZE =         65536; ///< ~64 KiB per Core
+constexpr const size_t L2_CACHE_SIZE =      256*1024; ///< ~512 KiB per Core
+constexpr const size_t L3_CACHE_SIZE =  16*1024*1024; ///< 2*6MiB shared
 
 /*
 constexpr const size_t L1_CACHE_SIZE = 65536;     ///< ~16 KiB per Core

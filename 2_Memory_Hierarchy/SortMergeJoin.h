@@ -75,24 +75,21 @@ struct threadArgs {
     std::span<const CastRelation> castRelation;
     std::span<const TitleRelation> rightRelation;
     std::vector<ResultRelation>& results;
-    bool& sorted;
-    std::condition_variable& cv_sorted;
-    std::mutex& m_sorted;
     std::mutex& m_results;
 };
 
 
-void processChunk(std::unique_ptr<threadArgs> args) {
+void inline processChunk(const std::span<const CastRelation>& castRelation, const std::span<const TitleRelation>& rightRelation, std::vector<ResultRelation>& results, std::mutex& m_results) {
     std::forward_iterator auto r_it = std::ranges::lower_bound(
-            args->rightRelation.begin(), args->rightRelation.end(), TitleRelation{.titleId = args->castRelation.begin()->movieId},
+            rightRelation.begin(), rightRelation.end(), TitleRelation{.titleId = castRelation.begin()->movieId},
             [](const TitleRelation& a, const TitleRelation& b) {
                 return a.titleId < b.titleId;
             }
     );
 
-    auto l_it = args->castRelation.begin();
+    auto l_it = castRelation.begin();
     int32_t currentId = 0;
-    while(l_it != args->castRelation.end() && r_it != args->rightRelation.end()) {
+    while(l_it != castRelation.end() && r_it != rightRelation.end()) {
         if(l_it->movieId < r_it->titleId) {
             ++l_it;
         } else if (l_it->movieId > r_it->titleId) {
@@ -103,17 +100,17 @@ void processChunk(std::unique_ptr<threadArgs> args) {
             currentId = r_it->titleId;
 
             // Find End of block where both sides share keys
-            while(r_it != args->rightRelation.end() && r_it->titleId == currentId) {
+            while(r_it != rightRelation.end() && r_it->titleId == currentId) {
                 ++r_it;
             }
-            while(l_it != args->castRelation.end() && l_it->movieId == currentId) {
+            while(l_it != castRelation.end() && l_it->movieId == currentId) {
                 ++l_it;
             }
 
-            std::lock_guard lock(args->m_results);
+            std::lock_guard lock(m_results);
             for(std::forward_iterator auto l_idx = l_start; l_idx != l_it; ++l_idx) {
                 for(std::forward_iterator auto r_idx = r_start; r_idx != r_it; ++r_idx) {
-                    args->results.emplace_back(createResultTuple(*l_idx, *r_idx));
+                    results.emplace_back(createResultTuple(*l_idx, *r_idx));
                 }
             }
 
@@ -121,22 +118,46 @@ void processChunk(std::unique_ptr<threadArgs> args) {
     }
 }
 
+struct WorkerThreadArgs {
+    std::queue<std::span<const CastRelation>>& chunks;
+    std::mutex& m_chunks;
+    const std::vector<TitleRelation>& titleRelation;
+    std::vector<ResultRelation>& results;
+    std::mutex& m_results;
+
+    std::condition_variable& cv;
+    std::atomic_bool stop;
+};
+
+void workerThread(WorkerThreadArgs args) {
+    while(!args.stop || !args.chunks.empty()) {
+        std::unique_lock l_chunks(args.m_chunks);
+        args.cv.wait(l_chunks, [&args] {return args.stop || !args.chunks.empty();});
+        if(!args.chunks.empty()) {
+            auto chunk = args.chunks.front();
+            args.chunks.pop();
+            l_chunks.unlock();
+            processChunk(chunk, args.titleRelation, args.results, args.m_results);
+        }
+    }
+}
+
+
+
+
 std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation,
                                                     const int numThreads = std::jthread::hardware_concurrency()) {
-    size_t chunkSize = leftRelation.size() / numThreads;
+    size_t chunkSize = (leftRelation.size() / L2_CACHE_SIZE) / 2;
 
     std::cout << "chunkSize: " << chunkSize << std::endl;
     if (chunkSize == 0) {
-        // numThreads is larger than data size
+        // L2 size is larger than data size
         std::cout << "performing has join!\n" << std::endl;
         std::cout << "numThreads: " << numThreads << std::endl;
         std::cout << "leftRelation.size(): " << leftRelation.size() << std::endl;
         return performHashJoin(HashJoinType::SHJ_UNORDERED_MAP, leftRelation, rightRelation);
     }
 
-    bool sorted = false;
-    std::condition_variable cv_sorted;
-    std::mutex m_sorted;
     std::mutex m_results;
 
     std::vector<ResultRelation> results;
@@ -155,13 +176,14 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
         }
         std::span<const CastRelation> chunkSpan(std::to_address(chunkStart), std::to_address(chunkEnd));
         threads.emplace_back(
-                processChunk, std::move(std::make_unique<threadArgs>(chunkSpan, rightRelation, results, sorted, cv_sorted, m_sorted, m_results)));
+                processChunk, chunkSpan, std::span(rightRelation), std::ref(results), std::ref(m_results));
         chunkStart = chunkEnd;
     }
     for (auto &t: threads) {
         t.join();
     }
     // Join ResultVectors
+    std::cout << "results.size(): " << results.size() << std::endl;
     return results;
 }
 #endif //PPDS_PARALLELISM_SORTMERGEJOIN_H

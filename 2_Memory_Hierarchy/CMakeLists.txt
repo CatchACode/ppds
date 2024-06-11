@@ -40,20 +40,6 @@ endif()
 include(FetchContent)
 include(ExternalProject)
 
-set(BOOST_INCLUDE_LIBRARIES sort)
-set(BOOST_ENABLE_CMAKE ON)
-
-Set(FETCHCONTENT_QUIET FALSE)
-FetchContent_Declare(
-        Boost
-        URL https://github.com/boostorg/boost/releases/download/boost-1.85.0/boost-1.85.0-cmake.7z # downloading a zip release speeds up the download
-        USES_TERMINAL_DOWNLOAD TRUE
-        GIT_PROGRESS TRUE
-        DOWNLOAD_NO_EXTRACT FALSE
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
-FetchContent_MakeAvailable(Boost)
-
 FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest
@@ -62,7 +48,6 @@ FetchContent_Declare(
 
 FetchContent_GetProperties(googletest)
 if(NOT googletest_POPULATED)
-    message(STATUS "googletest not populated!")
     FetchContent_Populate(googletest)
     set(BUILD_SHARED_LIBS TRUE)  # Forces shared libraries, which implies -fPIC
     add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
@@ -81,8 +66,8 @@ add_executable(${PROJECT_EXECUTABLE} Join.cpp SortMergeJoin.h HashJoin.h NestedL
 find_package(OpenMP REQUIRED)
 if (OpenMP_CXX_FOUND)
     message(STATUS "OpenMP found")
-    target_link_libraries(${PROJECT_ROOT} PUBLIC OpenMP::OpenMP_CXX gtest_main Boost::sort)
-    target_link_libraries(${PROJECT_EXECUTABLE} OpenMP::OpenMP_CXX gtest_main Boost::sort)
+    target_link_libraries(${PROJECT_ROOT} PUBLIC OpenMP::OpenMP_CXX gtest_main)
+    target_link_libraries(${PROJECT_EXECUTABLE} OpenMP::OpenMP_CXX gtest_main)
 else (OpenMP_CXX_FOUND)
     message(STATUS "OpenMP not found")
     message(STATUS "On Ubuntu, install the package by the following command!")

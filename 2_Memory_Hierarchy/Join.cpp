@@ -45,7 +45,6 @@ protected:
 
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    std::vector<CastRelation> leftRelation(castRelation);
     std::cout << "numThreads: " << numThreads << std::endl;
 
     return performThreadedSortJoin(castRelation, titleRelation, numThreads);
