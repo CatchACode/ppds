@@ -36,8 +36,9 @@ enum class SortMergeJoinType : uint8_t {
  * @param titleRelation a sorted span of title records
  * @return a std::vector<ResultRelation> of joined tuples
  */
-std::vector<ResultRelation> performSortMergeJoin(const std::span<CastRelation>& castRelation, const std::span<TitleRelation>& titleRelation) {
+std::vector<ResultRelation> performSortMergeJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation) {
     std::vector<ResultRelation> results;
+    results.reserve(castRelation.size());
 
     int32_t currentId = 0;
     std::forward_iterator auto l_it = castRelation.begin();
