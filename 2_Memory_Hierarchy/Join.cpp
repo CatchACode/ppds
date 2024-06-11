@@ -46,8 +46,13 @@ protected:
 
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
+    if(runCounter != 2) {
+        assert(std::is_sorted(castRelation.begin(), castRelation.end(), compareCastRelations));
+        assert(std::is_sorted(titleRelation.begin(), titleRelation.end(), compareTitleRelations));
+    }
     std::cout << "run: " << runCounter++ << '\n';
     std::cout << "numThreads: " << numThreads << std::endl;
+
     return performThreadedSortJoin(castRelation, titleRelation, numThreads);
 }
 
