@@ -174,8 +174,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
 
     std::mutex m_results;
 
-    std::vector<ResultRelation> results;
-    results.reserve(leftRelation.size());
+    std::vector<ResultRelation> results(leftRelation.size());
     std::atomic_size_t r_index(0);
 
 
