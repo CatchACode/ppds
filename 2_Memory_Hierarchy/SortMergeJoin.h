@@ -112,7 +112,7 @@ void inline processChunk(const std::span<const CastRelation>& castRelation, cons
 
             for(std::forward_iterator auto l_idx = l_start; l_idx != l_it; ++l_idx) {
                 for(std::forward_iterator auto r_idx = r_start; r_idx != r_it; ++r_idx) {
-                    index = r_index.fetch_add(1); // std::memory_order_relaxed);
+                    index = r_index.fetch_add(1,std::memory_order_relaxed); // std::memory_order_relaxed);
                     //std::cout << "Index: " << index << std::endl;
                     results[index] = createResultTuple(*l_idx, *r_idx);
                     //std::scoped_lock l_result(m_results);
@@ -174,7 +174,8 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
 
     std::mutex m_results;
 
-    std::vector<ResultRelation> results(rightRelation.size());
+    std::vector<ResultRelation> results;
+    results.reserve(leftRelation.size());
     std::atomic_size_t r_index(0);
 
 
@@ -200,7 +201,9 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
         t.join();
     }
     // Join ResultVectors
+    results.resize(r_index.load()); // r_index also conveniently counts the amount of joined records
     std::cout << "results.size(): " << results.size() << std::endl;
+
     return results;
 }
 #endif //PPDS_PARALLELISM_SORTMERGEJOIN_H
