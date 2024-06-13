@@ -28,11 +28,16 @@ def get_cpu_cache_sizes_unix() -> dict[str, int]:
 
     for line in lscpu.splitlines():
         if 'L1d cache:' in line:
-            cache_sizes['L1'] = line.split(':')[1].strip()
+            cache_size = line.split(':')[1].strip().split(' ')[0]
+            cache_size = int(cache_size) / get_phyiscal_core_count()
+            cache_sizes['L1'] = int(cache_size)
         elif 'L2 cache:' in line:
-            cache_sizes['L2'] = line.split(':')[1].strip()
+            cache_size = line.split(':')[1].strip().split(' ')[0]
+            cache_size = int(cache_size) / get_phyiscal_core_count()
+            cache_sizes['L2'] = int(cache_size)
         elif 'L3 cache:' in line:
-            cache_sizes['L3'] = line.split(':')[1].strip()
+            cache_size = line.split(':')[1].strip().split(' ')[0]
+            cache_sizes['L3'] = cache_size
 
     return cache_sizes
 
