@@ -100,7 +100,7 @@ if __name__ == "__main__":
     cache_sizes = {'L1': -1, 'L2': -1, 'L3': -1}
     if os_name == "Darwin":
         cache_sizes = get_cpu_cache_size_darwin()
-    elif os_name == "Unix":
+    elif os_name == "Linux":
         cache_sizes = get_cpu_cache_sizes_unix()
     elif os_name == "Windows":
         print("Not implemented!")
