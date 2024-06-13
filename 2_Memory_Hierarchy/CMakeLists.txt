@@ -22,7 +22,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set Optimization Flags
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC -march=native -mtune=native")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-g -O2 -march=native -mtune=native -fPIC")
 
 set(PPDS_PROJECT_DIR "${CMAKE_SOURCE_DIR}/..")
@@ -35,6 +35,30 @@ endif()
 if(NOT DEFINED SOURCE_DIRECTORY)
     set(SOURCE_DIRECTORY "${CMAKE_SOURCE_DIR}/")
 endif()
+
+# Get the current Git commit hash
+find_package(Git QUIET)
+
+if(GIT_FOUND)
+    execute_process(
+            COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            OUTPUT_VARIABLE GIT_COMMIT_HASH
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+else()
+    set(GIT_COMMIT_HASH "unknown")
+endif()
+
+# Print the Git commit hash during configuration
+message(STATUS "Git commit hash: ${GIT_COMMIT_HASH}")
+
+# Custom target to print Git commit hash on every build
+add_custom_target(print_git_hash ALL
+        COMMAND ${CMAKE_COMMAND} -E echo "Git commit hash: ${GIT_COMMIT_HASH}"
+        VERBATIM
+)
+
 
 # Load gtest
 include(FetchContent)
@@ -57,10 +81,12 @@ FetchContent_MakeAvailable(googletest)
 
 
 # Define the shared library
-add_library(${PROJECT_ROOT} SHARED Join.cpp SortMergeJoin.h HashJoin.h NestedLoopJoin.h)
+add_library(${PROJECT_ROOT} SHARED Join.cpp SortMergeJoin.h HashJoin.h NestedLoopJoin.h
+        ThreadedLoad.h)
 
 # Define the executable target that uses the shared library
-add_executable(${PROJECT_EXECUTABLE} Join.cpp SortMergeJoin.h HashJoin.h NestedLoopJoin.h)
+add_executable(${PROJECT_EXECUTABLE} Join.cpp SortMergeJoin.h HashJoin.h NestedLoopJoin.h
+        ThreadedLoad.h)
 
 # Link with Libraries
 find_package(OpenMP REQUIRED)
