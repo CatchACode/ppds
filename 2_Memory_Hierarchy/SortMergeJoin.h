@@ -112,7 +112,7 @@ void inline processChunk(const std::span<const CastRelation>& castRelation, cons
 
             for(std::forward_iterator auto l_idx = l_start; l_idx != l_it; ++l_idx) {
                 for(std::forward_iterator auto r_idx = r_start; r_idx != r_it; ++r_idx) {
-                    index = r_index.fetch_add(1, std::memory_order_relaxed);
+                    index = r_index.fetch_add(1); // std::memory_order_relaxed);
                     //std::cout << "Index: " << index << std::endl;
                     results[index] = createResultTuple(*l_idx, *r_idx);
                     //std::scoped_lock l_result(m_results);
@@ -154,11 +154,10 @@ void workerThread(WorkerThreadArgs args) {
 
 
 std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation,
-                                                    const int numThreads = std::jthread::hardware_concurrency()) {
-    size_t chunkSize = (leftRelation.size() / L2_CACHE_SIZE);
+                                                    const int numThreads = std::jthread::hardware_concurrency(), size_t chunkSize = L2_CACHE_SIZE) {
 
     std::cout << "chunkSize: " << chunkSize << std::endl;
-    if (chunkSize == 0) {
+    if (leftRelation.size() + rightRelation.size() <= L2_CACHE_SIZE) {
         /*
         // L2 size is larger than data size
         std::cout << "performing has join!\n" << std::endl;
@@ -169,8 +168,12 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
         chunkSize = leftRelation.size() / numThreads;
         std::cout << "chunkSize is now: " << chunkSize << std::endl;
         if(chunkSize == 0) {
-            std::cout << "Still too small, performing hash join!" << std::endl;
+            std::cout << "Still too small, performing unordered hash join!" << std::endl;
             return performSHJ_UNORDERED_MAP(leftRelation, rightRelation);
+        }
+        else {
+            std::cout << "Performing Chunked Hash Join!" << std::endl;
+            return performCHJ_MAP(leftRelation, rightRelation, numThreads);
         }
     }
 
