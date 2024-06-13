@@ -57,6 +57,11 @@ TEST_F(MemoryHierarchyTest, TestJoiningTuples) {
 
     timer.pause();
     std::cout << "Result size: " << results.size() << std::endl;
+    /*
+    for(const auto& record: results) {
+        std::cout << resultRelationToString(record) << '\n';
+    }
+    */
     std::cout << "Join time: " << printString(timer) << std::endl;
     std::cout << "\n\n";
 }

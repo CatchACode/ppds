@@ -20,6 +20,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <omp.h>
+#include <atomic>
 
 
 
@@ -80,7 +81,7 @@ struct threadArgs {
 };
 
 
-void inline processChunk(const std::span<const CastRelation>& castRelation, const std::span<const TitleRelation>& rightRelation, std::vector<ResultRelation>& results, std::mutex& m_results) {
+void inline processChunk(const std::span<const CastRelation>& castRelation, const std::span<const TitleRelation>& rightRelation, std::vector<ResultRelation>& results, std::mutex& m_results, std::atomic_size_t& r_index) {
     std::forward_iterator auto r_it = std::ranges::lower_bound(
             rightRelation.begin(), rightRelation.end(), TitleRelation{.titleId = castRelation.begin()->movieId},
             [](const TitleRelation& a, const TitleRelation& b) {
@@ -90,6 +91,7 @@ void inline processChunk(const std::span<const CastRelation>& castRelation, cons
 
     auto l_it = castRelation.begin();
     int32_t currentId = 0;
+    size_t index = 0;
     while(l_it != castRelation.end() && r_it != rightRelation.end()) {
         if(l_it->movieId < r_it->titleId) {
             ++l_it;
@@ -108,10 +110,13 @@ void inline processChunk(const std::span<const CastRelation>& castRelation, cons
                 ++l_it;
             }
 
-            std::lock_guard lock(m_results);
             for(std::forward_iterator auto l_idx = l_start; l_idx != l_it; ++l_idx) {
                 for(std::forward_iterator auto r_idx = r_start; r_idx != r_it; ++r_idx) {
-                    results.emplace_back(createResultTuple(*l_idx, *r_idx));
+                    index = r_index.fetch_add(1, std::memory_order_relaxed);
+                    //std::cout << "Index: " << index << std::endl;
+                    results[index] = createResultTuple(*l_idx, *r_idx);
+                    //std::scoped_lock l_result(m_results);
+                    //results.emplace_back(createResultTuple(*l_idx, *r_idx));
                 }
             }
 
@@ -127,7 +132,9 @@ struct WorkerThreadArgs {
     std::mutex& m_results;
 
     std::condition_variable& cv;
-    std::atomic_bool stop;
+    std::atomic_bool& stop;
+    std::atomic_size_t& r_index;
+
 };
 
 void workerThread(WorkerThreadArgs args) {
@@ -138,7 +145,7 @@ void workerThread(WorkerThreadArgs args) {
             auto chunk = args.chunks.front();
             args.chunks.pop();
             l_chunks.unlock();
-            processChunk(chunk, args.titleRelation, args.results, args.m_results);
+            processChunk(chunk, args.titleRelation, args.results, args.m_results, args.r_index);
         }
     }
 }
@@ -148,21 +155,29 @@ void workerThread(WorkerThreadArgs args) {
 
 std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation,
                                                     const int numThreads = std::jthread::hardware_concurrency()) {
-    size_t chunkSize = (leftRelation.size() / L2_CACHE_SIZE) / 2;
+    size_t chunkSize = (leftRelation.size() / L2_CACHE_SIZE);
 
     std::cout << "chunkSize: " << chunkSize << std::endl;
     if (chunkSize == 0) {
+        /*
         // L2 size is larger than data size
         std::cout << "performing has join!\n" << std::endl;
         std::cout << "numThreads: " << numThreads << std::endl;
         std::cout << "leftRelation.size(): " << leftRelation.size() << std::endl;
         return performHashJoin(HashJoinType::SHJ_UNORDERED_MAP, leftRelation, rightRelation);
+        */
+        chunkSize = leftRelation.size() / numThreads;
+        std::cout << "chunkSize is now: " << chunkSize << std::endl;
+        if(chunkSize == 0) {
+            std::cout << "Still too small, performing hash join!" << std::endl;
+            return performSHJ_UNORDERED_MAP(leftRelation, rightRelation);
+        }
     }
 
     std::mutex m_results;
 
-    std::vector<ResultRelation> results;
-    results.reserve(rightRelation.size());
+    std::vector<ResultRelation> results(rightRelation.size());
+    std::atomic_size_t r_index(0);
 
 
 
@@ -177,7 +192,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
         }
         std::span<const CastRelation> chunkSpan(std::to_address(chunkStart), std::to_address(chunkEnd));
         threads.emplace_back(
-                processChunk, chunkSpan, std::span(rightRelation), std::ref(results), std::ref(m_results));
+                processChunk, chunkSpan, std::span(rightRelation), std::ref(results), std::ref(m_results), std::ref(r_index));
         chunkStart = chunkEnd;
     }
     for (auto &t: threads) {
