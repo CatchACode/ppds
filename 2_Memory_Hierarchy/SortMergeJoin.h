@@ -154,17 +154,11 @@ void workerThread(WorkerThreadArgs args) {
 
 
 std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation,
-                                                    const int numThreads = std::jthread::hardware_concurrency(), size_t chunkSize = L2_CACHE_SIZE) {
-
+                                                    const int numThreads = std::jthread::hardware_concurrency(), size_t chunkSize = 262144) {
+    chunkSize = leftRelation.size() / numThreads;
+    /*
     std::cout << "chunkSize: " << chunkSize << std::endl;
     if (leftRelation.size() + rightRelation.size() <= L2_CACHE_SIZE) {
-        /*
-        // L2 size is larger than data size
-        std::cout << "performing has join!\n" << std::endl;
-        std::cout << "numThreads: " << numThreads << std::endl;
-        std::cout << "leftRelation.size(): " << leftRelation.size() << std::endl;
-        return performHashJoin(HashJoinType::SHJ_UNORDERED_MAP, leftRelation, rightRelation);
-        */
         chunkSize = leftRelation.size() / numThreads;
         std::cout << "chunkSize is now: " << chunkSize << std::endl;
         if(chunkSize == 0) {
@@ -176,6 +170,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
             return performCHJ_MAP(leftRelation, rightRelation, numThreads);
         }
     }
+    */
 
     std::mutex m_results;
 
@@ -192,6 +187,9 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
             chunkEnd = leftRelation.end();
         } else {
             chunkEnd = std::next(chunkStart, chunkSize);
+            if(chunkEnd > leftRelation.end()) {
+                chunkEnd = leftRelation.end();
+            }
         }
         std::span<const CastRelation> chunkSpan(std::to_address(chunkStart), std::to_address(chunkEnd));
         threads.emplace_back(
