@@ -29,8 +29,6 @@ def get_cpu_cache_sizes_unix() -> dict[str, int]:
     for line in lscpu.splitlines():
         if 'L1d cache:' in line:
             cache_sizes['L1'] = line.split(':')[1].strip()
-        elif 'L1i cache:' in line:
-            cache_sizes['L1'] = line.split(':')[1].strip()
         elif 'L2 cache:' in line:
             cache_sizes['L2'] = line.split(':')[1].strip()
         elif 'L3 cache:' in line:
