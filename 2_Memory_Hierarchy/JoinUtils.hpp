@@ -21,6 +21,8 @@
 #include <iostream>
 #include <vector>
 
+#include "generated_variables.h"
+
 
 /*
 static const size_t L1_CACHE_SIZE =     hwinfo::getAllCPUs()[0].L1CacheSize_Bytes(); ///< ~64 KiB per Core
@@ -44,6 +46,12 @@ constexpr const size_t L2_CACHE_SIZE = 16777216;    ///< 512KiB per Core
 constexpr const size_t L3_CACHE_SIZE = 83886000;  ///< ~80 MiB per Core
 */
 
+
+inline void printCacheSizes() {
+    std::cout << "L1 cache size: " << L1_CACHE_SIZE << std::endl;
+    std::cout << "L2 cache size: " << L2_CACHE_SIZE << std::endl;
+    std::cout << "L3 cache size: " << L3_CACHE_SIZE << std::endl;
+}
 
 
 
@@ -359,13 +367,7 @@ inline bool compareCastRelations(const CastRelation& a, const CastRelation& b) {
     return a.movieId < b.movieId;
 }
 
-inline void sortTitleRelations(std::vector<TitleRelation>& vector) {
-        std::sort(vector.begin(), vector.end(), compareTitleRelations);
-    }
-
-    inline void sortCastRelations(std::vector<CastRelation>& vector) {
-        std::sort(vector.begin(), vector.end(), compareCastRelations);
-    }
-
+inline void sortTitleRelations(std::vector<TitleRelation>& vector) {std::sort(vector.begin(), vector.end(), compareTitleRelations);}
+inline void sortCastRelations(std::vector<CastRelation>& vector) {std::sort(vector.begin(), vector.end(), compareCastRelations);}
 
 #endif //JOINUTIL_HPP
