@@ -88,6 +88,27 @@ add_library(${PROJECT_ROOT} SHARED Join.cpp SortMergeJoin.h HashJoin.h NestedLoo
 add_executable(${PROJECT_EXECUTABLE} Join.cpp SortMergeJoin.h HashJoin.h NestedLoopJoin.h
         ThreadedLoad.h)
 
+# Ensure the print_git_hash target runs before building the executable
+add_dependencies(${PROJECT_EXECUTABLE} print_git_hash)
+
+# Ensure the print_git_hash target runs before building the executable
+add_dependencies(${PROJECT_ROOT} print_git_hash)
+
+# Define a custom target that always runs
+add_custom_target(run_python_script ALL)
+
+# Ensure the run_python_script target runs before building the executable
+add_dependencies(${PROJECT_EXECUTABLE} run_python_script)
+add_dependencies(${PROJECT_ROOT} run_python_script)
+
+# Define a custom command that runs the Python script
+add_custom_command(
+        TARGET run_python_script
+        COMMAND ${CMAKE_COMMAND} -E echo "Running cache_sizes_to_file.py..."
+        COMMAND ${PYTHON_EXECUTABLE} ${PPDS_PROJECT_DIR}/Util/cache_sizes_to_file.py ${PPDS_PROJECT_DIR}/Util/include/generated_variables.h
+        COMMENT "Running Python script"
+)
+
 # Link with Libraries
 find_package(OpenMP REQUIRED)
 if (OpenMP_CXX_FOUND)

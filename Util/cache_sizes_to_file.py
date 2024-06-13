@@ -76,22 +76,28 @@ def get_processor_name():
     return ""
 
 
-def write_sizes_to_file(cache_sizes: dict[str, int]) -> None:
-    if os.path.exists('./include/cache_sizes.h'):
-        os.remove('./include/cache_sizes.h')
+def write_sizes_to_file(cache_sizes: dict[str, int], path: str) -> None:
+    print(os.getcwdb())
+    if os.path.exists(path):
+        os.remove(path)
 
     data = f"#pragma once\n"
     data += f"constexpr const size_t L1_CACHE_SIZE={cache_sizes.get('L1', -1)};\n"
     data += f"constexpr const size_t L2_CACHE_SIZE={cache_sizes.get('L2', -1)};\n"
     data += f"constexpr const size_t L3_CACHE_SIZE={cache_sizes.get('L3', -1)};\n"
 
-    with open('./include/cache_sizes.h', 'w') as file:
+    with open(path, 'w') as file:
         file.write(data)
 
 
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Write caches to a file")
+    parser.add_argument('path', type=str, help="The path where the file will be written")
+    args = parser.parse_args()
+
+
     os_name = platform.system()
     cache_sizes = {'L1': -1, 'L2': -1, 'L3': -1}
     if os_name == "Darwin":
@@ -102,7 +108,7 @@ if __name__ == "__main__":
         print("Not implemented!")
     else:
         print("Unknown OS!")
-    write_sizes_to_file(cache_sizes)
+    write_sizes_to_file(cache_sizes, args.path)
 
 
 

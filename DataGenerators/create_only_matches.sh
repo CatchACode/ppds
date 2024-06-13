@@ -40,10 +40,10 @@ rm -rf $fldr_name/*_matching.csv
 echo "Creating the data files now..."
 cd generator_code
 # We require only one file for the title table, as we purely change cast_info
-parallel python3 -m main --generator_type=Title --key_field_name="id" --output_file_size="$default_output_size" --output_file="../$fldr_name"/"title_info_matching.csv"
+parallel python3 -m main --generator_type=Title --key_field_name="id" --output_file_size="$default_output_size" --output_file="../$fldr_name"/"title_info_matching.csv" --num_records=20000
 
 # Files for Throughput over Threads figure
-parallel python3 -m main --generator_type=MatchRate --output_file_size="$default_output_size" --output_file="../$fldr_name"/"cast_info_matching.csv" --match_rate=1.0
+parallel python3 -m main --generator_type=MatchRate --output_file_size="$default_output_size" --output_file="../$fldr_name"/"cast_info_matching.csv" --match_rate=1.0 --max_value=20000 --num_records=20000
 cd ..
 
 wait

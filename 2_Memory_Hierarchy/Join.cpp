@@ -21,6 +21,7 @@
 #include "HashJoin.h"
 #include "NestedLoopJoin.h"
 #include "SortMergeJoin.h"
+#include "ThreadedLoad.h"
 
 
 class MemoryHierarchyTest : public ::testing::Test {
@@ -31,11 +32,11 @@ protected:
     const std::vector<TitleRelation> rightRelationSorted;
 
     void SetUp() override {
-        auto l_v = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
+        auto l_v = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform1gb.csv"));
         const_cast<std::vector<CastRelation>&>(leftRelation) = l_v;
         sortCastRelations(l_v);
         const_cast<std::vector<CastRelation>&>(leftRelationSorted) = l_v;
-        auto r_v = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
+        auto r_v = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
         const_cast<std::vector<TitleRelation>&>(rightRelation) = r_v;
         sortTitleRelations(r_v);
         const_cast<std::vector<TitleRelation>&>(rightRelationSorted) = r_v;
@@ -44,8 +45,6 @@ protected:
 
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    std::cout << "numThreads: " << numThreads << std::endl;
-
     return performThreadedSortJoin(castRelation, titleRelation, numThreads);
 }
 
@@ -61,7 +60,7 @@ TEST_F(MemoryHierarchyTest, TestJoiningTuples) {
     for(const auto& record: results) {
         std::cout << resultRelationToString(record) << '\n';
     }
-    */
+     */
     std::cout << "Join time: " << printString(timer) << std::endl;
     std::cout << "\n\n";
 }
@@ -248,6 +247,20 @@ TEST_F(MemoryHierarchyTest, TestAmoutOnlyMatches1toMany) {
         std::cout << id << '\n';
     }
     std::cout << std::flush;
+}
+
+
+TEST_F(MemoryHierarchyTest, TestChunkSize) {
+    for(size_t chunkSize = 2; chunkSize < (size_t)-1; chunkSize *= 2) {
+        std::cout << "Testing for chunkSize: " << chunkSize << std::endl;
+        for(int i = 0; i < 10; ++i) {
+            Timer timer("Run");
+            timer.start();
+            const auto results = performThreadedSortJoin(leftRelationSorted, rightRelationSorted);
+            timer.pause();
+            std::cout << "Run " << i << " with chunkSize: " << chunkSize << " took " << printString(timer) << std::endl;
+        }
+    }
 }
 
 
