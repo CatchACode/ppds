@@ -39,7 +39,6 @@ protected:
         const_cast<std::vector<CastRelation>&>(leftRelationSorted) = l_v;
         auto r_v = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
         const_cast<std::vector<TitleRelation>&>(rightRelation) = r_v;
-        sortTitleRelations(r_v);
         const_cast<std::vector<TitleRelation>&>(rightRelationSorted) = r_v;
     }
 };
@@ -48,6 +47,7 @@ protected:
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
     printCacheSizes();
     return performThreadedSortJoin(castRelation, titleRelation, numThreads);
+    //return performCacheSizedThreadedHashJoin(castRelation, titleRelation, numThreads);
 }
 
 TEST_F(MemoryHierarchyTest, TestJoiningTuples) {
