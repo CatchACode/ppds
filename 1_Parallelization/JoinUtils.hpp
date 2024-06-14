@@ -17,10 +17,9 @@
 
 #include <cstring>
 #include <fstream>
-#include <sstream>
+#include <sstream>1
 #include <iostream>
 #include <vector>
-#include <execution>
 
 #ifndef L1_CACHE_SIZE
 #define L1_CACHE_SIZE 65526

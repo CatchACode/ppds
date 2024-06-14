@@ -154,7 +154,7 @@ void workerThread(const WorkerThreadArgs& args) {
 
 std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation,
                                                     const int numThreads = std::jthread::hardware_concurrency()) {
-    static const std::size_t chunkSize = L2_CACHE_SIZE / sizeof(CastRelation) / 2;
+    static const std::size_t chunkSize = L2_CACHE_SIZE / sizeof(CastRelation);
 
     std::vector<ResultRelation> results(leftRelation.size());
     std::atomic_size_t r_index(0);
