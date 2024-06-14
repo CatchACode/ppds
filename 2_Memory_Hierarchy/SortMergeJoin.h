@@ -113,16 +113,15 @@ void inline processChunk(const ChunkCastRelation& chunkCastRelation, const Chunk
             while(l_it != chunkCastRelation.end && l_it->movieId == currentId) {
                 ++l_it;
             }
-            std::lock_guard l_results(m_results);
+            //std::scoped_lock l_results(m_results);
             for(std::forward_iterator auto l_idx = l_start; l_idx != l_it; ++l_idx) {
                 for(std::forward_iterator auto r_idx = r_start; r_idx != r_it; ++r_idx) {
-                    //index = r_index.fetch_add(1,std::memory_order_relaxed); // std::memory_order_relaxed);
-                    //results[index] = createResultTuple(*l_idx, *r_idx);
+                    index = r_index.fetch_add(1,std::memory_order_relaxed); // std::memory_order_relaxed);
+                    *(results.data() + index /*+ offset*/) = createResultTuple(*l_idx, *r_idx);
                     //results2.emplace_back(createResultTuple(*l_idx, *r_idx));
-                    results.emplace_back(createResultTuple(*l_idx, *r_idx));
+                    //results.emplace_back(createResultTuple(*l_idx, *r_idx));
                 }
             }
-
         }
     }
 }
@@ -156,9 +155,9 @@ void workerThread(const WorkerThreadArgs& args) {
 std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation,
                                                     const int numThreads = std::jthread::hardware_concurrency()) {
     const std::size_t chunkSize = L2_CACHE_SIZE / sizeof(CastRelation);
-    //std::vector<ResultRelation> results(leftRelation.size());
-    std::vector<ResultRelation> results;
-    results.reserve(leftRelation.size());
+    std::vector<ResultRelation> results(leftRelation.size());
+    //std::vector<ResultRelation> results;
+    //results.reserve(leftRelation.size());
     std::mutex m_results;
     std::atomic_size_t r_index(0);
     std::atomic_bool stop(false);
@@ -206,7 +205,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
         t.join();
     }
     // Join ResultVectors
-    //results.resize(r_index.load()); // r_index also conveniently counts the amount of joined records
+    results.resize(r_index.load()); // r_index also conveniently counts the amount of joined records
     std::cout << "results.size(): " << results.size() << std::endl;
     std::cout << "Created " << chunkNum << " Chunks" << std::endl;
     std::cout << "r_index: " << r_index.load() << std::endl;
