@@ -143,7 +143,7 @@ void workerThread(const WorkerThreadArgs& args) {
         std::unique_lock l_chunks(args.m_chunks);
         args.cv.wait(l_chunks, [&args] {return args.stop || !args.chunks.empty();});
         if(!args.chunks.empty()) {
-            auto chunkCastRelation = args.chunks.front();
+            auto& chunkCastRelation = args.chunks.front();
             args.chunks.pop_front();
             l_chunks.unlock();
             processChunk(chunkCastRelation, args.titleRelation,args.results, args.r_index, args.m_results);
@@ -208,7 +208,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     results.resize(r_index.load()); // r_index also conveniently counts the amount of joined records
     std::cout << "results.size(): " << results.size() << std::endl;
     std::cout << "Created " << chunkNum << " Chunks" << std::endl;
-    std::cout << "r_index: " << r_index.load() << std::endl;
+    //std::cout << "r_index: " << r_index.load() << std::endl;
 
     return results;
 }
