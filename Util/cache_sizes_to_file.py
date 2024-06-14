@@ -54,6 +54,7 @@ def get_cpu_cache_size_darwin() -> dict[str, int]:
             result = subprocess.run(['sysctl', command], capture_output=True, text=True, check=True)
             # Parse the output to get the cache size
             output = result.stdout.split(':')[1].strip()
+            output = int(output) / get_phyiscal_core_count()
             cache_sizes[cache] = int(output)
         except (subprocess.CalledProcessError, IndexError, ValueError) as e:
             print(f"An error occurred while retrieving {cache} cache size: {e}")
@@ -88,6 +89,7 @@ def write_sizes_to_file(cache_sizes: dict[str, int], path: str) -> None:
     data += f"constexpr const size_t L1_CACHE_SIZE={cache_sizes.get('L1', -1)};\n"
     data += f"constexpr const size_t L2_CACHE_SIZE={cache_sizes.get('L2', -1)};\n"
     data += f"constexpr const size_t L3_CACHE_SIZE={cache_sizes.get('L3', -1)};\n"
+    data += f"constexpr const char* CPU_NAME=\"{get_processor_name()}\";\n"
 
     with open(path, 'w') as file:
         file.write(data)

@@ -48,9 +48,10 @@ constexpr const size_t L3_CACHE_SIZE = 83886000;  ///< ~80 MiB per Core
 
 
 inline void printCacheSizes() {
-    std::cout << "L1 cache size: " << L1_CACHE_SIZE << std::endl;
-    std::cout << "L2 cache size: " << L2_CACHE_SIZE << std::endl;
-    std::cout << "L3 cache size: " << L3_CACHE_SIZE << std::endl;
+    std::cout << "L1 cache size: " << L1_CACHE_SIZE << '\n'
+              << "L2 cache size: " << L2_CACHE_SIZE << '\n'
+              << "L3 cache size: " << L3_CACHE_SIZE << '\n'
+              << "CPU: " << CPU_NAME << std::endl;
 }
 
 

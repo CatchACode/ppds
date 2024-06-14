@@ -22,6 +22,7 @@
 #include <condition_variable>
 #include <omp.h>
 #include <atomic>
+#include <list>
 
 
 
@@ -74,26 +75,29 @@ std::vector<ResultRelation> performSortMergeJoin(const std::vector<CastRelation>
     return results;
 }
 
-struct threadArgs {
-    std::span<const CastRelation> castRelation;
-    std::span<const TitleRelation> rightRelation;
-    std::vector<ResultRelation>& results;
-    std::mutex& m_results;
+struct ChunkCastRelation {
+    const std::vector<CastRelation>::const_iterator start;
+    const std::vector<CastRelation>::const_iterator end;
 };
 
+struct ChunkTitleRelation {
+    const std::vector<TitleRelation>::const_iterator start;
+    const std::vector<TitleRelation>::const_iterator end;
+};
 
-void inline processChunk(const std::span<const CastRelation>& castRelation, const std::span<const TitleRelation>& rightRelation, std::vector<ResultRelation>& results, std::atomic_size_t& r_index) {
+void inline processChunk(const ChunkCastRelation& chunkCastRelation, const ChunkTitleRelation& chunkTitleRelation, std::vector<ResultRelation>& results,
+                        std::atomic_size_t& r_index) {
     std::forward_iterator auto r_it = std::ranges::lower_bound(
-            rightRelation.begin(), rightRelation.end(), TitleRelation{.titleId = castRelation.begin()->movieId},
+            chunkTitleRelation.start, chunkTitleRelation.end, TitleRelation{.titleId = chunkCastRelation.start->movieId},
             [](const TitleRelation& a, const TitleRelation& b) {
                 return a.titleId < b.titleId;
             }
     );
 
-    auto l_it = castRelation.begin();
+    auto l_it = chunkCastRelation.start;
     int32_t currentId = 0;
     size_t index = 0;
-    while(l_it != castRelation.end() && r_it != rightRelation.end()) {
+    while(l_it != chunkCastRelation.end && r_it != chunkTitleRelation.end) {
         if(l_it->movieId < r_it->titleId) {
             ++l_it;
         } else if (l_it->movieId > r_it->titleId) {
@@ -104,20 +108,17 @@ void inline processChunk(const std::span<const CastRelation>& castRelation, cons
             currentId = r_it->titleId;
 
             // Find End of block where both sides share keys
-            while(r_it != rightRelation.end() && r_it->titleId == currentId) {
+            while(r_it != chunkTitleRelation.end && r_it->titleId == currentId) {
                 ++r_it;
             }
-            while(l_it != castRelation.end() && l_it->movieId == currentId) {
+            while(l_it != chunkCastRelation.end && l_it->movieId == currentId) {
                 ++l_it;
             }
 
             for(std::forward_iterator auto l_idx = l_start; l_idx != l_it; ++l_idx) {
                 for(std::forward_iterator auto r_idx = r_start; r_idx != r_it; ++r_idx) {
                     index = r_index.fetch_add(1,std::memory_order_relaxed); // std::memory_order_relaxed);
-                    //std::cout << "Index: " << index << std::endl;
                     results[index] = createResultTuple(*l_idx, *r_idx);
-                    //std::scoped_lock l_result(m_results);
-                    //results.emplace_back(createResultTuple(*l_idx, *r_idx));
                 }
             }
 
@@ -126,9 +127,9 @@ void inline processChunk(const std::span<const CastRelation>& castRelation, cons
 }
 
 struct WorkerThreadArgs {
-    std::queue<std::span<const CastRelation>>& chunks;
+    std::list<ChunkCastRelation>& chunks;
     std::mutex& m_chunks;
-    const std::vector<TitleRelation>& titleRelation;
+    const ChunkTitleRelation titleRelation;
     std::vector<ResultRelation>& results;
     std::condition_variable& cv;
     std::atomic_bool& stop;
@@ -141,10 +142,10 @@ void workerThread(const WorkerThreadArgs& args) {
         std::unique_lock l_chunks(args.m_chunks);
         args.cv.wait(l_chunks, [&args] {return args.stop || !args.chunks.empty();});
         if(!args.chunks.empty()) {
-            auto chunk = args.chunks.front();
-            args.chunks.pop();
+            auto chunkCastRelation = args.chunks.front();
+            args.chunks.pop_front();
             l_chunks.unlock();
-            processChunk(chunk, args.titleRelation, args.results, args.r_index);
+            processChunk(chunkCastRelation, args.titleRelation,args.results, args.r_index);
         }
     }
 }
@@ -159,7 +160,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     std::vector<ResultRelation> results(leftRelation.size());
     std::atomic_size_t r_index(0);
     std::atomic_bool stop(false);
-    std::queue<std::span<const CastRelation>> chunks;
+    std::list<ChunkCastRelation> chunks;
     std::mutex m_chunks;
     std::condition_variable cv_queue;
     std::size_t chunkNum = 0;
@@ -167,7 +168,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     const WorkerThreadArgs args(
             std::ref(chunks),
             std::ref(m_chunks),
-            std::ref(rightRelation),
+            ChunkTitleRelation(rightRelation.begin(), rightRelation.end()),
             std::ref(results),
             std::ref(cv_queue),
             std::ref(stop),
@@ -187,10 +188,9 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
         } else {
             chunkEnd = leftRelation.end();
         }
-        const std::span<const CastRelation> chunkSpan(std::to_address(chunkStart), std::to_address(chunkEnd));
         {
             std::scoped_lock l_chunks(m_chunks);
-            chunks.emplace(chunkSpan);
+            chunks.emplace_back(chunkStart, chunkEnd);
         }
         cv_queue.notify_one();
         chunkStart = chunkEnd;
