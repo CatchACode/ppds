@@ -93,7 +93,6 @@ void inline processChunk(const ChunkCastRelation& chunkCastRelation, const Chunk
                 return a.titleId < b.titleId;
             }
     );
-
     auto l_it = chunkCastRelation.start;
     int32_t currentId = 0;
     size_t index = 0;
@@ -119,6 +118,7 @@ void inline processChunk(const ChunkCastRelation& chunkCastRelation, const Chunk
                 for(std::forward_iterator auto r_idx = r_start; r_idx != r_it; ++r_idx) {
                     index = r_index.fetch_add(1,std::memory_order_relaxed); // std::memory_order_relaxed);
                     results[index] = createResultTuple(*l_idx, *r_idx);
+                    //results2.emplace_back(createResultTuple(*l_idx, *r_idx));
                 }
             }
 
@@ -151,12 +151,9 @@ void workerThread(const WorkerThreadArgs& args) {
 }
 
 
-
-
 std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation,
                                                     const int numThreads = std::jthread::hardware_concurrency()) {
-    static const std::size_t chunkSize = L2_CACHE_SIZE / sizeof(CastRelation);
-
+    const std::size_t chunkSize = L2_CACHE_SIZE / sizeof(CastRelation);
     std::vector<ResultRelation> results(leftRelation.size());
     std::atomic_size_t r_index(0);
     std::atomic_bool stop(false);
@@ -176,8 +173,9 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
             );
 
     std::vector<std::jthread> threads;
+    threads.reserve(numThreads);
     for(int i = 0; i < numThreads; ++i) {
-        threads.emplace_back(std::jthread(workerThread, std::ref(args)));
+        threads.emplace_back(workerThread, std::ref(args));
     }
 
     auto chunkStart = leftRelation.begin();
@@ -205,6 +203,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     results.resize(r_index.load()); // r_index also conveniently counts the amount of joined records
     std::cout << "results.size(): " << results.size() << std::endl;
     std::cout << "Created " << chunkNum << " Chunks" << std::endl;
+    std::cout << "r_index: " << r_index.load() << std::endl;
 
     return results;
 }

@@ -33,11 +33,11 @@ protected:
     const std::vector<TitleRelation> rightRelationSorted;
 
     void SetUp() override {
-        auto l_v = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
+        auto l_v = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform1gb.csv"));
         const_cast<std::vector<CastRelation>&>(leftRelation) = l_v;
         sortCastRelations(l_v);
         const_cast<std::vector<CastRelation>&>(leftRelationSorted) = l_v;
-        auto r_v = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
+        auto r_v = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
         const_cast<std::vector<TitleRelation>&>(rightRelation) = r_v;
         sortTitleRelations(r_v);
         const_cast<std::vector<TitleRelation>&>(rightRelationSorted) = r_v;
@@ -49,7 +49,6 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     printCacheSizes();
     return performThreadedSortJoin(castRelation, titleRelation, numThreads);
 }
-
 
 TEST_F(MemoryHierarchyTest, TestJoiningTuples) {
     Timer timer("ThreadedSort");
