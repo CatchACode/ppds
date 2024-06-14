@@ -22,6 +22,7 @@
 #include "NestedLoopJoin.h"
 #include "SortMergeJoin.h"
 #include "ThreadedLoad.h"
+#include "generated_variables.h"
 
 
 class MemoryHierarchyTest : public ::testing::Test {

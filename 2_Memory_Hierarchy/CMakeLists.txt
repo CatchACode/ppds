@@ -82,11 +82,11 @@ FetchContent_MakeAvailable(googletest)
 
 # Define the shared library
 add_library(${PROJECT_ROOT} SHARED Join.cpp SortMergeJoin.h HashJoin.h NestedLoopJoin.h
-        ThreadedLoad.h)
+        ThreadedLoad.h generated_variables.h)
 
 # Define the executable target that uses the shared library
 add_executable(${PROJECT_EXECUTABLE} Join.cpp SortMergeJoin.h HashJoin.h NestedLoopJoin.h
-        ThreadedLoad.h)
+        ThreadedLoad.h generated_variables.h)
 
 # Ensure the print_git_hash target runs before building the executable
 add_dependencies(${PROJECT_EXECUTABLE} print_git_hash)
@@ -105,7 +105,7 @@ add_dependencies(${PROJECT_ROOT} run_python_script)
 add_custom_command(
         TARGET run_python_script
         COMMAND ${CMAKE_COMMAND} -E echo "Running cache_sizes_to_file.py..."
-        COMMAND ${PYTHON_EXECUTABLE} ${PPDS_PROJECT_DIR}/Util/cache_sizes_to_file.py ${PPDS_PROJECT_DIR}/Util/include/generated_variables.h
+        COMMAND ${PYTHON_EXECUTABLE} ${PPDS_PROJECT_DIR}/Util/cache_sizes_to_file.py ${CMAKE_SOURCE_DIR}/generated_variables.h
         COMMENT "Running Python script"
 )
 
