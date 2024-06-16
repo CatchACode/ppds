@@ -97,16 +97,15 @@ void inline processChunk(const ChunkCastRelation& chunkCastRelation, const Chunk
     std::forward_iterator auto l_it = chunkCastRelation.start;
     int32_t currentId = 0;
     size_t index = 0;
-    std::vector<TitleRelation>::const_iterator r_start;
-    std::vector<CastRelation>::const_iterator l_start;
+
     while (l_it != chunkCastRelation.end && r_it != chunkTitleRelation.end) {
         if (l_it->movieId < r_it->titleId) {
             ++l_it;
         } else if (l_it->movieId > r_it->titleId) {
             ++r_it;
         } else {
-            r_start = r_it;
-            l_start = l_it;
+            auto r_start = r_it;
+            auto l_start = l_it;
             currentId = r_it->titleId;
 
             // Find End of block where both sides share keys
@@ -116,9 +115,9 @@ void inline processChunk(const ChunkCastRelation& chunkCastRelation, const Chunk
             while (l_it != chunkCastRelation.end && l_it->movieId == currentId) {
                 ++l_it;
             }
-            size_t matchingLeft = std::distance(l_start, l_it);
-            size_t matchingRight = std::distance(r_start, r_it);
-            index = r_index.fetch_add(matchingLeft*matchingRight,std::memory_order_relaxed);
+            //size_t matchingLeft = std::distance(l_start, l_it);
+            //size_t matchingRight = std::distance(r_start, r_it);
+            //index = r_index.fetch_add(matchingLeft*matchingRight,std::memory_order_relaxed);
             std::scoped_lock l_results(m_results);
             for (std::forward_iterator auto l_idx = l_start; l_idx != l_it; ++l_idx) {
                 for (std::forward_iterator auto r_idx = r_start; r_idx != r_it; ++r_idx) {
@@ -209,14 +208,15 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     for (auto &t: threads) {
         t.join();
     }
-    std::cout <<"\n\nFinished!\n\n";
+    //std::cout <<"\n\nFinished!\n\n";
     // Join ResultVectors
-    std::cout << "results.size() before resize: " << results.size() << std::endl;
-    std::cout << "results[0] = " << resultRelationToString(results[0]) << std::endl;
-    std::cout << "results[results.size()-1] = " << resultRelationToString(results[results.size() - 1]) << std::endl;
+    //std::cout << "results.size() before resize: " << results.size() << std::endl;
+    //std::cout << "results[0] = " << resultRelationToString(results[0]) << std::endl;
+    //std::cout << "results[results.size()-1] = " << resultRelationToString(results[results.size() - 1]) << std::endl;
     //results.resize(r_index.load()); // r_index also conveniently counts the amount of joined records
     //std::cout << "results.size(): " << results.size() << std::endl;
     std::cout << "Created " << chunkNum << " Chunks" << std::endl;
+    std::cout << "results.size(): " << results.size() << std::endl;
     //std::cout << "r_index: " << r_index.load() << std::endl;
     //std::cout << resultRelationToString(results[0]) << std::endl;
     //std::cout << resultRelationToString(results[results.size()-1]) << std::endl;

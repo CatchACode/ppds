@@ -23,7 +23,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set Optimization Flags
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fno-omit-frame-pointer -fPIC -Wall -Wextra -Wpedantic")
-set(CMAKE_CXX_FLAGS_RELEASE "-g -Ofast -march=native -mtune=native -fPIC -flto -funroll-loops -fno-stack-protector -fno-math-errno -fno-exceptions -fno-rtti -ffast-math")
+#set(CMAKE_CXX_FLAGS_RELEASE "-g -Ofast -march=native -mtune=native -fPIC -flto -funroll-loops -fno-stack-protector -fno-math-errno -fno-exceptions -fno-rtti -ffast-math -ftree-vectorize")
+set(CMAKE_CXX_FLAGS_RELEASE "-g -O2 -march=native -mtune=native -fPIC")
 
 # message flags depending on the build type
 if(CMAKE_BUILD_TYPE MATCHES Debug)
