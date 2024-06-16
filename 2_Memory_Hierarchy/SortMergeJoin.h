@@ -122,8 +122,9 @@ void inline processChunk(const ChunkCastRelation& chunkCastRelation, const Chunk
             //std::scoped_lock l_results(m_results);
             for (std::forward_iterator auto l_idx = l_start; l_idx != l_it; ++l_idx) {
                 for (std::forward_iterator auto r_idx = r_start; r_idx != r_it; ++r_idx) {
-                    results[index++] = createResultTuple(*l_idx, *r_idx);
-                    //results.emplace_back(createResultTuple(*l_idx, *r_idx));
+                    ResultRelation result = createResultTuple(*l_idx, *r_idx);
+                    std::cout << resultRelationToString(result) << std::endl;
+                    results[index++] = result;
                 }
             }
         }
