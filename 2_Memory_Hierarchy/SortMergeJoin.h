@@ -210,7 +210,8 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     std::cout << "results.size(): " << results.size() << std::endl;
     std::cout << "Created " << chunkNum << " Chunks" << std::endl;
     std::cout << "r_index: " << r_index.load() << std::endl;
-
+    std::cout << resultRelationToString(results[0]) << std::endl;
+    std::cout << resultRelationToString(results[results.size()-1]) << std::endl;
     return results;
 }
 #endif //PPDS_PARALLELISM_SORTMERGEJOIN_H
