@@ -23,7 +23,7 @@
 #include "SortMergeJoin.h"
 #include "ThreadedLoad.h"
 #include "generated_variables.h"
-
+#include "CustomAllocator.h"
 
 class MemoryHierarchyTest : public ::testing::Test {
 protected:
@@ -52,6 +52,8 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
 }
 
 TEST_F(MemoryHierarchyTest, TestJoiningTuples) {
+
+
     Timer timer("ThreadedSort");
     timer.start();
     const auto results = performJoin(leftRelationSorted, rightRelationSorted, 16);

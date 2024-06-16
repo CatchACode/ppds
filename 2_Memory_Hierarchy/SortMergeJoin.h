@@ -8,6 +8,7 @@
 #include "JoinUtils.hpp"
 #include "HashJoin.h"
 #include "generated_variables.h"
+#include "CustomAllocator.h"
 
 #include <span>
 #include <thread>
@@ -121,6 +122,7 @@ void inline processChunk(const ChunkCastRelation& chunkCastRelation, const Chunk
             for (std::forward_iterator auto l_idx = l_start; l_idx != l_it; ++l_idx) {
                 for (std::forward_iterator auto r_idx = r_start; r_idx != r_it; ++r_idx) {
                     results[index++] = createResultTuple(*l_idx, *r_idx);
+                    //results.emplace_back(createResultTuple(*l_idx, *r_idx));
                 }
             }
         }
@@ -156,9 +158,8 @@ void workerThread(const WorkerThreadArgs& args) {
 std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation,
                                                     const unsigned int numThreads = std::jthread::hardware_concurrency()) {
     const std::size_t chunkSize = L2_CACHE_SIZE / sizeof(CastRelation);
-    //std::vector<ResultRelation> results(leftRelation.size());
-    std::vector<ResultRelation> results;
-    results.reserve(leftRelation.size() > rightRelation.size() ? leftRelation.size() : rightRelation.size());
+    std::vector<ResultRelation> results(leftRelation.size());
+    //results.reserve(leftRelation.size() > rightRelation.size() ? leftRelation.size() : rightRelation.size());
     std::mutex m_results;
     std::atomic_size_t r_index(0);
     std::atomic_bool stop(false);
