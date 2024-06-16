@@ -146,7 +146,7 @@ void workerThread(const WorkerThreadArgs& args) {
         std::unique_lock l_chunks(args.m_chunks);
         args.cv.wait(l_chunks, [&args] {return args.stop || !args.chunks.empty();});
         if(!args.chunks.empty()) {
-            auto& chunkCastRelation = args.chunks.front();
+            auto chunkCastRelation = std::move(args.chunks.front());
             args.chunks.pop_front();
             l_chunks.unlock();
             processChunk(chunkCastRelation, args.titleRelation,args.results, args.r_index, args.m_results);
