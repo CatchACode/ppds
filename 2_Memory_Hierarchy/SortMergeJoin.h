@@ -88,16 +88,17 @@ struct ChunkTitleRelation {
 void inline processChunk(const ChunkCastRelation& chunkCastRelation, const ChunkTitleRelation& chunkTitleRelation, std::vector<ResultRelation>& results,
                         std::atomic_size_t& r_index, std::mutex& m_results) {
     std::forward_iterator auto r_it = std::ranges::lower_bound(
-            chunkTitleRelation.start, chunkTitleRelation.end, TitleRelation{.titleId = chunkCastRelation.start->movieId},
-            [](const TitleRelation& a, const TitleRelation& b) {
+            chunkTitleRelation.start, chunkTitleRelation.end,
+            TitleRelation{.titleId = chunkCastRelation.start->movieId},
+            [](const TitleRelation &a, const TitleRelation &b) {
                 return a.titleId < b.titleId;
             }
     );
     auto l_it = chunkCastRelation.start;
     int32_t currentId = 0;
     size_t index = 0;
-    while(l_it != chunkCastRelation.end && r_it != chunkTitleRelation.end) {
-        if(l_it->movieId < r_it->titleId) {
+    while (l_it != chunkCastRelation.end && r_it != chunkTitleRelation.end) {
+        if (l_it->movieId < r_it->titleId) {
             ++l_it;
         } else if (l_it->movieId > r_it->titleId) {
             ++r_it;
@@ -107,19 +108,19 @@ void inline processChunk(const ChunkCastRelation& chunkCastRelation, const Chunk
             currentId = r_it->titleId;
 
             // Find End of block where both sides share keys
-            while(r_it != chunkTitleRelation.end && r_it->titleId == currentId) {
+            while (r_it != chunkTitleRelation.end && r_it->titleId == currentId) {
                 ++r_it;
             }
-            while(l_it != chunkCastRelation.end && l_it->movieId == currentId) {
+            while (l_it != chunkCastRelation.end && l_it->movieId == currentId) {
                 ++l_it;
             }
+            size_t matchingLeft = std::distance(l_start, l_it);
+            size_t matchingRight = std::distance(r_start, r_it);
+            index = r_index.fetch_add(matchingLeft*matchingRight,std::memory_order_relaxed);
             //std::scoped_lock l_results(m_results);
-            for(std::forward_iterator auto l_idx = l_start; l_idx != l_it; ++l_idx) {
-                for(std::forward_iterator auto r_idx = r_start; r_idx != r_it; ++r_idx) {
-                    index = r_index.fetch_add(1,std::memory_order_relaxed); // std::memory_order_relaxed);
-                    *(results.data() + index /*+ offset*/) = createResultTuple(*l_idx, *r_idx);
-                    //results2.emplace_back(createResultTuple(*l_idx, *r_idx));
-                    //results.emplace_back(createResultTuple(*l_idx, *r_idx));
+            for (std::forward_iterator auto l_idx = l_start; l_idx != l_it; ++l_idx) {
+                for (std::forward_iterator auto r_idx = r_start; r_idx != r_it; ++r_idx) {
+                    results[index++] = createResultTuple(*l_idx, *r_idx);
                 }
             }
         }
@@ -153,11 +154,11 @@ void workerThread(const WorkerThreadArgs& args) {
 
 
 std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation,
-                                                    const int numThreads = std::jthread::hardware_concurrency()) {
+                                                    const unsigned int numThreads = std::jthread::hardware_concurrency()) {
     const std::size_t chunkSize = L2_CACHE_SIZE / sizeof(CastRelation);
-    std::vector<ResultRelation> results(leftRelation.size());
-    //std::vector<ResultRelation> results;
-    //results.reserve(leftRelation.size());
+    //std::vector<ResultRelation> results(leftRelation.size());
+    std::vector<ResultRelation> results;
+    results.reserve(leftRelation.size() > rightRelation.size() ? leftRelation.size() : rightRelation.size());
     std::mutex m_results;
     std::atomic_size_t r_index(0);
     std::atomic_bool stop(false);
@@ -179,14 +180,14 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
 
     std::vector<std::jthread> threads;
     threads.reserve(numThreads);
-    for(int i = 0; i < numThreads; ++i) {
+    for(unsigned int i = 0; i < numThreads; ++i) {
         threads.emplace_back(workerThread, std::ref(args));
     }
 
     auto chunkStart = leftRelation.begin();
     auto chunkEnd = leftRelation.begin();
     while(chunkEnd != leftRelation.end()) {
-        if(std::distance(chunkEnd, leftRelation.end()) > chunkSize) {
+        if((long unsigned int)std::distance(chunkEnd, leftRelation.end()) > chunkSize) {
             chunkEnd = std::next(chunkEnd, chunkSize);
         } else {
             chunkEnd = leftRelation.end();
@@ -208,7 +209,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     results.resize(r_index.load()); // r_index also conveniently counts the amount of joined records
     std::cout << "results.size(): " << results.size() << std::endl;
     std::cout << "Created " << chunkNum << " Chunks" << std::endl;
-    //std::cout << "r_index: " << r_index.load() << std::endl;
+    std::cout << "r_index: " << r_index.load() << std::endl;
 
     return results;
 }

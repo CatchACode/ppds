@@ -33,11 +33,11 @@ protected:
     const std::vector<TitleRelation> rightRelationSorted;
 
     void SetUp() override {
-        auto l_v = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform1gb.csv"));
+        auto l_v = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
         const_cast<std::vector<CastRelation>&>(leftRelation) = l_v;
         sortCastRelations(l_v);
         const_cast<std::vector<CastRelation>&>(leftRelationSorted) = l_v;
-        auto r_v = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
+        auto r_v = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
         const_cast<std::vector<TitleRelation>&>(rightRelation) = r_v;
         sortTitleRelations(r_v);
         const_cast<std::vector<TitleRelation>&>(rightRelationSorted) = r_v;
@@ -54,15 +54,15 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
 TEST_F(MemoryHierarchyTest, TestJoiningTuples) {
     Timer timer("ThreadedSort");
     timer.start();
-    const auto results = performJoin(leftRelationSorted, rightRelationSorted, 8);
+    const auto results = performJoin(leftRelationSorted, rightRelationSorted, 16);
 
     timer.pause();
     std::cout << "Result size: " << results.size() << std::endl;
     /*
-    for(const auto& record: results) {
-        std::cout << resultRelationToString(record) << '\n';
+    for(int i = results.size(); i > results.size() - 1999; --i) {
+        std::cout << resultRelationToString(results[i]) << '\n';
     }
-     */
+    */
     std::cout << "Join time: " << printString(timer) << std::endl;
     std::cout << "\n\n";
 }

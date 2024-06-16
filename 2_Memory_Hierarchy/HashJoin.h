@@ -151,17 +151,18 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
     results.reserve(leftRelation.size());
     size_t numChunks = 0;
 
+    threads.reserve(numThreads);
     for(int i = 0; i < numThreads; ++i) {
-        threads.emplace_back(std::jthread(workerThreadChunk, std::make_unique<ThreadArgs>(i, std::ref(chunks), std::ref(m_chunks),
+        threads.emplace_back(workerThreadChunk, std::make_unique<ThreadArgs>(i, std::ref(chunks), std::ref(m_chunks),
                                                                                           std::ref(cv_queue), std::ref(results),
                                                                                           std::ref(m_results), std::ref(leftRelation),
-                                                                                          std::ref(stop))));
+                                                                                          std::ref(stop)));
     };
 
     auto chunkStart = rightRelation.begin();
     auto chunkEnd = rightRelation.begin();
     while(chunkEnd != rightRelation.end()) {
-        if(std::distance(chunkEnd, rightRelation.end()) > HASHMAP_SIZE) {
+        if((unsigned long)std::distance(chunkEnd, rightRelation.end()) > HASHMAP_SIZE) {
             chunkEnd = std::next(chunkEnd, HASHMAP_SIZE);
         } else {
             chunkEnd = rightRelation.end();

@@ -22,8 +22,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set Optimization Flags
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
-set(CMAKE_CXX_FLAGS_RELEASE "-g -O2 -march=native -mtune=native -fPIC")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fno-omit-frame-pointer -fPIC -Wall -Wextra -Wpedantic")
+set(CMAKE_CXX_FLAGS_RELEASE "-g -O3 -march=native -mtune=native -fPIC")
 
 set(PPDS_PROJECT_DIR "${CMAKE_SOURCE_DIR}/..")
 

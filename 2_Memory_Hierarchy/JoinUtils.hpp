@@ -371,4 +371,32 @@ inline bool compareCastRelations(const CastRelation& a, const CastRelation& b) {
 inline void sortTitleRelations(std::vector<TitleRelation>& vector) {std::sort(vector.begin(), vector.end(), compareTitleRelations);}
 inline void sortCastRelations(std::vector<CastRelation>& vector) {std::sort(vector.begin(), vector.end(), compareCastRelations);}
 
+void createResultTuplePointer(ResultRelation* result, const std::vector<CastRelation>::const_iterator castIt, const std::vector<TitleRelation>::const_iterator titleIt) {
+    // Assign values from title to result
+    result->titleId = titleIt->titleId;
+    std::memcpy(result->title, titleIt->title, 200);
+    std::memcpy(result->imdbIndex, titleIt->imdbIndex, 12);
+    result->kindId = titleIt->kindId;
+    result->productionYear = titleIt->productionYear;
+    result->imdbId = titleIt->imdbId;
+    std::memcpy(result->phoneticCode, titleIt->phoneticCode, 5);
+    result->episodeOfId = titleIt->episodeOfId;
+    result->seasonNr = titleIt->seasonNr;
+    result->episodeNr = titleIt->episodeNr;
+    std::memcpy(result->seriesYears, titleIt->seriesYears, 49);
+    std::memcpy(result->md5sum, titleIt->md5sum, 32);
+
+    // Assign values from castInfo to result
+    result->castInfoId = castIt->castInfoId;
+    result->personId = castIt->personId;
+    result->movieId = castIt->movieId;
+    result->personRoleId = castIt->personRoleId;
+    std::memcpy(result->note, castIt->note, 100);
+    result->nrOrder = castIt->nrOrder;
+    result->roleId = castIt->roleId;
+}
+
+
+
+
 #endif //JOINUTIL_HPP
