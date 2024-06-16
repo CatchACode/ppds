@@ -211,15 +211,15 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     }
     std::cout <<"\n\nFinished!\n\n";
     // Join ResultVectors
-    std::cout << "results[0] = " << resultRelationToString(results[0]) << std::endl;
-    std::cout << "results[results.size()-1] = " << resultRelationToString(results[results.size()-1]) << std::endl;
     std::cout << "results.size() before resize: " << results.size() << std::endl;
-    results.resize(r_index.load()); // r_index also conveniently counts the amount of joined records
-    std::cout << "results.size(): " << results.size() << std::endl;
+    std::cout << "results[0] = " << resultRelationToString(results[0]) << std::endl;
+    std::cout << "results[results.size()-1] = " << resultRelationToString(results[results.size() - 1]) << std::endl;
+    //results.resize(r_index.load()); // r_index also conveniently counts the amount of joined records
+    //std::cout << "results.size(): " << results.size() << std::endl;
     std::cout << "Created " << chunkNum << " Chunks" << std::endl;
-    std::cout << "r_index: " << r_index.load() << std::endl;
-    std::cout << resultRelationToString(results[0]) << std::endl;
-    std::cout << resultRelationToString(results[results.size()-1]) << std::endl;
+    //std::cout << "r_index: " << r_index.load() << std::endl;
+    //std::cout << resultRelationToString(results[0]) << std::endl;
+    //std::cout << resultRelationToString(results[results.size()-1]) << std::endl;
 
     return results;
 }
