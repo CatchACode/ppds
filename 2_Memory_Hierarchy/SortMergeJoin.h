@@ -26,7 +26,6 @@
 #include <list>
 
 
-
 enum class SortMergeJoinType : uint8_t {
     SMJ = 1, ///< single threaded sort merge join
     TSMJ = 2, ///< multi-threaded sort merge join, where the leftRelation is divided in chunks by the number of threads
@@ -95,17 +94,19 @@ void inline processChunk(const ChunkCastRelation& chunkCastRelation, const Chunk
                 return a.titleId < b.titleId;
             }
     );
-    auto l_it = chunkCastRelation.start;
+    std::forward_iterator auto l_it = chunkCastRelation.start;
     int32_t currentId = 0;
     size_t index = 0;
+    std::vector<TitleRelation>::const_iterator r_start;
+    std::vector<CastRelation>::const_iterator l_start;
     while (l_it != chunkCastRelation.end && r_it != chunkTitleRelation.end) {
         if (l_it->movieId < r_it->titleId) {
             ++l_it;
         } else if (l_it->movieId > r_it->titleId) {
             ++r_it;
         } else {
-            std::forward_iterator auto r_start = r_it;
-            std::forward_iterator auto l_start = l_it;
+            r_start = r_it;
+            l_start = l_it;
             currentId = r_it->titleId;
 
             // Find End of block where both sides share keys
@@ -207,12 +208,13 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
         t.join();
     }
     // Join ResultVectors
-    results.resize(r_index.load()); // r_index also conveniently counts the amount of joined records
+    //results.resize(r_index.load()); // r_index also conveniently counts the amount of joined records
     std::cout << "results.size(): " << results.size() << std::endl;
     std::cout << "Created " << chunkNum << " Chunks" << std::endl;
     std::cout << "r_index: " << r_index.load() << std::endl;
     std::cout << resultRelationToString(results[0]) << std::endl;
     std::cout << resultRelationToString(results[results.size()-1]) << std::endl;
+
     return results;
 }
 #endif //PPDS_PARALLELISM_SORTMERGEJOIN_H
