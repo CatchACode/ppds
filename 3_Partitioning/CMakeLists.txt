@@ -36,6 +36,28 @@ if(NOT DEFINED SOURCE_DIRECTORY)
     set(SOURCE_DIRECTORY "${CMAKE_SOURCE_DIR}/")
 endif()
 
+if(GIT_FOUND)
+    execute_process(
+            COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            OUTPUT_VARIABLE GIT_COMMIT_HASH
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+else()
+    set(GIT_COMMIT_HASH "unknown")
+endif()
+
+# Print the Git commit hash during configuration
+message(STATUS "Git commit hash: ${GIT_COMMIT_HASH}")
+
+# Custom target to print Git commit hash on every build
+add_custom_target(print_git_hash ALL
+        COMMAND ${CMAKE_COMMAND} -E echo "Git commit hash: ${GIT_COMMIT_HASH}"
+        VERBATIM
+)
+
+
+
 # Load gtest
 include(FetchContent)
 include(ExternalProject)
@@ -55,10 +77,37 @@ endif()
 FetchContent_MakeAvailable(googletest)
 
 # Define the shared library
-add_library(${PROJECT_ROOT} SHARED Join.cpp)
+add_library(${PROJECT_ROOT} SHARED Join.cpp
+        HashJoin.h
+        ../2_Memory_Hierarchy/generated_variables.h)
 
 # Define the executable target that uses the shared library
-add_executable(${PROJECT_EXECUTABLE} Join.cpp)
+add_executable(${PROJECT_EXECUTABLE} Join.cpp
+        HashJoin.h
+        ../2_Memory_Hierarchy/generated_variables.h)
+
+# Ensure the print_git_hash target runs before building the executable
+add_dependencies(${PROJECT_EXECUTABLE} print_git_hash)
+
+# Ensure the print_git_hash target runs before building the executable
+add_dependencies(${PROJECT_ROOT} print_git_hash)
+
+# Define a custom target that always runs
+add_custom_target(run_python_script ALL)
+
+# Ensure the run_python_script target runs before building the executable
+add_dependencies(${PROJECT_EXECUTABLE} run_python_script)
+add_dependencies(${PROJECT_ROOT} run_python_script)
+
+# Define a custom command that runs the Python script
+add_custom_command(
+        TARGET run_python_script
+        COMMAND ${CMAKE_COMMAND} -E echo "Running cache_sizes_to_file.py..."
+        COMMAND ${PYTHON_EXECUTABLE} ${PPDS_PROJECT_DIR}/Util/cache_sizes_to_file.py ${CMAKE_SOURCE_DIR}/generated_variables.h
+        COMMENT "Running Python script"
+)
+
+
 
 # Link with Libraries
 find_package(OpenMP REQUIRED)

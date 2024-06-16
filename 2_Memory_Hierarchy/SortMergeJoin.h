@@ -119,12 +119,11 @@ void inline processChunk(const ChunkCastRelation& chunkCastRelation, const Chunk
             size_t matchingLeft = std::distance(l_start, l_it);
             size_t matchingRight = std::distance(r_start, r_it);
             index = r_index.fetch_add(matchingLeft*matchingRight,std::memory_order_relaxed);
-            //std::scoped_lock l_results(m_results);
+            std::scoped_lock l_results(m_results);
             for (std::forward_iterator auto l_idx = l_start; l_idx != l_it; ++l_idx) {
                 for (std::forward_iterator auto r_idx = r_start; r_idx != r_it; ++r_idx) {
-                    ResultRelation result = createResultTuple(*l_idx, *r_idx);
-                    std::cout << resultRelationToString(result) << std::endl;
-                    results[index++] = result;
+                    //results[index++] = createResultTuple(*l_idx, *r_idx);
+                    results.emplace_back(createResultTuple(*l_idx, *r_idx));
                 }
             }
         }
@@ -160,9 +159,10 @@ void workerThread(const WorkerThreadArgs& args) {
 std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation,
                                                     const unsigned int numThreads = std::jthread::hardware_concurrency()) {
     const std::size_t chunkSize = L2_CACHE_SIZE / sizeof(CastRelation);
-    std::vector<ResultRelation> results(leftRelation.size());
-    std::cout << "Initialized results with a size of " << leftRelation.size() << " | size: " << results.size() << std::endl;
-    //results.reserve(leftRelation.size() > rightRelation.size() ? leftRelation.size() : rightRelation.size());
+    //std::vector<ResultRelation> results(leftRelation.size());
+    //std::cout << "Initialized results with a size of " << leftRelation.size() << " | size: " << results.size() << std::endl;
+    std::vector<ResultRelation> results;
+    results.reserve(leftRelation.size() > rightRelation.size() ? leftRelation.size() : rightRelation.size());
     std::mutex m_results;
     std::atomic_size_t r_index(0);
     std::atomic_bool stop(false);
@@ -209,6 +209,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     for (auto &t: threads) {
         t.join();
     }
+    std::cout <<"\n\nFinished!\n\n";
     // Join ResultVectors
     std::cout << "results[0] = " << resultRelationToString(results[0]) << std::endl;
     std::cout << "results[results.size()-1] = " << resultRelationToString(results[results.size()-1]) << std::endl;
