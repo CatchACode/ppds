@@ -142,9 +142,9 @@ struct WorkerThreadArgs {
 };
 
 void workerThread(const WorkerThreadArgs& args) {
-    while(!args.stop || !args.chunks.empty()) {
+    while(!args.stop.load(std::memory_order_seq_cst) || !args.chunks.empty()) {
         std::unique_lock l_chunks(args.m_chunks);
-        args.cv.wait(l_chunks, [&args] {return args.stop || !args.chunks.empty();});
+        args.cv.wait(l_chunks, [&args] {return args.stop.load(std::memory_order_seq_cst) || !args.chunks.empty();});
         if(!args.chunks.empty()) {
             auto chunkCastRelation = std::move(args.chunks.front());
             args.chunks.pop_front();
@@ -152,6 +152,7 @@ void workerThread(const WorkerThreadArgs& args) {
             processChunk(chunkCastRelation, args.titleRelation,args.results, args.r_index, args.m_results);
         }
     }
+    std::cout << "Stopping thread\n"
 }
 
 
@@ -203,7 +204,8 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
         chunkStart = chunkEnd;
         chunkNum++;
     }
-    stop.store(true);
+    stop.store(true, std::memory_order_seq_cst);
+    std::cout << "All threads should stop now!\n"
     cv_queue.notify_all();
     for (auto &t: threads) {
         t.join();
@@ -215,8 +217,8 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     //std::cout << "results[results.size()-1] = " << resultRelationToString(results[results.size() - 1]) << std::endl;
     //results.resize(r_index.load()); // r_index also conveniently counts the amount of joined records
     //std::cout << "results.size(): " << results.size() << std::endl;
-    std::cout << "Created " << chunkNum << " Chunks" << std::endl;
-    std::cout << "results.size(): " << results.size() << std::endl;
+    //std::cout << "Created " << chunkNum << " Chunks" << std::endl;
+    //std::cout << "results.size(): " << results.size() << std::endl;
     //std::cout << "r_index: " << r_index.load() << std::endl;
     //std::cout << resultRelationToString(results[0]) << std::endl;
     //std::cout << resultRelationToString(results[results.size()-1]) << std::endl;

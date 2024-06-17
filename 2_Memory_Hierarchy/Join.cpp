@@ -46,8 +46,8 @@ protected:
 
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    printCacheSizes();
-    std::cout << "numThreads: " << numThreads << std::endl;
+    //printCacheSizes();
+    //std::cout << "numThreads: " << numThreads << std::endl;
     return performThreadedSortJoin(castRelation, titleRelation, numThreads);
 }
 
@@ -56,7 +56,7 @@ TEST_F(MemoryHierarchyTest, TestJoiningTuples) {
 
     Timer timer("ThreadedSort");
     timer.start();
-    const auto results = performJoin(leftRelationSorted, rightRelationSorted, 16);
+    const auto results = performJoin(leftRelationSorted, rightRelationSorted, 8);
 
     timer.pause();
     std::cout << "Result size: " << results.size() << std::endl;
