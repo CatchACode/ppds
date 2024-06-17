@@ -130,7 +130,7 @@ void inline processChunk(const ChunkCastRelation& chunkCastRelation, const Chunk
 }
 
 struct WorkerThreadArgs {
-    std::list<ChunkCastRelation>& chunks;
+    std::vector<ChunkCastRelation>& chunks;
     std::mutex& m_chunks;
     const ChunkTitleRelation titleRelation;
     std::vector<ResultRelation>& results;
@@ -142,12 +142,12 @@ struct WorkerThreadArgs {
 };
 
 void workerThread(const WorkerThreadArgs& args) {
-    while(!args.stop.load(std::memory_order_seq_cst) || !args.chunks.empty()) {
+    while(!args.stop.load(std::memory_order_relaxed) || !args.chunks.empty()) {
         std::unique_lock l_chunks(args.m_chunks);
-        args.cv.wait(l_chunks, [&args] {return args.stop.load(std::memory_order_seq_cst) || !args.chunks.empty();});
+        args.cv.wait(l_chunks, [&args] {return args.stop.load(std::memory_order_relaxed) || !args.chunks.empty();});
         if(!args.chunks.empty()) {
-            auto chunkCastRelation = std::move(args.chunks.front());
-            args.chunks.pop_front();
+            auto chunkCastRelation = std::move(args.chunks.back());
+            args.chunks.pop_back();
             l_chunks.unlock();
             processChunk(chunkCastRelation, args.titleRelation,args.results, args.r_index, args.m_results);
         }
@@ -166,10 +166,11 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     std::mutex m_results;
     std::atomic_size_t r_index(0);
     std::atomic_bool stop(false);
-    std::list<ChunkCastRelation> chunks;
+    std::vector<ChunkCastRelation> chunks;
     std::mutex m_chunks;
     std::condition_variable cv_queue;
     //std::size_t chunkNum = 0;
+    std::size_t maxChunksInQueue = 0;
 
     const WorkerThreadArgs args(
             std::ref(chunks),
@@ -199,12 +200,14 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
         {
             std::scoped_lock l_chunks(m_chunks);
             chunks.emplace_back(chunkStart, chunkEnd);
+            //std::cout << "chunks.size()" << chunks.size() << std::endl;
+            maxChunksInQueue = maxChunksInQueue < chunks.size() ? chunks.size() : maxChunksInQueue;
         }
         cv_queue.notify_one();
         chunkStart = chunkEnd;
         //chunkNum++;
     }
-    stop.store(true, std::memory_order_seq_cst);
+    stop.store(true, std::memory_order_relaxed);
     //std::cout << "All threads should stop now!\n";
     cv_queue.notify_all();
     for (auto &t: threads) {
@@ -219,6 +222,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     //std::cout << "results.size(): " << results.size() << std::endl;
     //std::cout << "Created " << chunkNum << " Chunks" << std::endl;
     std::cout << "results.size(): " << results.size() << std::endl;
+    std::cout << "Max chunks in Queue: " << maxChunksInQueue << std::endl;
     //std::cout << "r_index: " << r_index.load() << std::endl;
     //std::cout << resultRelationToString(results[0]) << std::endl;
     //std::cout << resultRelationToString(results[results.size()-1]) << std::endl;
