@@ -161,7 +161,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     //std::vector<ResultRelation> results(leftRelation.size());
     //std::cout << "Initialized results with a size of " << leftRelation.size() << " | size: " << results.size() << std::endl;
     std::vector<ResultRelation> results;
-    results.reserve(leftRelation.size() > rightRelation.size() ? leftRelation.size() : rightRelation.size());
+    //results.reserve(leftRelation.size() > rightRelation.size() ? leftRelation.size() : rightRelation.size());
     std::mutex m_results;
     std::atomic_size_t r_index(0);
     std::atomic_bool stop(false);
