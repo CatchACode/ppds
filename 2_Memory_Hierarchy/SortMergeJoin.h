@@ -218,7 +218,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     //results.resize(r_index.load()); // r_index also conveniently counts the amount of joined records
     //std::cout << "results.size(): " << results.size() << std::endl;
     //std::cout << "Created " << chunkNum << " Chunks" << std::endl;
-    //std::cout << "results.size(): " << results.size() << std::endl;
+    std::cout << "results.size(): " << results.size() << std::endl;
     //std::cout << "r_index: " << r_index.load() << std::endl;
     //std::cout << resultRelationToString(results[0]) << std::endl;
     //std::cout << resultRelationToString(results[results.size()-1]) << std::endl;
