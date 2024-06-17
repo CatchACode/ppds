@@ -152,7 +152,7 @@ void workerThread(const WorkerThreadArgs& args) {
             processChunk(chunkCastRelation, args.titleRelation,args.results, args.r_index, args.m_results);
         }
     }
-    std::cout << "Stopping thread\n";
+    //std::cout << "Stopping thread\n";
 }
 
 
@@ -169,7 +169,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     std::list<ChunkCastRelation> chunks;
     std::mutex m_chunks;
     std::condition_variable cv_queue;
-    std::size_t chunkNum = 0;
+    //std::size_t chunkNum = 0;
 
     const WorkerThreadArgs args(
             std::ref(chunks),
@@ -202,10 +202,10 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
         }
         cv_queue.notify_one();
         chunkStart = chunkEnd;
-        chunkNum++;
+        //chunkNum++;
     }
     stop.store(true, std::memory_order_seq_cst);
-    std::cout << "All threads should stop now!\n";
+    //std::cout << "All threads should stop now!\n";
     cv_queue.notify_all();
     for (auto &t: threads) {
         t.join();
