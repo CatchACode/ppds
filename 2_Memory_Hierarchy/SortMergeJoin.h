@@ -162,11 +162,13 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     //std::vector<ResultRelation> results(leftRelation.size());
     //std::cout << "Initialized results with a size of " << leftRelation.size() << " | size: " << results.size() << std::endl;
     std::vector<ResultRelation> results;
+    results.reserve(10);
     //results.reserve(leftRelation.size() > rightRelation.size() ? leftRelation.size() : rightRelation.size());
     std::mutex m_results;
     std::atomic_size_t r_index(0);
     std::atomic_bool stop(false);
     std::vector<ChunkCastRelation> chunks;
+    chunks.reserve(200);
     std::mutex m_chunks;
     std::condition_variable cv_queue;
     //std::size_t chunkNum = 0;
@@ -201,7 +203,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
             std::scoped_lock l_chunks(m_chunks);
             chunks.emplace_back(chunkStart, chunkEnd);
             //std::cout << "chunks.size()" << chunks.size() << std::endl;
-            maxChunksInQueue = maxChunksInQueue < chunks.size() ? chunks.size() : maxChunksInQueue;
+            //maxChunksInQueue = maxChunksInQueue < chunks.size() ? chunks.size() : maxChunksInQueue;
         }
         cv_queue.notify_one();
         chunkStart = chunkEnd;
@@ -222,7 +224,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     //std::cout << "results.size(): " << results.size() << std::endl;
     //std::cout << "Created " << chunkNum << " Chunks" << std::endl;
     std::cout << "results.size(): " << results.size() << std::endl;
-    std::cout << "Max chunks in Queue: " << maxChunksInQueue << std::endl;
+    //std::cout << "Max chunks in Queue: " << maxChunksInQueue << std::endl;
     //std::cout << "r_index: " << r_index.load() << std::endl;
     //std::cout << resultRelationToString(results[0]) << std::endl;
     //std::cout << resultRelationToString(results[results.size()-1]) << std::endl;
