@@ -20,9 +20,11 @@
 #include <gtest/gtest.h>
 #include <omp.h>
 
-std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    omp_set_num_threads(numThreads);
-    std::vector<ResultRelation> resultTuples;
+//std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
+void performJoin() {
+
+    //omp_set_num_threads(numThreads);
+    //std::vector<ResultRelation> resultTuples;
     //------------------------- Trie Test ----------------------------------
     vector<string> strs = {"apple", "banana", "orange", "apricot", "app"};
     for (int i = 0; i < strs.size(); i++) {
@@ -30,7 +32,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     }
     TrieNode *root=new TrieNode();
     for (int i = 0; i < strs.size(); i++) {
-        insert(root,strs[i]);
+        insert(root,strs[i],i);
     }
     string wordToSearch = "app";
     bool found = search(root, wordToSearch);
@@ -41,5 +43,11 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     // TODO: Implement a join on the strings cast.note and title.title
     // The benchmark will join on increasing string sizes: cast.note% LIKE title.title
 
-    return resultTuples;
+    //return resultTuples;
+}
+
+int main(){
+    performJoin();
+    return 0;
+    return 0;
 }

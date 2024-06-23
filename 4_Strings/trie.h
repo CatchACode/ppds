@@ -18,12 +18,13 @@ struct TrieNode
 {
     map<char,TrieNode*> children;
     bool endofword;
+    int index;
     TrieNode()
     {
         endofword=false;
     }
 };
-void insert(TrieNode *root,string word)
+void insert(TrieNode *root,string word, int index)
 {
     TrieNode *current=root;
     for(int i=0;i<word.size();i++)
@@ -38,6 +39,7 @@ void insert(TrieNode *root,string word)
         current=node;
     }
     current->endofword=true;
+    current->index= index;
 }
 bool search(TrieNode *root,string word)
 {
@@ -55,6 +57,7 @@ bool search(TrieNode *root,string word)
 
 void printTrie(TrieNode* root, string prefix = "") {
     if (root->endofword) {
+        cout << "Das Wort steht am index " << root->index << endl;
         cout << prefix << endl;
     }
     for (auto it: root->children) {
