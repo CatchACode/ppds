@@ -20,11 +20,12 @@
 #include <gtest/gtest.h>
 #include <omp.h>
 
-//std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-void performJoin() {
+std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
+//void performJoin() {
 
     //omp_set_num_threads(numThreads);
     //std::vector<ResultRelation> resultTuples;
+    /*
     //------------------------- Trie Test ----------------------------------
     vector<string> strs = {"apple", "banana", "orange", "apricot", "app"};
     for (int i = 0; i < strs.size(); i++) {
@@ -35,19 +36,26 @@ void performJoin() {
         insert(root,strs[i],i);
     }
     string wordToSearch = "app";
-    bool found = search(root, wordToSearch);
-    cout << "Das Wort '" << wordToSearch << "' ist im Präfixbaum enthalten: " << (found ? "Ja" : "Nein") << endl;
+    Ruckgabe found = search(root, wordToSearch);
+    if(found.endofword){
+        cout << "Das Wort '" << wordToSearch << "' ist im Präfixbaum enthalten und hat den index: " << found.index << endl;
+    } else{
+    cout << "Das Wort '" << wordToSearch << "' ist im Präfixbaum nicht enthalte." << endl;
+    }
 
+    cout << "----------------------------------------" << endl;
     printTrie(root);
+     */
     //---------------------------------------------------------------------------------------
     // TODO: Implement a join on the strings cast.note and title.title
     // The benchmark will join on increasing string sizes: cast.note% LIKE title.title
-
-    //return resultTuples;
+    return performJointrie(castRelation, titleRelation, numThreads);
 }
 
 int main(){
-    performJoin();
-    return 0;
+    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), 20000);
+    const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform.csv"), 20000);
+    auto result=  performJoin(leftRelation, rightRelation, 1);
+    cout << result.size();
     return 0;
 }

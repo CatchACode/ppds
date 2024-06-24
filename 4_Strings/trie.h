@@ -24,6 +24,12 @@ struct TrieNode
         endofword=false;
     }
 };
+struct Ruckgabe
+{
+    bool endofword;
+    int index;
+};
+
 void insert(TrieNode *root,string word, int index)
 {
     TrieNode *current=root;
@@ -41,18 +47,24 @@ void insert(TrieNode *root,string word, int index)
     current->endofword=true;
     current->index= index;
 }
-bool search(TrieNode *root,string word)
+Ruckgabe search(TrieNode *root,string word)
 {
+    Ruckgabe ret;
     TrieNode *current=root;
     for(int i=0;i<word.size();i++)
     {
         char ch=word[i];
         TrieNode *node=current->children[ch];
-        if(!node)
-            return false;
+        if(!node) {
+            ret.endofword = false;
+            ret.index = INT32_MAX;
+            return ret;
+        }
         current=node;
     }
-    return current->endofword;
+    ret.endofword = current->endofword;
+    ret.index = current->index;
+    return ret;
 }
 
 void printTrie(TrieNode* root, string prefix = "") {
@@ -65,5 +77,20 @@ void printTrie(TrieNode* root, string prefix = "") {
     }
 }
 
+vector<ResultRelation> performJointrie(const vector<CastRelation>& castRelation, const vector<TitleRelation>& titleRelation, int numThreads){
+    vector<ResultRelation> resultTuples;
+    // Aufbau des Trie auf der CastRelation
+    TrieNode *root=new TrieNode();
+    for(int i = 0; i < castRelation.size(); i++){
+        insert(root,castRelation[i].note,i);
+    }
+    for(int j = 0; j < titleRelation.size(); j++){
+        Ruckgabe gefunden = search(root, titleRelation[j].title);
+        if(gefunden.endofword){
+            resultTuples.emplace_back(createResultTuple(castRelation[gefunden.index], titleRelation[j]));
+        }
+    }
+    return  resultTuples;
+}
 
 #endif //PPDS_TRIE_H
