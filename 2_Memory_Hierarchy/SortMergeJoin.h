@@ -171,6 +171,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     std::atomic_size_t r_index(0);
     std::atomic_bool stop(false);
     std::vector<ChunkCastRelation> chunks;
+    //chunks.reserve(100);
     //chunks.reserve(200);
     std::mutex m_chunks;
     std::condition_variable cv_queue;

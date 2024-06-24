@@ -33,11 +33,11 @@ protected:
     const std::vector<TitleRelation> rightRelationSorted;
 
     void SetUp() override {
-        auto l_v = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform1gb.csv"));
+        auto l_v = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_matching.csv"));
         const_cast<std::vector<CastRelation>&>(leftRelation) = l_v;
         sortCastRelations(l_v);
         const_cast<std::vector<CastRelation>&>(leftRelationSorted) = l_v;
-        auto r_v = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
+        auto r_v = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_matching.csv"));
         const_cast<std::vector<TitleRelation>&>(rightRelation) = r_v;
         sortTitleRelations(r_v);
         const_cast<std::vector<TitleRelation>&>(rightRelationSorted) = r_v;
@@ -48,7 +48,8 @@ protected:
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
     //printCacheSizes();
     //std::cout << "numThreads: " << numThreads << std::endl;
-    return performThreadedSortJoin(castRelation, titleRelation, numThreads);
+    //return performThreadedSortJoin(castRelation, titleRelation, numThreads);
+    return performSortMergeJoin(castRelation, titleRelation);
 }
 
 TEST_F(MemoryHierarchyTest, TestJoiningTuples) {

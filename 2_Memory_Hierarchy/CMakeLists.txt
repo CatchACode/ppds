@@ -92,12 +92,14 @@ FetchContent_MakeAvailable(googletest)
 add_library(${PROJECT_ROOT} SHARED Join.cpp SortMergeJoin.h HashJoin.h NestedLoopJoin.h
         ThreadedLoad.h generated_variables.h
         CustomAllocator.h
+        RingBuffer.h
 )
 
 # Define the executable target that uses the shared library
 add_executable(${PROJECT_EXECUTABLE} Join.cpp SortMergeJoin.h HashJoin.h NestedLoopJoin.h
         ThreadedLoad.h generated_variables.h
         CustomAllocator.h
+        RingBuffer.h
 )
 
 # Ensure the print_git_hash target runs before building the executable

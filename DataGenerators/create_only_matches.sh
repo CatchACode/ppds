@@ -24,12 +24,14 @@ one_hundret_mebi_byte=104857600
 one_mebi_byte=1048576
 one_kibi_byte=1024;
 half_mebi_byte=524288;
+twenty_mebi_byte=10485760;
 #default_output_size=12400;
 #default_output_size=1
-default_output_size=$one_kibi_byte
+#default_output_size=$one_kibi_byte
 #default_output_size=$half_mebi_byte
 #default_output_size=$one_mebi_byte
-#default_output_size=$one_gebi_byte
+default_output_size=$one_gebi_byte
+#default_output_size=$twenty_mebi_byte
 #default_output_size=$one_hundret_mebi_byte
 fldr_name="data"
 
@@ -40,10 +42,10 @@ rm -rf $fldr_name/*_matching.csv
 echo "Creating the data files now..."
 cd generator_code
 # We require only one file for the title table, as we purely change cast_info
-parallel python3 -m main --generator_type=Title --key_field_name="id" --output_file_size="$default_output_size" --output_file="../$fldr_name"/"title_info_matching.csv" --num_records=20000
+parallel python3 -m main --generator_type=Title --key_field_name="id" --output_file_size="$default_output_size" --output_file="../$fldr_name"/"title_info_matching.csv" --num_records=8659209
 
 # Files for Throughput over Threads figure
-parallel python3 -m main --generator_type=MatchRate --output_file_size="$default_output_size" --output_file="../$fldr_name"/"cast_info_matching.csv" --match_rate=1.0 --max_value=20000 --num_records=20000
+parallel python3 -m main --generator_type=MatchRate --output_file_size="$default_output_size" --output_file="../$fldr_name"/"cast_info_matching.csv" --match_rate=0.0 --max_value=8659209 --num_records=8659209
 cd ..
 
 wait

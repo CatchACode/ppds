@@ -17,23 +17,15 @@
 #include <unordered_map>
 #include <iostream>
 #include <gtest/gtest.h>
+#include "HashJoin.h"
 #include <omp.h>
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
     omp_set_num_threads(numThreads);
-    std::vector<ResultRelation> resultTuples;
 
     // TODO: Implement your join
     // The benchmark will test it against skewed key distributions
-    for(const auto& l: castRelation) {
-        for(const auto& r : titleRelation) {
-            if(l.movieId == r.titleId) {
-                resultTuples.emplace_back(createResultTuple(l, r));
-            }
-        }
-    }
-
-    return resultTuples;
+    return performCacheSizedThreadedHashJoin(castRelation, titleRelation, numThreads);
 }
 
 TEST(PartioningTest, TestJoiningTuples) {
