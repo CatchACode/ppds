@@ -56,6 +56,5 @@ int main(){
     const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), 20000);
     const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform.csv"), 20000);
     auto result=  performJoin(leftRelation, rightRelation, 1);
-    cout << result.size();
     return 0;
 }

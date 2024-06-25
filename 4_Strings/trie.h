@@ -33,9 +33,12 @@ struct Ruckgabe
 void insert(TrieNode *root,string word, int index)
 {
     TrieNode *current=root;
-    for(int i=0;i<word.size();i++)
-    {
-        char ch=word[i];
+    //cout << word << endl;
+    //for(int i=0;i<word.size();i++)
+    int i = 0;
+    char ch = word[i];
+    while(i < word.size()-1){
+        ch=word[i];
         TrieNode *node=current->children[ch];
         if(!node)
         {
@@ -43,6 +46,7 @@ void insert(TrieNode *root,string word, int index)
             current->children[word[i]]=node;
         }
         current=node;
+        i++;
     }
     current->endofword=true;
     current->index= index;
@@ -79,8 +83,9 @@ void printTrie(TrieNode* root, string prefix = "") {
 
 vector<ResultRelation> performJointrie(const vector<CastRelation>& castRelation, const vector<TitleRelation>& titleRelation, int numThreads){
     vector<ResultRelation> resultTuples;
-    // Aufbau des Trie auf der CastRelation
     TrieNode *root=new TrieNode();
+    // Aufbau des Trie auf der CastRelation
+    /*
     for(int i = 0; i < castRelation.size(); i++){
         insert(root,castRelation[i].note,i);
     }
@@ -88,8 +93,21 @@ vector<ResultRelation> performJointrie(const vector<CastRelation>& castRelation,
         Ruckgabe gefunden = search(root, titleRelation[j].title);
         if(gefunden.endofword){
             resultTuples.emplace_back(createResultTuple(castRelation[gefunden.index], titleRelation[j]));
+            cout << "tupel Cast: " << gefunden.index << " und tupel Titel: " << j << " wurden gejoint." << endl;
         }
-    }
+    }*/
+    // Aufbau des Trie auf der TitleRelation
+    for(int i = 0; i < titleRelation.size(); i++){
+        insert(root,titleRelation[i].title,i);
+    }///*
+    for(int j = 0; j < castRelation.size(); j++){
+        Ruckgabe gefunden = search(root, castRelation[j].note);
+        if(gefunden.endofword){
+            resultTuples.emplace_back(createResultTuple(castRelation[j], titleRelation[gefunden.index]));
+            cout << "tupel Cast: " << j<< " und tupel Titel: " << gefunden.index << " wurden gejoint." << endl;
+        }
+    }//*/
+    //printTrie(root);
     return  resultTuples;
 }
 
