@@ -22,14 +22,14 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set Optimization Flags
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC")
-set(CMAKE_CXX_FLAGS_RELEASE "-g -O2 -march=native -mtune=native -fPIC")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fno-omit-frame-pointer -gdwarf -ggdb")
+set(CMAKE_CXX_FLAGS_RELEASE "-g -Ofast -march=native -mtune=native -fPIC -flto -funroll-loops -fno-stack-protector -fno-math-errno -fno-exceptions -fno-rtti -ffast-math -ftree-vectorize -funswitch-loops -fprefetch-loop-arrays -floop-block")
 
 set(PPDS_PROJECT_DIR "${CMAKE_SOURCE_DIR}/..")
 
 include_directories(${PPDS_PROJECT_DIR}/Util/include)
 if(NOT DEFINED DATA_DIRECTORY)
-    set(DATA_DIRECTORY "${PPDS_PROJECT_DIR}/../DataGenerators/data/")
+    set(DATA_DIRECTORY "${PPDS_PROJECT_DIR}/DataGenerators/data/")
 endif()
 
 if(NOT DEFINED SOURCE_DIRECTORY)
@@ -79,12 +79,16 @@ FetchContent_MakeAvailable(googletest)
 # Define the shared library
 add_library(${PROJECT_ROOT} SHARED Join.cpp
         HashJoin.h
-        )
+        Partitioning.h
+        ThreadPool.h
+)
 
 # Define the executable target that uses the shared library
 add_executable(${PROJECT_EXECUTABLE} Join.cpp
         HashJoin.h
-        )
+        Partitioning.h
+        ThreadPool.h
+)
 
 # Ensure the print_git_hash target runs before building the executable
 add_dependencies(${PROJECT_EXECUTABLE} print_git_hash)
@@ -110,7 +114,7 @@ add_custom_command(
 
 
 # Link with Libraries
-find_package(OpenMP REQUIRED)
+find_package(OpenMP)
 if (OpenMP_CXX_FOUND)
     message(STATUS "OpenMP found")
     target_link_libraries(${PROJECT_ROOT} PUBLIC OpenMP::OpenMP_CXX gtest_main)

@@ -60,14 +60,14 @@ std::vector<ResultRelation> performSHJ_UNORDERED_MAP(const std::vector<CastRelat
     return results;
 }
 
-std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, const int numThreads = std::jthread::hardware_concurrency()) {
+std::vector<ResultRelation> performCHJ_MAP(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, const int numThreads = std::thread::hardware_concurrency()) {
     const size_t chunkSize = rightRelation.size() / numThreads;
 
     std::vector<ResultRelation> results;
     results.reserve(leftRelation.size());
     std::mutex m_results;
 
-    std::vector<std::jthread> threads;
+    std::vector<std::thread> threads;
 
     auto chunkStart = rightRelation.begin();
     for(int i = 0; i < numThreads; ++i) {
@@ -135,7 +135,7 @@ void workerThreadChunk(std::unique_ptr<ThreadArgs> args) {
     }
 }
 
-std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, const int numThreads = std::jthread::hardware_concurrency()) {
+std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, const int numThreads = std::thread::hardware_concurrency()) {
     if(HASHMAP_SIZE > rightRelation.size() / numThreads) {
         // Cache Size is too large to split into more than hashmapSize * numThreads
         std::cout << "Performing CHJ as it is not possible to create <= numThread cache sized HashMaps!" << std::endl;
@@ -143,7 +143,7 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
     }
     std::vector<ResultRelation> results;
     std::mutex m_results;
-    std::vector<std::jthread> threads;
+    std::vector<std::thread> threads;
     std::atomic_bool stop = false;
     std::queue<std::span<const TitleRelation>> chunks;
     std::mutex m_chunks;
@@ -196,7 +196,7 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
  * @return
  */
 
-std::vector<ResultRelation> performHashJoin(enum HashJoinType joinType, const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, const int numThreads = std::jthread::hardware_concurrency()) {
+std::vector<ResultRelation> performHashJoin(enum HashJoinType joinType, const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, const int numThreads = std::thread::hardware_concurrency()) {
     switch (joinType) {
         using enum HashJoinType;
         case SHJ_MAP: {
