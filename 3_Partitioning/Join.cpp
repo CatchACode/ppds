@@ -56,25 +56,22 @@ TEST(PartioningTest, TestAppendStep) {
 
 TEST(PartioningTest, TestCastRadixPartition) {
     std::vector<uint32_t> castRelation {0b000, 0b001, 0b010, 0b100, 0b011, 0b101, 0b110, 0b111};
-    auto p = radixPartition(std::span(castRelation), 0);
     for(const auto& num: castRelation) {
         std::bitset<sizeof(uint32_t)> temp(num);
         std::cout << temp << std::endl;
     }
-    std::bitset<sizeof(uint32_t)> temp(*p);
-    std::cout <<"\npointer to: " << temp << std::endl;
 }
 
 TEST(PartioningTest, uint32Partiton) {
-    std::vector<uint32_t> castRelation {0b000, 0b001, 0b010, 0b100, 0b011, 0b101, 0b110, 0b111, 0b1000, 0b1001, 0b1010,0b1100,0b1101,0b1111};
-    auto threadPool = std::make_shared<ThreadPool>(8);
-    std::atomic_bool flag(false);
-    uint32Partition(threadPool, std::span(castRelation), 0, flag);
-    flag.wait(false);
+    std::vector<int32_t> castRelation {0b000, 0b001, 0b010, 0b100, 0b011, 0b101, 0b110, 0b111, 0b1000, 0b1001, 0b1010,0b1100,0b1101,0b1111};
+    auto threadPool = std::make_shared<ThreadPool>(1);
+
+    uint32Partition(castRelation);
     for(const auto& num: castRelation) {
         std::bitset<sizeof(uint32_t)> temp(num);
         std::cout << temp << std::endl;
     }
+
 }
 
 TEST(PartioningTest, partitioning) {
@@ -104,7 +101,17 @@ TEST(PartioningTest, titlePartition) {
     std::vector<std::span<TitleRelation>> titlePartitions;
     titlePartitions.reserve(1000);
     std::atomic_size_t counter(0);
+}
 
-    titlePartition(threadPool, std::span(rightRelation), 0, m, titlePartitions, counter);
-    sleep(1);
+
+TEST(PartitioningTest, TestTitleRadixPartition) {
+    auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
+
+    auto split = titleRadixPartition(titleRelations.begin(), titleRelations.end(), 0);
+    for(auto it = titleRelations.begin(); it != split; ++it) {
+        std::cout << std::bitset<sizeof(int32_t)>(it->titleId) << std::endl;
+    }
+    for(auto it = split; it != titleRelations.end(); ++it) {
+        std::cout << std::bitset<sizeof(int32_t)>(it->titleId) << std::endl;
+    }
 }

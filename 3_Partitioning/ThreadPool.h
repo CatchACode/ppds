@@ -78,4 +78,5 @@ ThreadPool::~ThreadPool() {
     condition.notify_all();
     for(std::thread &worker: workers)
         worker.join();
+    std::cout << "ThreadPool destroyed" << std::endl;
 }

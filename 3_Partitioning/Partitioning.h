@@ -13,12 +13,14 @@
 #include "generated_variables.h"
 #include <span>
 #include "ThreadPool.h"
-using CastIterator = std::vector<CastRelation>::const_iterator;
-using TitleIterator = std::vector<TitleRelation>::const_iterator;
+#include <map>
+using CastIterator = std::vector<CastRelation>::iterator;
+using TitleIterator = std::vector<TitleRelation>::iterator;
 
 
 static std::atomic_bool titlePartitioned(false);
 static std::atomic_bool castPartitioned(false);
+static std::size_t maxBitsToCompare;
 
 constexpr static const std::size_t PARTITION_SIZE = L2_CACHE_SIZE / (sizeof(CastRelation*) + sizeof(uint32_t));
 
@@ -41,10 +43,9 @@ inline size_t appendStep(const uint8_t& steps, const bool step, const uint8_t po
 }
 
 
-inline std::span<uint32_t>::iterator radixPartition(std::span<uint32_t> span, uint8_t position) {
-    std::span<uint32_t>::iterator zeroBin = span.begin();
-    std::span<uint32_t>::iterator oneBin = span.end();
-
+inline std::vector<int32_t>::iterator radixPartition(std::vector<int32_t>::iterator begin, std::vector<int32_t>::iterator end, uint8_t position) {
+    auto zeroBin = begin;
+    auto oneBin = end;
     while(zeroBin != oneBin) {
         if(getBitAtPosition(*zeroBin, position)) {
             std::swap(*zeroBin, *(--oneBin));
@@ -55,36 +56,44 @@ inline std::span<uint32_t>::iterator radixPartition(std::span<uint32_t> span, ui
     return zeroBin;
 }
 
-inline void uint32Partition(const std::shared_ptr<ThreadPool>& threadPool, std::span<uint32_t> span, uint8_t position, std::atomic_bool& stop) {
-    if(position >= 4) {
-        stop.store(true);
-        stop.notify_all();
+inline void uint32Partition(std::shared_ptr<ThreadPool>& threadPool, std::vector<int32_t>::iterator begin, std::vector<int32_t>::iterator end, uint8_t position, std::atomic_size_t& counter) {
+    if(position >= maxBitsToCompare) {
+        counter++;
+        counter.notify_all();
+        //std::cout << "Counter is now " << current << std::endl;
         return;
     }
-    if(span.size() <= 1) {
-        return;
-    }
-    auto split = radixPartition(span, position);
-    std::span<uint32_t> left(span.begin(), std::distance(span.begin(),  split));
-    std::span<uint32_t> right(split, std::distance(split, span.end()));
-    auto p1 = threadPool->enqueue(uint32Partition, threadPool, left, position + 1, std::ref(stop));
-    auto p2 = threadPool->enqueue(uint32Partition, threadPool, right, position + 1, std::ref(stop));
 
+    auto split = radixPartition(begin, end, position);
+    auto p1 = threadPool->enqueue(uint32Partition, threadPool, begin, split, position + 1, std::ref(counter));
+    auto p2 = threadPool->enqueue(uint32Partition, threadPool, split, end, position + 1, std::ref(counter));
+}
+
+inline void uint32Partition(std::vector<int32_t>& vector) {
+    maxBitsToCompare = 3;
+    std::shared_ptr<ThreadPool> threadPool = std::make_shared<ThreadPool>(8);
+    std::atomic_size_t counter(0);
+    uint32Partition(threadPool, vector.begin(), vector.end(), 0, counter);
+    size_t expected = 8;
+    while(counter < expected) {
+        counter.wait(expected - 1, std::memory_order_acquire);
+    }
+    std::cout << "counter: " << counter.load() << std::endl;
 }
 
 /**
- * @param castRelations a span containing the parition to sort
- * @param the bit position to sort by
+ * @param begin iterator to the start of the cast relation
+ * @param begin iterator to one past the last element of the cast relation, ie end();
+ * @param position the bit position to compare
+ * @return an iterator to the first element of the right partition
  *
- * @return an iterator pointing to where the zero bin of the partition ends, ie start of ones bin
  */
-
-inline std::vector<CastRelation>::const_iterator castRadixPartition(const CastIterator& begin, const CastIterator& end, const uint8_t& position) {
+inline std::vector<CastRelation>::iterator castRadixPartition(const CastIterator& begin, const CastIterator& end, const uint8_t& position) {
     auto zeroBin = begin;
     auto oneBin = end;
     while(zeroBin != oneBin && zeroBin != end) {
         if(getBitAtPosition(zeroBin->movieId, position)) { // if true 1 is at the bit position
-            std::swap(zeroBin, (--oneBin));
+            std::swap(*zeroBin, *(--oneBin));
         } else { // a zero is at bit position
             zeroBin++;
         }
@@ -92,13 +101,19 @@ inline std::vector<CastRelation>::const_iterator castRadixPartition(const CastIt
     return zeroBin;
 }
 
-
-inline std::span<TitleRelation>::iterator titleRadixPartition(std::span<TitleRelation> titleRelations, uint8_t position) {
-    std::span<TitleRelation>::iterator zeroBin = titleRelations.begin();
-    std::span<TitleRelation>::iterator oneBin = titleRelations.end();
+/**
+ * @param begin iterator to the start of the title relation
+ * @param begin iterator to one past the last element of the title relation, ie end();
+ * @param position the bit position to compare
+ * @return an iterator to the first element of the right partition
+ *
+ */
+inline std::vector<TitleRelation>::iterator titleRadixPartition(const TitleIterator& begin, const TitleIterator& end, const uint8_t& position) {
+    auto zeroBin = begin;
+    auto oneBin = end;
     while(zeroBin != oneBin) {
         if(getBitAtPosition(zeroBin->titleId, position)) {
-            std::swap(*zeroBin, *(--oneBin));
+            std::swap(*zeroBin, *(--oneBin)); // because we conveniently want to use end();
         } else {
             zeroBin++;
         }
@@ -106,74 +121,32 @@ inline std::span<TitleRelation>::iterator titleRadixPartition(std::span<TitleRel
     return zeroBin;
 }
 
-void inline titlePartition(const std::shared_ptr<ThreadPool>& threadPool, std::span<TitleRelation> titleRelation, uint8_t position,
-                           std::mutex& m_titlePartitions, std::vector<std::span<TitleRelation>>& titlePartitions,
-                           std::atomic_size_t& counter) {
-    if(titleRelation.size() <= 0) {
+void inline titlePartition(const std::shared_ptr<ThreadPool>& threadPool, const TitleIterator& begin, const TitleIterator& end,
+                           uint8_t position, std::mutex& m_titlePartitions, std::vector<std::span<TitleRelation>>& titlePartitions,
+                          std::atomic_size_t& counter) {
+    if(begin == end) { // write to partition hashmap
         return;
     }
-    if(position >= 2) {
-        std::unique_lock lk(m_titlePartitions);
-        titlePartitions[titleRelation[0].titleId & 0b111] = titleRelation;
-        titlePartitioned.store(true);
-        titlePartitioned.notify_all();
+    if(position >= maxBitsToCompare) { // Write to the partition vector
         return;
     }
-    if(titleRelation.size() <= 1) {
-        return;
-    }
-    auto split = titleRadixPartition(titleRelation, position);
-    long leftDistance = std::distance(titleRelation.begin(), split);
-    long rightDistance = std::distance(split, titleRelation.end());
-    std::span<TitleRelation> left(titleRelation.begin(), leftDistance);
-    std::span<TitleRelation> right(split, rightDistance);
-    auto p1 = threadPool->enqueue(titlePartition, std::ref(threadPool), left, position + 1, std::ref(m_titlePartitions),
-                        std::ref(titlePartitions), std::ref(counter));
-    auto p2 = threadPool->enqueue(titlePartition, std::ref(threadPool), right, position + 1, std::ref(m_titlePartitions),
-                        std::ref(titlePartitions), std::ref(counter));
+    auto split = titleRadixPartition(begin, end, position);
 }
 
 void inline castPartition(const std::shared_ptr<ThreadPool>& threadPool, std::span<CastRelation> castRelation,
                           uint8_t position, std::mutex& m_castPartitions, std::vector<std::span<CastRelation>>& castPartitions,
                           std::atomic_size_t& counter) {
-    if(castRelation.size() <= 0) {
-        return;
-    }
-    if(position >= 4) {
-        // need to add this partition to partitions vector
-        std::unique_lock lk(m_castPartitions);
-        castPartitions[castRelation[0].movieId & 0b111] = castRelation;
-        castPartitioned.store(true);
-        castPartitioned.notify_all();
-        return;
-    }
-    auto split = castRadixPartition(castRelation, position);
-    std::span<CastRelation> left(castRelation.begin(), std::distance(castRelation.begin(), split));
-    std::span<CastRelation> right(split, std::distance(split, castRelation.end()));
-    auto p1 = threadPool->enqueue(castPartition, std::ref(threadPool), left, position + 1, std::ref(m_castPartitions),
-                        std::ref(castPartitions), std::ref(counter));
-    auto p2 = threadPool->enqueue(castPartition, std::ref(threadPool), right, position + 1, std::ref(m_castPartitions),
-                        std::ref(castPartitions), std::ref(counter));
+
 }
 
-void inline partition(std::span<CastRelation> castRelation, std::span<TitleRelation> titleRelation, int numThreads = std::thread::hardware_concurrency()) {
-    std::vector<std::span<CastRelation>> castPartitions(numThreads);
-    castPartitions.reserve(16);
-    std::vector<std::span<TitleRelation>> titlePartitions(numThreads);
-    titlePartitions.reserve(16);
-    std::mutex m_castPartitions;
-    std::mutex m_titlePartitions;
-    std::atomic_size_t counterCastPartitions(0);
-    std::atomic_size_t counterTitlePartitions(0);
-    auto threadPool = std::make_shared<ThreadPool>(7);
-    threadPool->enqueue(castPartition, std::ref(threadPool), std::span(castRelation), 0, std::ref(m_castPartitions),
-                        std::ref(castPartitions), std::ref(counterCastPartitions));
-    /*
-    threadPool->enqueue(titlePartition, std::ref(threadPool), std::span(titleRelation), 0, std::ref(m_titlePartitions),
-                        std::ref(titlePartitions), std::ref(counterTitlePartitions));
-                        */
-    titlePartitioned.wait(false);
-    castPartitioned.wait(false);
+void inline partition(std::span<CastRelation> castRelation, std::span<TitleRelation> titleRelation, unsigned int numThreads = std::thread::hardware_concurrency()) {
+    maxBitsToCompare = std::ceil(std::log2(numThreads));
+    auto threadPool = std::make_shared<ThreadPool>(numThreads);
+
 }
+
+
+
+
 
 #endif //PPDS_3_PARTITIONING_PARTITIONING_H
