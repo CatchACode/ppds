@@ -184,6 +184,7 @@ std::vector<ResultRelation> performCacheSizedThreadedHashJoin(const std::vector<
         thread.join();
     }
     std::cout << "Created " << numChunks << " Chunks" << std::endl;
+    std::cout << "results.size() = " << results.size() << std::endl;
     return results;
 }
 
