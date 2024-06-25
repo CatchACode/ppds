@@ -51,10 +51,26 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     // The benchmark will join on increasing string sizes: cast.note% LIKE title.title
     return performJointrie(castRelation, titleRelation, numThreads);
 }
-
+/*
 int main(){
     const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), 20000);
     const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform.csv"), 20000);
     auto result=  performJoin(leftRelation, rightRelation, 1);
     return 0;
+}
+ */
+
+TEST(StringTest, TestNestedLoopjoin) {
+    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), 20000);
+    const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform.csv"), 20000);
+    std::vector<ResultRelation> results;
+
+    for(const auto& l_record: leftRelation) {
+        for(const auto& r_record: rightRelation) {
+            if(strncmp(l_record.note, r_record.title, 100) == 0) {
+                results.emplace_back(createResultTuple(l_record, r_record));
+            }
+        }
+    }
+    std::cout << "results.size(): " << results.size() << std::endl;
 }

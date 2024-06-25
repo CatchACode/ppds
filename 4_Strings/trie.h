@@ -98,17 +98,17 @@ vector<ResultRelation> performJointrie(const vector<CastRelation>& castRelation,
     }*/
     // Aufbau des Trie auf der TitleRelation
     for(int i = 0; i < titleRelation.size(); i++){
-        insert(root,titleRelation[i].title,i);
+        insert(root,std::string(titleRelation[i].title, 200),i);
     }///*
     for(int j = 0; j < castRelation.size(); j++){
-        Ruckgabe gefunden = search(root, castRelation[j].note);
+        Ruckgabe gefunden = search(root, std::string(castRelation[j].note, 100));
         if(gefunden.endofword){
             resultTuples.emplace_back(createResultTuple(castRelation[j], titleRelation[gefunden.index]));
             cout << "tupel Cast: " << j<< " und tupel Titel: " << gefunden.index << " wurden gejoint." << endl;
         }
     }//*/
     //printTrie(root);
-    return  resultTuples;
+    return resultTuples;
 }
 
 #endif //PPDS_TRIE_H
