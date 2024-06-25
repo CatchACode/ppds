@@ -79,12 +79,12 @@ inline void uint32Partition(const std::shared_ptr<ThreadPool>& threadPool, std::
  * @return an iterator pointing to where the zero bin of the partition ends, ie start of ones bin
  */
 
-inline std::span<CastRelation>::iterator castRadixPartition(std::span<CastRelation> castRelations, uint8_t position) {
-    std::span<CastRelation>::iterator zeroBin = castRelations.begin();
-    std::span<CastRelation>::iterator oneBin = castRelations.end();
-    while(zeroBin != oneBin) {
+inline std::vector<CastRelation>::const_iterator castRadixPartition(const CastIterator& begin, const CastIterator& end, const uint8_t& position) {
+    auto zeroBin = begin;
+    auto oneBin = end;
+    while(zeroBin != oneBin && zeroBin != end) {
         if(getBitAtPosition(zeroBin->movieId, position)) { // if true 1 is at the bit position
-            std::swap(*zeroBin, *(--oneBin));
+            std::swap(zeroBin, (--oneBin));
         } else { // a zero is at bit position
             zeroBin++;
         }
@@ -92,13 +92,13 @@ inline std::span<CastRelation>::iterator castRadixPartition(std::span<CastRelati
     return zeroBin;
 }
 
+
 inline std::span<TitleRelation>::iterator titleRadixPartition(std::span<TitleRelation> titleRelations, uint8_t position) {
     std::span<TitleRelation>::iterator zeroBin = titleRelations.begin();
     std::span<TitleRelation>::iterator oneBin = titleRelations.end();
     while(zeroBin != oneBin) {
         if(getBitAtPosition(zeroBin->titleId, position)) {
             std::swap(*zeroBin, *(--oneBin));
-            oneBin--;
         } else {
             zeroBin++;
         }
