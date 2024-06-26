@@ -191,7 +191,7 @@ void inline partition(ThreadPool& threadPool, std::vector<CastRelation>& leftRel
                       std::vector<std::span<CastRelation>>& castPartitions, std::vector<std::span<TitleRelation>>& titlePartitions,
                       unsigned int numThreads = std::jthread::hardware_concurrency()) {
     std::vector<std::atomic_bool> finishedPartitions(numPartitionsToExpect);
-    setMaxBitsToCompare(2);
+    setMaxBitsToCompare(6);
     castPartitions.resize(numPartitionsToExpect);
     titlePartitions.resize(numPartitionsToExpect);
     std::mutex m_castPartitions;
@@ -213,24 +213,20 @@ void hashJoin(std::span<CastRelation> leftRelation, std::span<TitleRelation> rig
     if(leftRelation.size() == 0 || rightRelation.size() == 0) { // either span is empty so no matches
         return;
     }
-    std::vector<ResultRelation> localResults;
-    std::unordered_map<int32_t, const TitleRelation*> map;
+    std::unordered_multimap<int32_t, const CastRelation*> map;
     map.reserve(leftRelation.size());
-    for(const auto& record: rightRelation) {
-        map[record.titleId] = &record;
-    }
     for(const auto& record: leftRelation) {
-        if(map.contains(record.movieId)) {
-            std::scoped_lock lk(m_results);
-            results.emplace_back(createResultTuple(record, *map[record.movieId]));
+        map.insert(std::make_pair(record.movieId, &record));
+    }
+    for(const auto& record: rightRelation) {
+        if(map.contains(record.titleId)) {
+            auto iterators = map.equal_range(record.titleId);
+            std::scoped_lock lk (m_results);
+            for(iterators.first; iterators.first != iterators.second; ++iterators.first) {
+                results.emplace_back(createResultTuple(*iterators.first->second, record));
+            }
         }
     }
-    /*
-    std::scoped_lock lk(m_results);
-    for(const auto& record: localResults) {
-        results.emplace_back(record);
-    }
-     */
 }
 
 inline size_t averagePartitionSize(const std::vector<std::span<CastRelation>>& vector) {
@@ -249,8 +245,8 @@ inline size_t averagePartitionSize(const std::vector<std::span<TitleRelation>>& 
 }
 
 std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, unsigned int numThreads = std::jthread::hardware_concurrency()) {
-    auto& castRelation = const_cast<std::vector<CastRelation>&>(leftRelation);
-    auto& titleRelation = const_cast<std::vector<TitleRelation>&>(rightRelation);
+    std::vector<CastRelation>& castRelation = const_cast<std::vector<CastRelation>&>(leftRelation);
+    std::vector<TitleRelation>& titleRelation = const_cast<std::vector<TitleRelation>&>(rightRelation);
     std::vector<std::span<CastRelation>> castPartitions;
     std::vector<std::span<TitleRelation>> titlePartitions;
     ThreadPool threadPool(numThreads);
@@ -261,7 +257,7 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
     std::cout << "Average cast partition size: " << averagePartitionSize(castPartitions) << '\n';
     std::cout << "Average title partition size: " << averagePartitionSize(titlePartitions) << '\n';
     std::vector<ResultRelation> results;
-    results.reserve(30000);
+    results.reserve(leftRelation.size());
     std::mutex m_results;
     std::atomic_size_t counter(0);
     for(int i = 0; i < castPartitions.size(); ++i) {
