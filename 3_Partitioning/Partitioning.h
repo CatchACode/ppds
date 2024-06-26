@@ -240,7 +240,7 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
     assert(castPartitions.size() == titlePartitions.size());
     std::cout << "finished Partitioning\n";
     std::vector<ResultRelation> results;
-    results.reserve(30000);
+    results.reserve(leftRelation.size());
     std::mutex m_results;
     std::atomic_size_t counter(0);
     for(int i = 0; i < castPartitions.size(); ++i) {
