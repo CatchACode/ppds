@@ -212,6 +212,7 @@ void hashJoin(std::span<CastRelation> leftRelation, std::span<TitleRelation> rig
     if(leftRelation.size() == 0 || rightRelation.size() == 0) { // either span is empty so no matches
         return;
     }
+    std::vector<ResultRelation> localResults;
     std::unordered_map<int32_t, const TitleRelation*> map;
     map.reserve(leftRelation.size());
     for(const auto& record: rightRelation) {
@@ -219,9 +220,12 @@ void hashJoin(std::span<CastRelation> leftRelation, std::span<TitleRelation> rig
     }
     for(const auto& record: leftRelation) {
         if(map.contains(record.movieId)) {
-            //std::scoped_lock lk (m_results);
-            //results.emplace_back(createResultTuple(record, *map[record.movieId]));
+            localResults.emplace_back(createResultTuple(record, *map[record.movieId]));
         }
+    }
+    std::scoped_lock lk(m_results);
+    for(const auto& record: localResults) {
+        results.emplace_back(record);
     }
 }
 
@@ -236,7 +240,7 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
     assert(castPartitions.size() == titlePartitions.size());
     std::cout << "finished Partitioning\n";
     std::vector<ResultRelation> results;
-    results.resize(leftRelation.size());
+    results.reserve(30000);
     std::mutex m_results;
     std::atomic_size_t counter(0);
     for(int i = 0; i < castPartitions.size(); ++i) {
