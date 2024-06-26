@@ -22,7 +22,7 @@
 #include "HashJoin.h"
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    performPartitionJoin(castRelation, titleRelation, numThreads);
+    return performPartitionJoin(castRelation, titleRelation, numThreads);
 }
 
 TEST(PartioningTest, TestJoiningTuples) {
@@ -170,11 +170,11 @@ TEST(PartitioningTest, TestMatchingBins) {
 
 
 TEST(PartitioningTest, TestPerformJoin) {
-    const auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform1gb.csv"));
-    const auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
+    const auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
+    const auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
 
-    //auto results = performPartitionJoin(castRelations, titleRelations, std::jthread::hardware_concurrency());
-    auto results = performCacheSizedThreadedHashJoin(castRelations, titleRelations, std::jthread::hardware_concurrency());
+    auto results = performPartitionJoin(castRelations, titleRelations, std::jthread::hardware_concurrency());
+    //auto results = performCacheSizedThreadedHashJoin(castRelations, titleRelations, std::jthread::hardware_concurrency());
 
     std::cout << "results.size(): " << results.size() << '\n';
 }
