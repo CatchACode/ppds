@@ -186,11 +186,10 @@ void inline castPartition(ThreadPool& threadPool, const CastIterator begin, cons
 
 
 
-void inline partition(std::vector<CastRelation>& leftRelation, std::vector<TitleRelation>& rightRelation,
+void inline partition(ThreadPool& threadPool, std::vector<CastRelation>& leftRelation, std::vector<TitleRelation>& rightRelation,
                       std::vector<std::span<CastRelation>>& castPartitions, std::vector<std::span<TitleRelation>>& titlePartitions,
                       unsigned int numThreads = std::jthread::hardware_concurrency()) {
     setMaxBitsToCompare(leftRelation.size());
-    ThreadPool threadPool(numThreads);
     castPartitions.resize(numPartitionsToExpect);
     titlePartitions.resize(numPartitionsToExpect);
     std::mutex m_castPartitions;
@@ -228,19 +227,22 @@ void hashJoin(std::span<CastRelation> leftRelation, std::span<TitleRelation> rig
 }
 
 
-std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation> leftRelation, const std::vector<TitleRelation> rightRelation, unsigned int numThreads = std::jthread::hardware_concurrency()) {
+std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, unsigned int numThreads = std::jthread::hardware_concurrency()) {
     std::vector<CastRelation> castRelation(leftRelation);
     std::vector<TitleRelation> titleRelation(rightRelation);
     std::vector<std::span<CastRelation>> castPartitions;
     std::vector<std::span<TitleRelation>> titlePartitions;
-    partition(castRelation, titleRelation, castPartitions, titlePartitions, numThreads);
-    assert(castPartitions.size() == titlePartitions.size());
     ThreadPool threadPool(numThreads);
+    partition(threadPool, castRelation, titleRelation, castPartitions, titlePartitions, numThreads);
+    assert(castPartitions.size() == titlePartitions.size());
     std::vector<ResultRelation> results;
+    results.reserve(8659209);
     std::mutex m_results;
     for(int i = 0; i < castPartitions.size(); ++i) {
         threadPool.enqueue(hashJoin, castPartitions[i], titlePartitions[i], std::ref(results), std::ref(m_results));
     }
+    std::cout << "numThreads: " << numThreads << '\n';
+    std::cout << "results.size(): " << results.size() << '\n';
     return results;
 }
 

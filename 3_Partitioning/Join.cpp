@@ -150,7 +150,8 @@ TEST(PartitioningTest, TestMatchingBins) {
     auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
     std::vector<std::span<CastRelation>> castPartitions;
     std::vector<std::span<TitleRelation>> titlePartitions;
-    partition(castRelations, titleRelations, castPartitions, titlePartitions);
+    ThreadPool threadPool(std::jthread::hardware_concurrency());
+    partition(threadPool, castRelations, titleRelations, castPartitions, titlePartitions);
     std::cout << "castPartitions: " << castPartitions.size() << '\n';
     std::cout << "titleParitions: " << titlePartitions.size() << '\n';
 
@@ -170,8 +171,8 @@ TEST(PartitioningTest, TestMatchingBins) {
 
 
 TEST(PartitioningTest, TestPerformJoin) {
-    const auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
-    const auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
+    const auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform1gb.csv"));
+    const auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
 
     auto results = performPartitionJoin(castRelations, titleRelations, std::jthread::hardware_concurrency());
     //auto results = performCacheSizedThreadedHashJoin(castRelations, titleRelations, std::jthread::hardware_concurrency());
