@@ -22,7 +22,9 @@
 #include "HashJoin.h"
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    return performPartitionJoin(castRelation, titleRelation, numThreads);
+    auto results = performPartitionJoin(castRelation, titleRelation, numThreads);
+    std::cout << "results.size(): " << results.size() << '\n';
+    return results;
 }
 
 TEST(PartioningTest, TestJoiningTuples) {
@@ -174,8 +176,11 @@ TEST(PartitioningTest, TestPerformJoin) {
     const auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform1gb.csv"));
     const auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
 
+    Timer timer("Join");
+    timer.start();
     auto results = performPartitionJoin(castRelations, titleRelations, std::jthread::hardware_concurrency());
     //auto results = performCacheSizedThreadedHashJoin(castRelations, titleRelations, std::jthread::hardware_concurrency());
-
+    timer.pause();
+    std::cout << "Join took: " << printString(timer) << '\n';
     std::cout << "results.size(): " << results.size() << '\n';
 }

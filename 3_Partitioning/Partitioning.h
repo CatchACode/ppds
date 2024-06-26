@@ -242,7 +242,6 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
         threadPool.enqueue(hashJoin, castPartitions[i], titlePartitions[i], std::ref(results), std::ref(m_results));
     }
     std::cout << "numThreads: " << numThreads << '\n';
-    std::cout << "results.size(): " << results.size() << '\n';
     return results;
 }
 
