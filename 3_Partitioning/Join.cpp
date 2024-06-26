@@ -22,7 +22,8 @@
 #include "HashJoin.h"
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    auto results = performPartitionJoin(castRelation, titleRelation, numThreads);
+    //auto results = performPartitionJoin(castRelation, titleRelation, numThreads);
+    auto results = performCacheSizedThreadedHashJoin(castRelation, titleRelation);
     std::cout << "results.size(): " << results.size() << '\n';
     return results;
 }

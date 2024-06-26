@@ -189,6 +189,7 @@ void inline castPartition(ThreadPool& threadPool, const CastIterator begin, cons
 void inline partition(ThreadPool& threadPool, std::vector<CastRelation>& leftRelation, std::vector<TitleRelation>& rightRelation,
                       std::vector<std::span<CastRelation>>& castPartitions, std::vector<std::span<TitleRelation>>& titlePartitions,
                       unsigned int numThreads = std::jthread::hardware_concurrency()) {
+    std::vector<std::atomic_bool> finishedPartitions(numPartitionsToExpect);
     setMaxBitsToCompare(leftRelation.size());
     castPartitions.resize(numPartitionsToExpect);
     titlePartitions.resize(numPartitionsToExpect);
@@ -206,7 +207,8 @@ void inline partition(ThreadPool& threadPool, std::vector<CastRelation>& leftRel
     }
 }
 
-void hashJoin(std::span<CastRelation> leftRelation, std::span<TitleRelation> rightRelation, std::vector<ResultRelation>& results, std::mutex& m_results) {
+void hashJoin(std::span<CastRelation> leftRelation, std::span<TitleRelation> rightRelation, std::vector<ResultRelation>& results,
+              std::mutex& m_results, std::atomic_size_t& counter) {
     if(leftRelation.size() == 0 || rightRelation.size() == 0) { // either span is empty so no matches
         return;
     }
@@ -218,9 +220,6 @@ void hashJoin(std::span<CastRelation> leftRelation, std::span<TitleRelation> rig
     for(const auto& record: leftRelation) {
         if(map.contains(record.movieId)) {
             std::scoped_lock lk (m_results);
-            if(results.size() == results.capacity()) {
-                results.reserve(results.size() * 2);
-            }
             results.emplace_back(createResultTuple(record, *map[record.movieId]));
         }
     }
@@ -236,10 +235,14 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
     partition(threadPool, castRelation, titleRelation, castPartitions, titlePartitions, numThreads);
     assert(castPartitions.size() == titlePartitions.size());
     std::vector<ResultRelation> results;
-    results.reserve(30000);
+    results.resize(30000);
     std::mutex m_results;
+    std::atomic_size_t counter(0);
     for(int i = 0; i < castPartitions.size(); ++i) {
-        threadPool.enqueue(hashJoin, castPartitions[i], titlePartitions[i], std::ref(results), std::ref(m_results));
+        if(castPartitions.empty() || titlePartitions[i].empty()) {
+            continue;
+        }
+        threadPool.enqueue(hashJoin, castPartitions[i], titlePartitions[i], std::ref(results), std::ref(m_results), std::ref(counter));
     }
     std::cout << "numThreads: " << numThreads << '\n';
     return results;
