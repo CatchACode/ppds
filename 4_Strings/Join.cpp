@@ -76,10 +76,10 @@ TEST(StringTest, TestNestedLoopjoin) {
 }
 
 TEST(StringTest, TestTrieJoin) {
-    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), 20000);
-    const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform.csv"), 20000);
+    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_1StringMatch.csv"), 20000);
+    const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_1StringMatch.csv"), 20000);
 
-    auto results = performJointrie(leftRelation, rightRelation, 8);
+    auto results = performJoin(leftRelation, rightRelation, 8);
 
     std::cout << results.size() << std::endl;
 }

@@ -34,11 +34,12 @@ void insert(TrieNode *root,string word, int index)
 {
     TrieNode *current=root;
     //cout << word << endl;
-    //for(int i=0;i<word.size();i++)
-    int i = 0;
-    char ch = word[i];
-    while(i < word.size()-1){
-        ch=word[i];
+    for(int i=0;i<100;i++)
+    //int i = 0;
+    //char ch = word[i];
+    //while(i < word.size())
+    {
+        char ch=word[i];
         TrieNode *node=current->children[ch];
         if(!node)
         {
@@ -46,7 +47,7 @@ void insert(TrieNode *root,string word, int index)
             current->children[word[i]]=node;
         }
         current=node;
-        i++;
+        //i++;
     }
     current->endofword=true;
     current->index= index;
@@ -98,7 +99,8 @@ vector<ResultRelation> performJointrie(const vector<CastRelation>& castRelation,
     }*/
     // Aufbau des Trie auf der TitleRelation
     for(int i = 0; i < titleRelation.size(); i++){
-        insert(root,std::string(titleRelation[i].title, 200),i);
+        //insert(root,std::string(titleRelation[i].title, 100),i);
+        insert(root,titleRelation[i].title,i);
     }///*
     for(int j = 0; j < castRelation.size(); j++){
         Ruckgabe gefunden = search(root, std::string(castRelation[j].note, 100));
