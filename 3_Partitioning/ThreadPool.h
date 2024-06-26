@@ -57,8 +57,9 @@ auto ThreadPool::enqueue(F&& f, Args&&... args) -> std::future<typename std::res
     std::future<return_type> res = task->get_future();
     {
         std::unique_lock<std::mutex> lock(queue_mutex);
-        if(stop)
+        if(stop) {
             std::cerr << "enqueue on stopped ThreadPool" << std::endl;
+        }
         tasks.emplace([task](){ (*task)(); });
     }
     condition.notify_one();
