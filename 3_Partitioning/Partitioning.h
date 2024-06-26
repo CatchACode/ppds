@@ -236,7 +236,7 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
     partition(threadPool, castRelation, titleRelation, castPartitions, titlePartitions, numThreads);
     assert(castPartitions.size() == titlePartitions.size());
     std::vector<ResultRelation> results;
-    results.reserve(8659209);
+    results.reserve(30000);
     std::mutex m_results;
     for(int i = 0; i < castPartitions.size(); ++i) {
         threadPool.enqueue(hashJoin, castPartitions[i], titlePartitions[i], std::ref(results), std::ref(m_results));
