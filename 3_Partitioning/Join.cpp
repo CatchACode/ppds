@@ -181,7 +181,7 @@ TEST(PartitioningTest, TestPerformJoin) {
 
     Timer timer("Join");
     timer.start();
-    auto results = performPartitionJoin(castRelations, titleRelations, std::jthread::hardware_concurrency());
+    auto results = performPartitionJoin(castRelations, titleRelations, 16);
     //auto results = performCacheSizedThreadedHashJoin(castRelations, titleRelations, std::jthread::hardware_concurrency());
     timer.pause();
     std::cout << "Join took: " << printString(timer) << '\n';

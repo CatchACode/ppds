@@ -85,6 +85,9 @@ inline void uint32Partition(std::vector<int32_t>& vector) {
 constexpr const std::size_t MAX_HASHMAP_SIZE = L2_CACHE_SIZE / (sizeof(int32_t) + sizeof(CastRelation*));
 
 inline void setMaxBitsToCompare(const std::size_t sizeRelationVector) {
+    //auto minimumNumOfHashMaps = std::ceil(sizeRelationVector / MAX_HASHMAP_SIZE);
+    //if(minimumNumOfHashMaps == 0) {minimumNumOfHashMaps = 1;}
+    //maxBitsToCompare = static_cast<std::size_t>(std::ceil(std::log2(minimumNumOfHashMaps)));
     maxBitsToCompare = sizeRelationVector;
     if(maxBitsToCompare == 0) {maxBitsToCompare = 1;}
     numPartitionsToExpect = static_cast<std::size_t>(std::pow(2, maxBitsToCompare));
@@ -188,7 +191,7 @@ void inline partition(ThreadPool& threadPool, std::vector<CastRelation>& leftRel
                       std::vector<std::span<CastRelation>>& castPartitions, std::vector<std::span<TitleRelation>>& titlePartitions,
                       unsigned int numThreads = std::jthread::hardware_concurrency()) {
     std::vector<std::atomic_bool> finishedPartitions(numPartitionsToExpect);
-    setMaxBitsToCompare(3);
+    setMaxBitsToCompare(2);
     castPartitions.resize(numPartitionsToExpect);
     titlePartitions.resize(numPartitionsToExpect);
     std::mutex m_castPartitions;
@@ -218,15 +221,32 @@ void hashJoin(std::span<CastRelation> leftRelation, std::span<TitleRelation> rig
     }
     for(const auto& record: leftRelation) {
         if(map.contains(record.movieId)) {
-            localResults.emplace_back(createResultTuple(record, *map[record.movieId]));
+            std::scoped_lock lk(m_results);
+            results.emplace_back(createResultTuple(record, *map[record.movieId]));
         }
     }
+    /*
     std::scoped_lock lk(m_results);
     for(const auto& record: localResults) {
         results.emplace_back(record);
     }
+     */
 }
 
+inline size_t averagePartitionSize(const std::vector<std::span<CastRelation>>& vector) {
+    size_t sum = 0;
+    for(const auto& span: vector) {
+        sum += span.size();
+    }
+    return sum / vector.size();
+}
+inline size_t averagePartitionSize(const std::vector<std::span<TitleRelation>>& vector) {
+    size_t sum = 0;
+    for(const auto& span: vector) {
+        sum += span.size();
+    }
+    return sum / vector.size();
+}
 
 std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, unsigned int numThreads = std::jthread::hardware_concurrency()) {
     std::vector<CastRelation> castRelation(leftRelation);
@@ -236,7 +256,10 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
     ThreadPool threadPool(numThreads);
     partition(threadPool, castRelation, titleRelation, castPartitions, titlePartitions, numThreads);
     assert(castPartitions.size() == titlePartitions.size());
+    std::cout << "Number of Paritions: " << castPartitions.size() << '\n';
     std::cout << "finished Partitioning\n";
+    std::cout << "Average cast partition size: " << averagePartitionSize(castPartitions) << '\n';
+    std::cout << "Average title partition size: " << averagePartitionSize(titlePartitions) << '\n';
     std::vector<ResultRelation> results;
     results.reserve(leftRelation.size());
     std::mutex m_results;
