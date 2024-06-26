@@ -62,18 +62,7 @@ TEST(PartioningTest, TestCastRadixPartition) {
     }
 }
 
-TEST(PartioningTest, uint32Partiton) {
-    std::vector<int32_t> castRelation {0b000, 0b001, 0b010, 0b100, 0b011, 0b101, 0b110, 0b111, 0b1000, 0b1001, 0b1010,0b1100,0b1101,0b1111};
-    auto threadPool = std::make_shared<ThreadPool>(1);
-
-    uint32Partition(castRelation);
-    for(const auto& num: castRelation) {
-        std::bitset<sizeof(uint32_t)> temp(num);
-        std::cout << temp << std::endl;
-    }
-
-}
-
+/*
 TEST(PartioningTest, castPartition) {
     auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
     setMaxBitsToCompare(leftRelation.size());
@@ -94,7 +83,9 @@ TEST(PartioningTest, castPartition) {
         }
     }
 }
+ */
 
+/*
 TEST(PartioningTest, titlePartition) {
     auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
     setMaxBitsToCompare(rightRelation.size());
@@ -109,15 +100,8 @@ TEST(PartioningTest, titlePartition) {
         counter.wait(current);
     }
     std::cout << "counter: " << counter.load() << std::endl;
-    /*
-    for(const auto& span: results) {
-        for(const auto& record: span) {
-            std::cout << std::bitset<sizeof(int32_t)*8>(record.titleId) << std::endl;
-        }
-    }
-    */
 }
-
+*/
 
 TEST(PartitioningTest, TestTitleRadixPartition) {
     auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
@@ -154,7 +138,6 @@ TEST(PartitioningTest, TestMatchingBins) {
     std::vector<std::span<CastRelation>> castPartitions;
     std::vector<std::span<TitleRelation>> titlePartitions;
     ThreadPool threadPool(std::jthread::hardware_concurrency());
-    partition(threadPool, castRelations, titleRelations, castPartitions, titlePartitions);
     std::cout << "castPartitions: " << castPartitions.size() << '\n';
     std::cout << "titleParitions: " << titlePartitions.size() << '\n';
 

@@ -64,6 +64,8 @@ def main():
 		else:
 			numberOfRecords = calcNumberOfRecords(args.output_file_size, TITLE["size"])
 		schema = CAST_INFO["schema"]
+	elif args.generator_type == 'Zipifian':
+		print("")
 	else:
 		printFail(f"Invalid generator type {args.generator_type}")
 		exit(-1)
