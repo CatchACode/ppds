@@ -29,7 +29,7 @@ set(PPDS_PROJECT_DIR "${CMAKE_SOURCE_DIR}/..")
 
 include_directories(${PPDS_PROJECT_DIR}/Util/include)
 if(NOT DEFINED DATA_DIRECTORY)
-    set(DATA_DIRECTORY "${PPDS_PROJECT_DIR}/../DataGenerators/data/")
+    set(DATA_DIRECTORY "${PPDS_PROJECT_DIR}/DataGenerators/data/")
 endif()
 
 if(NOT DEFINED SOURCE_DIRECTORY)
