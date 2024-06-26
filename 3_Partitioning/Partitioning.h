@@ -249,8 +249,8 @@ inline size_t averagePartitionSize(const std::vector<std::span<TitleRelation>>& 
 }
 
 std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, unsigned int numThreads = std::jthread::hardware_concurrency()) {
-    std::vector<CastRelation> castRelation(leftRelation);
-    std::vector<TitleRelation> titleRelation(rightRelation);
+    auto& castRelation = const_cast<std::vector<CastRelation>&>(leftRelation);
+    auto& titleRelation = const_cast<std::vector<TitleRelation>&>(rightRelation);
     std::vector<std::span<CastRelation>> castPartitions;
     std::vector<std::span<TitleRelation>> titlePartitions;
     ThreadPool threadPool(numThreads);
