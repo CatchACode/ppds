@@ -219,8 +219,8 @@ void hashJoin(std::span<CastRelation> leftRelation, std::span<TitleRelation> rig
     }
     for(const auto& record: leftRelation) {
         if(map.contains(record.movieId)) {
-            std::scoped_lock lk (m_results);
-            results.emplace_back(createResultTuple(record, *map[record.movieId]));
+            //std::scoped_lock lk (m_results);
+            //results.emplace_back(createResultTuple(record, *map[record.movieId]));
         }
     }
 }
@@ -234,8 +234,9 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
     ThreadPool threadPool(numThreads);
     partition(threadPool, castRelation, titleRelation, castPartitions, titlePartitions, numThreads);
     assert(castPartitions.size() == titlePartitions.size());
+    std::cout << "finished Partitioning\n";
     std::vector<ResultRelation> results;
-    results.resize(30000);
+    results.resize(leftRelation.size());
     std::mutex m_results;
     std::atomic_size_t counter(0);
     for(int i = 0; i < castPartitions.size(); ++i) {

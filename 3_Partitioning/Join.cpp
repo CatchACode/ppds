@@ -22,8 +22,8 @@
 #include "HashJoin.h"
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    //auto results = performPartitionJoin(castRelation, titleRelation, numThreads);
-    auto results = performCacheSizedThreadedHashJoin(castRelation, titleRelation);
+    auto results = performPartitionJoin(castRelation, titleRelation, std::jthread::hardware_concurrency());
+    //auto results = performCacheSizedThreadedHashJoin(castRelation, titleRelation);
     std::cout << "results.size(): " << results.size() << '\n';
     return results;
 }
@@ -175,7 +175,7 @@ TEST(PartitioningTest, TestMatchingBins) {
 
 TEST(PartitioningTest, TestPerformJoin) {
     const auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform1gb.csv"));
-    const auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
+    const auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_matching.csv"));
 
     Timer timer("Join");
     timer.start();
