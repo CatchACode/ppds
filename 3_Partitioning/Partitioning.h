@@ -261,7 +261,7 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
     std::cout << "Average cast partition size: " << averagePartitionSize(castPartitions) << '\n';
     std::cout << "Average title partition size: " << averagePartitionSize(titlePartitions) << '\n';
     std::vector<ResultRelation> results;
-    results.reserve(leftRelation.size());
+    results.reserve(30000);
     std::mutex m_results;
     std::atomic_size_t counter(0);
     for(int i = 0; i < castPartitions.size(); ++i) {
