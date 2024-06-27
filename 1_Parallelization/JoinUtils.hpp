@@ -30,9 +30,6 @@
 #ifndef L3_CACHE_SIZE
 #define L3_CACHE_SIZE 2097152
 #endif
-#ifndef CPU_NAME
-#define "Custom Cmake"
-#endif
 #ifndef BLOCK_SIZE
 #define BLOCK_SIZE 4096
 #endif
