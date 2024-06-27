@@ -23,7 +23,7 @@
 #include "TimerUtil.hpp"
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    auto results = performPartitionJoin(castRelation, titleRelation, std::thread::hardware_concurrency());
+    auto results = performPartitionJoin(castRelation, titleRelation, numThreads);
     //auto results = performCacheSizedThreadedHashJoin(castRelation, titleRelation);
     std::cout << "castRelation.size(): " << castRelation.size() << '\n';
     std::cout << "titleRelation.size(): " << titleRelation.size() << '\n';

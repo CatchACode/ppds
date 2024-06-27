@@ -182,14 +182,11 @@ inline void hashJoinMultiMap(std::span<CastRelation> leftRelation, std::span<Tit
     std::unordered_multimap<int32_t, const CastRelation*> map;
     map.reserve(leftRelation.size());
     for(const auto& record: leftRelation) {
-        map.insert(std::make_pair(hasher(record.movieId), &record));
+        map.insert(std::make_pair(record.movieId, &record));
     }
-    std::cout << "Max bucket count: " << map.max_bucket_count() << '\n';
-    std::cout << "Bucket count: " << map.bucket_count() << '\n';
-
     for(const auto& record: rightRelation) {
         if(map.contains(hasher(record.titleId))) {
-            auto iterators = map.equal_range(hasher(record.titleId));
+            auto iterators = map.equal_range(record.titleId);
             std::scoped_lock lk (m_results);
             for(iterators.first; iterators.first != iterators.second; ++iterators.first) {
                 results.emplace_back(createResultTuple(*iterators.first->second, record));
@@ -200,6 +197,7 @@ inline void hashJoinMultiMap(std::span<CastRelation> leftRelation, std::span<Tit
 
 inline void hashJoinMap(std::span<CastRelation> leftRelation, std::span<TitleRelation> rightRelation, std::vector<ResultRelation>& results,
                  std::mutex& m_results) {
+    std::vector<ResultRelation> localResults;
     if (leftRelation.empty() || rightRelation.empty()) {
         return;
     }
@@ -238,6 +236,8 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
     std::vector<TitleRelation>& titleRelation = const_cast<std::vector<TitleRelation>&>(rightRelation);
     std::vector<std::span<CastRelation>> castPartitions;
     std::vector<std::span<TitleRelation>> titlePartitions;
+    castPartitions.reserve(numPartitionsToExpect);
+    titlePartitions.reserve(numPartitionsToExpect);
     ThreadPool threadPool(numThreads);
     partition(threadPool, castRelation, titleRelation, castPartitions, titlePartitions, numThreads);
     std::vector<ResultRelation> results;
