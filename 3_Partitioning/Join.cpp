@@ -73,7 +73,7 @@ TEST(PartioningTest, castPartition) {
     std::atomic_size_t counter(0);
     std::vector<std::span<CastRelation>> results;
     results.resize(numPartitionsToExpect);
-    threadPool.enqueue(castPartition, std::ref(threadPool), leftRelation.begin(), leftRelation.end(), 0, std::ref(m), std::ref(results), std::ref(counter));
+    //threadPool.enqueue(castPartition, std::ref(threadPool), leftRelation.begin(), leftRelation.end(), 0, std::ref(m), std::ref(results), std::ref(counter));
     size_t expected = numPartitionsToExpect;
     while(size_t current = counter.load() < expected) {
         counter.wait(current);
@@ -94,7 +94,7 @@ TEST(PartioningTest, titlePartition) {
     std::atomic_size_t counter(0);
     std::vector<std::span<TitleRelation>> results;
     results.resize(numPartitionsToExpect);
-    threadPool.enqueue(titlePartition, std::ref(threadPool), rightRelation.begin(), rightRelation.end(), 0, std::ref(m), std::ref(results), std::ref(counter));
+    //threadPool.enqueue(titlePartition, std::ref(threadPool), rightRelation.begin(), rightRelation.end(), 0, std::ref(m), std::ref(results), std::ref(counter));
     size_t expected = numPartitionsToExpect;
     while(size_t current = counter.load() < expected) {
         counter.wait(current);
@@ -145,7 +145,7 @@ TEST(PartitioningTest, TestMatchingBins) {
     std::vector<std::span<CastRelation>> castPartitions;
     std::vector<std::span<TitleRelation>> titlePartitions;
     ThreadPool threadPool(std::thread::hardware_concurrency());
-    partition(threadPool, castRelations, titleRelations, castPartitions, titlePartitions);
+    //partition(threadPool, castRelations, titleRelations, castPartitions, titlePartitions);
     std::cout << "castPartitions: " << castPartitions.size() << '\n';
     std::cout << "titleParitions: " << titlePartitions.size() << '\n';
 

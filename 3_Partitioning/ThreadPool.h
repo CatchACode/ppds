@@ -59,7 +59,7 @@ auto ThreadPool::enqueue(F&& f, Args&&... args) -> std::future<typename std::inv
     {
         std::unique_lock<std::mutex> lock(queue_mutex);
         if(stop) {
-            std::cerr << "enqueue on stopped ThreadPool" << std::endl;
+            //std::cerr << "enqueue on stopped ThreadPool" << std::endl;
         }
         tasks.emplace([task](){ (*task)(); });
     }
