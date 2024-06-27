@@ -108,7 +108,6 @@ inline void hashJoinMap(std::span<CastRelation> leftRelation, std::span<TitleRel
     for(const auto& result: localResults) {
         results.emplace_back(createResultTuple(*result.first, *result.second));
     }
-    std::cout << "localresults: " << localResults.size() << std::endl;
 }
 
 
