@@ -19,12 +19,6 @@
 using CastIterator = std::vector<CastRelation>::iterator;
 using TitleIterator = std::vector<TitleRelation>::iterator;
 
-using hashFunction = std::hash<int32_t>;
-
-
-
-static std::atomic_bool titlePartitioned(false);
-static std::atomic_bool castPartitioned(false);
 static std::size_t maxBitsToCompare;
 static std::size_t numPartitionsToExpect;
 static std::hash<int32_t> hasher;
@@ -127,7 +121,7 @@ inline std::vector<CastRelation>::iterator castRadixPartition(const CastIterator
     auto zeroBin = begin;
     auto oneBin = end;
     while(zeroBin != oneBin && zeroBin != end) {
-        if(getBitAtPosition(hasher(zeroBin->movieId), position)) { // if true 1 is at the bit position
+        if(getBitAtPosition(zeroBin->movieId, position)) { // if true 1 is at the bit position
             std::swap(*zeroBin, *(--oneBin));
         } else { // a zero is at bit position
             zeroBin++;
@@ -147,7 +141,7 @@ inline std::vector<TitleRelation>::iterator titleRadixPartition(const TitleItera
     auto zeroBin = begin;
     auto oneBin = end;
     while(zeroBin != oneBin) {
-        if(getBitAtPosition(hasher(zeroBin->titleId), position)) {
+        if(getBitAtPosition(zeroBin->titleId, position)) {
             std::swap(*zeroBin, *(--oneBin)); // because we conveniently want to use end();
         } else {
             zeroBin++;
