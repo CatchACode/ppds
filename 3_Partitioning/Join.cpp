@@ -188,7 +188,7 @@ TEST(PartitioningTest, TestSortMergeFaster) {
     auto& castRelation = const_cast<std::vector<CastRelation>&>(castRelations);
     auto& titleRelation = const_cast<std::vector<TitleRelation>&>(titleRelations);
     std::sort(castRelation.begin(), castRelation.end(), [](const auto& a, const auto& b){return a.movieId < b.movieId;});
-    auto results = performThreadedSortJoin(castRelation, titleRelation, 8);
+    auto results = performThreadedSortJoin(castRelation, titleRelation, 16);
     timer.pause();
     std::cout << "Timer: " << printString(timer) << '\n';
     std::cout << "results.size(): " << results.size() << '\n';

@@ -16,6 +16,7 @@
 #include <map>
 #include <cassert>
 #include <functional>
+#include "MemoryLocker.h"
 using CastIterator = std::vector<CastRelation>::iterator;
 using TitleIterator = std::vector<TitleRelation>::iterator;
 
@@ -45,6 +46,9 @@ inline size_t averagePartitionSize(const std::vector<std::span<TitleRelation>>& 
     }
     return sum / vector.size();
 }
+
+
+
 
 /**
  * returns the bit in the number at pos
@@ -117,8 +121,8 @@ chunkProcessing(const std::span<CastRelation> &leftRelation, std::unordered_map<
 inline void writeLocalResults(const std::vector<std::pair<const CastRelation*, const TitleRelation*>>& localResults,
                               std::vector<ResultRelation>& results, std::mutex& m_results) {
     std::lock_guard lk(m_results);
-    for(const auto& result: localResults) {
-        results.emplace_back(createResultTuple(*result.first, *result.second));
+    for(const auto& [castPointer, titlePointer]: localResults) {
+        results.emplace_back(createResultTuple(*castPointer, *titlePointer));
     }
 }
 
@@ -241,7 +245,20 @@ void inline partition(ThreadPool& threadPool, std::vector<CastRelation>& leftRel
     titlePartition( std::ref(threadPool), rightRelation.begin(), rightRelation.end(), 0, std::ref(partitions), std::ref(results), std::ref(m_results));
 }
 
+void lockAllMemory() {
+    if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0) {
+        std::cerr << "mlockall failed: " << std::strerror(errno) << std::endl;
+    }
+}
+
+void unlockAllMemory() {
+    if (munlockall() != 0) {
+        std::cerr << "munlockall failed: " << std::strerror(errno) << std::endl;
+    }
+}
+
 std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, unsigned int numThreads = std::jthread::hardware_concurrency()) {
+    lockAllMemory();
     setMaxBitsToCompare(numThreads);
     missingPartitions.store(numPartitionsToExpect);
     auto& castRelation = const_cast<std::vector<CastRelation>&>(leftRelation);
@@ -251,11 +268,16 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
     std::vector<PartitionPair> partitions(numPartitionsToExpect);
     ThreadPool threadPool(numThreads);
     std::vector<ResultRelation> results;
-    results.reserve(26810);
+    results.reserve(leftRelation.size());
+    //auto vectorMLock = MemoryLocker(results.data(), results.size());
+    //auto cLock = MemoryLocker(castRelation.data(), castRelation.size());
+    //auto tLock = MemoryLocker(titleRelation.data(), titleRelation.size());
+    //setRealtimePriority();
     std::mutex m_results;
     partition(threadPool, castRelation, titleRelation, partitions, results, m_results);
     std::unique_lock l_threads(m_threads);
     cv_threads.wait(l_threads, []{return missingPartitions == 0;});
+    unlockAllMemory();
     return results;
 }
 
