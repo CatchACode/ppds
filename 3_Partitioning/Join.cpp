@@ -17,18 +17,25 @@
 #include <unordered_map>
 #include <iostream>
 #include <gtest/gtest.h>
+#include "generated_variables.h"
 #include "Partitioning.h"
 #include <bitset>
 #include "HashJoin.h"
 #include "TimerUtil.hpp"
+#include "SortMergeJoin.h"
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
+    /*
     auto results = performPartitionJoin(castRelation, titleRelation, numThreads);
     //auto results = performCacheSizedThreadedHashJoin(castRelation, titleRelation);
     std::cout << "castRelation.size(): " << castRelation.size() << '\n';
     std::cout << "titleRelation.size(): " << titleRelation.size() << '\n';
     std::cout << "results.size(): " << results.size() << '\n';
-    return results;
+     */
+    auto& leftRelation = const_cast<std::vector<CastRelation>&>(castRelation);
+    auto& rightRelation = const_cast<std::vector<TitleRelation>&>(titleRelation);
+    std::sort(leftRelation.begin(), leftRelation.end(), [](const auto& a, const auto& b){return a.movieId < b.movieId;});
+    return performThreadedSortJoin(leftRelation, rightRelation, numThreads);
 }
 
 TEST(PartioningTest, TestJoiningTuples) {
@@ -184,4 +191,19 @@ TEST(PartitioningTest, TestBullshit) {
     results.reserve(26810);
     timer.pause();
     std::cout << "Time: " << printString(timer) << '\n';
+}
+
+
+TEST(PartitioningTest, TestSortMergeFaster) {
+    const auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_zipfian1gb.csv"));
+    const auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
+    Timer timer("timer");
+    timer.start();
+    auto& castRelation = const_cast<std::vector<CastRelation>&>(castRelations);
+    auto& titleRelation = const_cast<std::vector<TitleRelation>&>(titleRelations);
+    std::sort(castRelation.begin(), castRelation.end(), [](const auto& a, const auto& b){return a.movieId < b.movieId;});
+    auto results = performThreadedSortJoin(castRelation, titleRelation, 8);
+    timer.pause();
+    std::cout << "Timer: " << printString(timer) << '\n';
+    std::cout << "results.size(): " << results.size() << '\n';
 }

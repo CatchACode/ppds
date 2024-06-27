@@ -94,8 +94,6 @@ struct PartitionPair {
 
 inline void hashJoinMap(std::span<CastRelation> leftRelation, std::span<TitleRelation> rightRelation, std::vector<ResultRelation>& results,
                         std::mutex& m_results) {
-    std::vector<ResultRelation> localResults;
-    localResults.reserve(leftRelation.size());
     if (leftRelation.empty() || rightRelation.empty()) {
         return;
     }
@@ -107,17 +105,10 @@ inline void hashJoinMap(std::span<CastRelation> leftRelation, std::span<TitleRel
     for (const auto &record: leftRelation) {
         auto it = map.find(record.movieId);
         if (it != map.end()) {
-            //std::scoped_lock lk(m_results);
-            //localResults.emplace_back(createResultTuple(record, *it->second));
-            size_t localIndex = indexCounter.fetch_add(1);
-            createResultTuple(results[localIndex], record, *map[record.movieId]);
+            std::lock_guard lk(m_results);
+            results.emplace_back(createResultTuple(record, *map[record.movieId]));
         }
     }
-
-    for(const auto& result: localResults) {
-
-    }
-
 }
 
 
@@ -236,8 +227,7 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
     std::vector<PartitionPair> partitions(numPartitionsToExpect);
     ThreadPool threadPool(numThreads);
     std::vector<ResultRelation> results;
-    results.resize(leftRelation.size());
-    //results.reserve(26810);
+    results.reserve(leftRelation.size());
     std::mutex m_results;
     partition(threadPool, castRelation, titleRelation, partitions, results, m_results);
     std::unique_lock l_threads(m_threads);
