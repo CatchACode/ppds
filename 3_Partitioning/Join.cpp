@@ -170,7 +170,7 @@ TEST(PartitioningTest, TestPerformJoin) {
 
     Timer timer("timer");
     timer.start();
-    auto results = performPartitionJoin(castRelations, titleRelations, 8);
+    auto results = performPartitionJoin(castRelations, titleRelations, 16);
     timer.pause();
     std::cout << "Join Time: " << printString(timer) << '\n';
     //auto results = performCacheSizedThreadedHashJoin(castRelations, titleRelations, std::jthread::hardware_concurrency());
@@ -178,4 +178,10 @@ TEST(PartitioningTest, TestPerformJoin) {
 }
 
 TEST(PartitioningTest, TestBullshit) {
+    Timer timer("t");
+    std::vector<ResultRelation> results;
+    timer.start();
+    results.reserve(26810);
+    timer.pause();
+    std::cout << "Time: " << printString(timer) << '\n';
 }

@@ -331,5 +331,31 @@ static constexpr size_t NUM_FIELD_CAST_RELATION = 7;
 
       return result;
     }
+    inline ResultRelation createResultTuple(ResultRelation& result, const CastRelation& cast, const TitleRelation& title) {
+        // Assign values from title to result
+        result.titleId = title.titleId;
+        std::memcpy(result.title, title.title, 200);
+        std::memcpy(result.imdbIndex, title.imdbIndex, 12);
+        result.kindId = title.kindId;
+        result.productionYear = title.productionYear;
+        result.imdbId = title.imdbId;
+        std::memcpy(result.phoneticCode, title.phoneticCode, 5);
+        result.episodeOfId = title.episodeOfId;
+        result.seasonNr = title.seasonNr;
+        result.episodeNr = title.episodeNr;
+        std::memcpy(result.seriesYears, title.seriesYears, 49);
+        std::memcpy(result.md5sum, title.md5sum, 32);
+
+        // Assign values from castInfo to result
+        result.castInfoId = cast.castInfoId;
+        result.personId = cast.personId;
+        result.movieId = cast.movieId;
+        result.personRoleId = cast.personRoleId;
+        std::memcpy(result.note, cast.note, 100);
+        result.nrOrder = cast.nrOrder;
+        result.roleId = cast.roleId;
+
+        return result;
+    }
 
 #endif //JOINUTIL_HPP

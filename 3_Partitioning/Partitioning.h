@@ -26,6 +26,7 @@ static std::hash<int32_t> hasher;
 static std::condition_variable cv_threads;
 static std::mutex m_threads;
 static std::atomic_size_t missingPartitions;
+static std::atomic_size_t indexCounter;
 
 constexpr static const std::size_t PARTITION_SIZE = L2_CACHE_SIZE / (sizeof(CastRelation*) + sizeof(uint32_t));
 
@@ -94,6 +95,7 @@ struct PartitionPair {
 inline void hashJoinMap(std::span<CastRelation> leftRelation, std::span<TitleRelation> rightRelation, std::vector<ResultRelation>& results,
                         std::mutex& m_results) {
     std::vector<ResultRelation> localResults;
+    localResults.reserve(leftRelation.size());
     if (leftRelation.empty() || rightRelation.empty()) {
         return;
     }
@@ -105,10 +107,17 @@ inline void hashJoinMap(std::span<CastRelation> leftRelation, std::span<TitleRel
     for (const auto &record: leftRelation) {
         auto it = map.find(record.movieId);
         if (it != map.end()) {
-            std::scoped_lock lk(m_results);
-            results.emplace_back(createResultTuple(record, *it->second));
+            //std::scoped_lock lk(m_results);
+            //localResults.emplace_back(createResultTuple(record, *it->second));
+            size_t localIndex = indexCounter.fetch_add(1);
+            createResultTuple(results[localIndex], record, *map[record.movieId]);
         }
     }
+
+    for(const auto& result: localResults) {
+
+    }
+
 }
 
 
@@ -227,11 +236,14 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
     std::vector<PartitionPair> partitions(numPartitionsToExpect);
     ThreadPool threadPool(numThreads);
     std::vector<ResultRelation> results;
-    results.reserve(26810);
+    results.resize(26810);
+    //results.reserve(26810);
     std::mutex m_results;
     partition(threadPool, castRelation, titleRelation, partitions, results, m_results);
     std::unique_lock l_threads(m_threads);
     cv_threads.wait(l_threads, []{return missingPartitions == 0;});
+    size_t endSize = indexCounter.load();
+    results.resize(endSize);
     return results;
 }
 
