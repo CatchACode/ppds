@@ -51,11 +51,11 @@ inline size_t appendStep(const uint8_t& steps, const bool step, const uint8_t po
 
 constexpr const std::size_t MAX_HASHMAP_SIZE = L2_CACHE_SIZE / (sizeof(int32_t) + sizeof(CastRelation*));
 
-inline void setMaxBitsToCompare(const std::size_t relationSize) {
+inline void setMaxBitsToCompare(const std::size_t numThreads) {
     //auto minimumNumOfHashMaps = std::ceil(relationSize / MAX_HASHMAP_SIZE);
     //if(minimumNumOfHashMaps == 0) {minimumNumOfHashMaps = 1;}
     //maxBitsToCompare = static_cast<std::size_t>(std::ceil(std::log2(minimumNumOfHashMaps)));
-    maxBitsToCompare = relationSize;
+    maxBitsToCompare = std::ceil(std::log(numThreads));
     if(maxBitsToCompare == 0) {maxBitsToCompare = 1;}
     numPartitionsToExpect = static_cast<std::size_t>(std::pow(2, maxBitsToCompare));
 }
@@ -67,6 +67,14 @@ inline uint32_t bitmask() {
     }
     return mask;
 }
+
+struct PartitionPair {
+    std::atomic_bool alreadyStored = false;
+    std::span<CastRelation> castSpan;
+    std::span<TitleRelation> titleSpan;
+};
+
+
 
 /**
  * @param begin iterator to the start of the cast relation
@@ -123,7 +131,6 @@ void inline titlePartition(ThreadPool& threadPool, const TitleIterator begin, co
                           std::atomic_size_t& counter) {
     if(position >= maxBitsToCompare) { // Write to the partition vector
         if(begin != end) {
-            std::unique_lock lk (m_titlePartitions);
             titlePartitions[hasher(begin->titleId) & bitmask()] = std::span<TitleRelation>(begin, end);
         }
         counter.fetch_add(1, std::memory_order_seq_cst);
@@ -140,7 +147,6 @@ void inline castPartition(ThreadPool& threadPool, const CastIterator begin, cons
                           std::atomic_size_t& counter) {
     if(position >= maxBitsToCompare) {
         if(begin != end) {
-            std::unique_lock lk(m_castPartitions);
             castPartitions[hasher(begin->movieId) & bitmask()] = std::span<CastRelation>(begin, end);
         }
         counter++;
@@ -231,9 +237,9 @@ inline size_t averagePartitionSize(const std::vector<std::span<TitleRelation>>& 
 }
 
 std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, unsigned int numThreads = std::thread::hardware_concurrency()) {
-    setMaxBitsToCompare(3);
-    std::vector<CastRelation>& castRelation = const_cast<std::vector<CastRelation>&>(leftRelation);
-    std::vector<TitleRelation>& titleRelation = const_cast<std::vector<TitleRelation>&>(rightRelation);
+    setMaxBitsToCompare(numThreads);
+    auto& castRelation = const_cast<std::vector<CastRelation>&>(leftRelation);
+    auto& titleRelation = const_cast<std::vector<TitleRelation>&>(rightRelation);
     std::vector<std::span<CastRelation>> castPartitions;
     std::vector<std::span<TitleRelation>> titlePartitions;
     castPartitions.reserve(numPartitionsToExpect);
