@@ -34,7 +34,7 @@ void insert(TrieNode *root,string word, int index)
 {
     TrieNode *current=root;
     //cout << word << endl;
-    for(int i=0;i<100;i++)
+    for(int i=0;i<word.size();i++)
     //int i = 0;
     //char ch = word[i];
     //while(i < word.size())
@@ -100,13 +100,13 @@ vector<ResultRelation> performJointrie(const vector<CastRelation>& castRelation,
     // Aufbau des Trie auf der TitleRelation
     for(int i = 0; i < titleRelation.size(); i++){
         //insert(root,std::string(titleRelation[i].title, 100),i);
-        insert(root,titleRelation[i].title,i);
+        insert(root,std::string(titleRelation[i].title, 100),i);
     }///*
     for(int j = 0; j < castRelation.size(); j++){
         Ruckgabe gefunden = search(root, std::string(castRelation[j].note, 100));
         if(gefunden.endofword){
             resultTuples.emplace_back(createResultTuple(castRelation[j], titleRelation[gefunden.index]));
-            cout << "tupel Cast: " << j<< " und tupel Titel: " << gefunden.index << " wurden gejoint." << endl;
+            //cout << "tupel Cast: " << j<< " und tupel Titel: " << gefunden.index << " wurden gejoint." << endl;
         }
     }//*/
     //printTrie(root);
