@@ -97,6 +97,7 @@ inline void hashJoinMap(std::span<CastRelation> leftRelation, std::span<TitleRel
     if (leftRelation.empty() || rightRelation.empty()) {
         return;
     }
+    std::vector<std::pair<const CastRelation*, const TitleRelation*>> localResults;
     std::unordered_map<int32_t, const TitleRelation *> map;
     map.reserve(rightRelation.size());
     for (const auto &record: rightRelation) {
@@ -105,9 +106,15 @@ inline void hashJoinMap(std::span<CastRelation> leftRelation, std::span<TitleRel
     for (const auto &record: leftRelation) {
         auto it = map.find(record.movieId);
         if (it != map.end()) {
-            std::lock_guard lk(m_results);
-            results.emplace_back(createResultTuple(record, *map[record.movieId]));
+            localResults.emplace_back(&record, map[record.movieId]);
         }
+    }
+    std::lock_guard lk(m_results);
+    if(results.capacity() <= results.size() + localResults.size()) {
+        results.reserve(localResults.size() + results.size());
+    }
+    for(const auto& result: localResults) {
+        results.emplace_back(createResultTuple(*result.first, *result.second));
     }
 }
 
@@ -233,7 +240,6 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
     std::unique_lock l_threads(m_threads);
     cv_threads.wait(l_threads, []{return missingPartitions == 0;});
     size_t endSize = indexCounter.load();
-    results.resize(endSize);
     return results;
 }
 

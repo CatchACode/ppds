@@ -25,17 +25,13 @@
 #include "SortMergeJoin.h"
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    /*
     auto results = performPartitionJoin(castRelation, titleRelation, numThreads);
     //auto results = performCacheSizedThreadedHashJoin(castRelation, titleRelation);
     std::cout << "castRelation.size(): " << castRelation.size() << '\n';
     std::cout << "titleRelation.size(): " << titleRelation.size() << '\n';
     std::cout << "results.size(): " << results.size() << '\n';
-     */
-    auto& leftRelation = const_cast<std::vector<CastRelation>&>(castRelation);
-    auto& rightRelation = const_cast<std::vector<TitleRelation>&>(titleRelation);
-    std::sort(leftRelation.begin(), leftRelation.end(), [](const auto& a, const auto& b){return a.movieId < b.movieId;});
-    return performThreadedSortJoin(leftRelation, rightRelation, numThreads);
+
+    return results;
 }
 
 TEST(PartioningTest, TestJoiningTuples) {

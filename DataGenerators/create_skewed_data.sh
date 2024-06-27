@@ -41,7 +41,7 @@ cd generator_code
 #parallel python3 -m main --generator_type=Title --key_field_name="id" --output_file_size="$default_output_size" --output_file="../$fldr_name"/"title_info_uniform1mb.csv"
 
 # Files for Throughput over Threads figure
-parallel python3 -m main --generator_type=Zipfian --output_file_size="$default_output_size" --output_file="../$fldr_name"/"cast_info_zipfian1mTest.csv" --max_value=2
+parallel python3 -m main --generator_type=Zipfian --output_file_size="$default_output_size" --output_file="../$fldr_name"/"cast_info_zipfian1mTest.csv"
 
 cd ..
 
