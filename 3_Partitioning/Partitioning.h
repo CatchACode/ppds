@@ -23,6 +23,10 @@ static std::size_t maxBitsToCompare;
 static std::size_t numPartitionsToExpect;
 static std::hash<int32_t> hasher;
 
+static std::condition_variable cv_threads;
+static std::mutex m_threads;
+static std::atomic_size_t missingPartitions;
+
 constexpr static const std::size_t PARTITION_SIZE = L2_CACHE_SIZE / (sizeof(CastRelation*) + sizeof(uint32_t));
 
 
@@ -194,11 +198,15 @@ void inline castPartition(ThreadPool& threadPool, const CastIterator begin, cons
                 partitions[begin->movieId & bitmask()].alreadyStored.store(true, std::memory_order_release);
             }
         }
+        missingPartitions--;
+        if(missingPartitions == 0) {
+            cv_threads.notify_all();
+        }
         return;
     }
     auto split = castRadixPartition(begin, end, position);
     threadPool.enqueue(castPartition, std::ref(threadPool), begin, split, position + 1, std::ref(partitions), std::ref(results), std::ref(m_results));
-    castPartition(std::ref(threadPool), split, end, position + 1, std::ref(partitions), std::ref(results), std::ref(m_results));
+    castPartition(threadPool, split, end, position + 1, partitions, results, m_results);
 }
 
 
@@ -211,6 +219,7 @@ void inline partition(ThreadPool& threadPool, std::vector<CastRelation>& leftRel
 
 std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, unsigned int numThreads = std::thread::hardware_concurrency()) {
     setMaxBitsToCompare(numThreads);
+    missingPartitions.store(numPartitionsToExpect);
     auto& castRelation = const_cast<std::vector<CastRelation>&>(leftRelation);
     auto& titleRelation = const_cast<std::vector<TitleRelation>&>(rightRelation);
     //auto castRelation(leftRelation);
@@ -218,9 +227,11 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
     std::vector<PartitionPair> partitions(numPartitionsToExpect);
     ThreadPool threadPool(numThreads);
     std::vector<ResultRelation> results;
-    results.reserve(26810);
+    results.reserve(leftRelation.size());
     std::mutex m_results;
     partition(threadPool, castRelation, titleRelation, partitions, results, m_results);
+    std::unique_lock l_threads(m_threads);
+    cv_threads.wait(l_threads, []{return missingPartitions == 0;});
     return results;
 }
 
