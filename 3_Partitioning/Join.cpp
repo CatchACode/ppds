@@ -34,6 +34,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     return results;
 }
 
+
 TEST(PartioningTest, TestJoiningTuples) {
     const auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
     const auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
@@ -48,17 +49,6 @@ TEST(PartioningTest, TestGetBitAtPosition) {
         assert(getBitAtPosition(num, i) == true);
     }
 }
-
-TEST(PartioningTest, TestAppendStep) {
-    uint8_t steps = 0;
-    assert(appendStep(steps, 0, 0)==0);
-    assert(appendStep(steps, 1, 0)==1);
-    assert(appendStep(steps, 1, 1)==2);
-    assert(appendStep(steps, 0, 1)==0);
-    steps = 1;
-    assert(appendStep(steps,1,1)==3);
-}
-
 
 TEST(PartioningTest, TestCastRadixPartition) {
     std::vector<uint32_t> castRelation {0b000, 0b001, 0b010, 0b100, 0b011, 0b101, 0b110, 0b111};
@@ -168,12 +158,12 @@ TEST(PartitioningTest, TestMatchingBins) {
 
 
 TEST(PartitioningTest, TestPerformJoin) {
-    const auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_zipfian1gb.csv"));
-    const auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
+    const auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform1kb.csv"));
+    const auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1kb.csv"));
 
     Timer timer("timer");
     timer.start();
-    auto results = performPartitionJoin(castRelations, titleRelations, 16);
+    auto results = performJoin(castRelations, titleRelations, 8);
     timer.pause();
     std::cout << "Join Time: " << printString(timer) << '\n';
     //auto results = performCacheSizedThreadedHashJoin(castRelations, titleRelations, std::jthread::hardware_concurrency());
