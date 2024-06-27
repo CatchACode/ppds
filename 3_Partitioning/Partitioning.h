@@ -84,11 +84,11 @@ inline void uint32Partition(std::vector<int32_t>& vector) {
 
 constexpr const std::size_t MAX_HASHMAP_SIZE = L2_CACHE_SIZE / (sizeof(int32_t) + sizeof(CastRelation*));
 
-inline void setMaxBitsToCompare(const std::size_t numBitsToCompare) {
-    //auto minimumNumOfHashMaps = std::ceil(sizeRelationVector / MAX_HASHMAP_SIZE);
-    //if(minimumNumOfHashMaps == 0) {minimumNumOfHashMaps = 1;}
-    //maxBitsToCompare = static_cast<std::size_t>(std::ceil(std::log2(minimumNumOfHashMaps)));
-    maxBitsToCompare = numBitsToCompare;
+inline void setMaxBitsToCompare(const std::size_t relationSize) {
+    auto minimumNumOfHashMaps = std::ceil(sizeRelationVector / MAX_HASHMAP_SIZE);
+    if(minimumNumOfHashMaps == 0) {minimumNumOfHashMaps = 1;}
+    maxBitsToCompare = static_cast<std::size_t>(std::ceil(std::log2(minimumNumOfHashMaps)));
+    //maxBitsToCompare = numBitsToCompare;
     if(maxBitsToCompare == 0) {maxBitsToCompare = 1;}
     numPartitionsToExpect = static_cast<std::size_t>(std::pow(2, maxBitsToCompare));
 }
@@ -191,7 +191,7 @@ void inline partition(ThreadPool& threadPool, std::vector<CastRelation>& leftRel
                       std::vector<std::span<CastRelation>>& castPartitions, std::vector<std::span<TitleRelation>>& titlePartitions,
                       unsigned int numThreads = std::jthread::hardware_concurrency()) {
     std::vector<std::atomic_bool> finishedPartitions(numPartitionsToExpect);
-    setMaxBitsToCompare(3);
+    setMaxBitsToCompare(leftRelation.size());
     castPartitions.resize(numPartitionsToExpect);
     titlePartitions.resize(numPartitionsToExpect);
     std::mutex m_castPartitions;
