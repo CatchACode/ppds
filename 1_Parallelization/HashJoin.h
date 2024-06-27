@@ -9,6 +9,8 @@
 #include <map>
 #include <unordered_map>
 #include <span>
+#include <ranges>
+#include <algorithm>
 
 #include "JoinUtils.hpp"
 

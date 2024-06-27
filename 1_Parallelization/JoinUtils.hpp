@@ -17,7 +17,7 @@
 
 #include <cstring>
 #include <fstream>
-#include <sstream>1
+#include <sstream>
 #include <iostream>
 #include <vector>
 
