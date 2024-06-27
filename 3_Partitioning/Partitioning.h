@@ -27,7 +27,8 @@ static std::condition_variable cv_threads;
 static std::mutex m_threads;
 static std::atomic_size_t missingPartitions;
 
-constexpr static const std::size_t PARTITION_SIZE = L2_CACHE_SIZE / (sizeof(CastRelation*) + sizeof(uint32_t));
+constexpr const std::size_t MAX_HASHMAP_SIZE = L2_CACHE_SIZE / (sizeof(int32_t) + sizeof(CastRelation*));
+
 
 
 inline size_t averagePartitionSize(const std::vector<std::span<CastRelation>>& vector) {
@@ -55,15 +56,6 @@ inline bool getBitAtPosition(int32_t num, int pos) {
     // Perform bitwise AND with the mask and shift right to get the bit at pos
     return (num & mask) >> pos;
 }
-
-/**
- * Appends a bit (0,1) to the front of the steps number
- */
-inline size_t appendStep(const uint8_t& steps, const bool step, const uint8_t position) {
-    return steps + (step << position);
-}
-
-constexpr const std::size_t MAX_HASHMAP_SIZE = L2_CACHE_SIZE / (sizeof(int32_t) + sizeof(CastRelation*));
 
 inline void setMaxBitsToCompare(const std::size_t numThreads) {
     //auto minimumNumOfHashMaps = std::ceil(relationSize / MAX_HASHMAP_SIZE);
@@ -97,6 +89,7 @@ inline void hashJoinMap(std::span<CastRelation> leftRelation, std::span<TitleRel
         return;
     }
     std::vector<std::pair<const CastRelation*, const TitleRelation*>> localResults;
+    localResults.reserve(3500);
     std::unordered_map<int32_t, const TitleRelation *> map;
     map.reserve(rightRelation.size());
     for (const auto &record: rightRelation) {
@@ -117,7 +110,6 @@ inline void hashJoinMap(std::span<CastRelation> leftRelation, std::span<TitleRel
     }
     std::cout << "localresults: " << localResults.size() << std::endl;
 }
-
 
 
 /**
