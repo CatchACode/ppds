@@ -15,14 +15,19 @@
 #include "ThreadPool.h"
 #include <map>
 #include <assert.h>
+#include <functional>
 using CastIterator = std::vector<CastRelation>::iterator;
 using TitleIterator = std::vector<TitleRelation>::iterator;
+
+using hashFunction = std::hash<int32_t>;
+
 
 
 static std::atomic_bool titlePartitioned(false);
 static std::atomic_bool castPartitioned(false);
 static std::size_t maxBitsToCompare;
 static std::size_t numPartitionsToExpect;
+static std::hash<int32_t> hasher;
 
 constexpr static const std::size_t PARTITION_SIZE = L2_CACHE_SIZE / (sizeof(CastRelation*) + sizeof(uint32_t));
 
@@ -74,7 +79,7 @@ inline std::vector<CastRelation>::iterator castRadixPartition(const CastIterator
     auto zeroBin = begin;
     auto oneBin = end;
     while(zeroBin != oneBin && zeroBin != end) {
-        if(getBitAtPosition(zeroBin->movieId, position)) { // if true 1 is at the bit position
+        if(getBitAtPosition(hasher(zeroBin->movieId), position)) { // if true 1 is at the bit position
             std::swap(*zeroBin, *(--oneBin));
         } else { // a zero is at bit position
             zeroBin++;
@@ -94,7 +99,7 @@ inline std::vector<TitleRelation>::iterator titleRadixPartition(const TitleItera
     auto zeroBin = begin;
     auto oneBin = end;
     while(zeroBin != oneBin) {
-        if(getBitAtPosition(zeroBin->titleId, position)) {
+        if(getBitAtPosition(hasher(zeroBin->titleId), position)) {
             std::swap(*zeroBin, *(--oneBin)); // because we conveniently want to use end();
         } else {
             zeroBin++;
@@ -119,7 +124,7 @@ void inline titlePartition(ThreadPool& threadPool, const TitleIterator begin, co
     if(position >= maxBitsToCompare) { // Write to the partition vector
         if(begin != end) {
             std::unique_lock lk (m_titlePartitions);
-            titlePartitions[begin->titleId & bitmask()] = std::span<TitleRelation>(begin, end);
+            titlePartitions[hasher(begin->titleId) & bitmask()] = std::span<TitleRelation>(begin, end);
         }
         counter.fetch_add(1, std::memory_order_seq_cst);
         counter.notify_all();
@@ -136,7 +141,7 @@ void inline castPartition(ThreadPool& threadPool, const CastIterator begin, cons
     if(position >= maxBitsToCompare) {
         if(begin != end) {
             std::unique_lock lk(m_castPartitions);
-            castPartitions[begin->movieId & bitmask()] = std::span<CastRelation>(begin, end);
+            castPartitions[hasher(begin->movieId) & bitmask()] = std::span<CastRelation>(begin, end);
         }
         counter++;
         counter.notify_all();
@@ -153,7 +158,6 @@ void inline partition(ThreadPool& threadPool, std::vector<CastRelation>& leftRel
                       std::vector<std::span<CastRelation>>& castPartitions, std::vector<std::span<TitleRelation>>& titlePartitions,
                       unsigned int numThreads = std::thread::hardware_concurrency()) {
     std::vector<std::atomic_bool> finishedPartitions(numPartitionsToExpect);
-    setMaxBitsToCompare(2);
     castPartitions.resize(numPartitionsToExpect);
     titlePartitions.resize(numPartitionsToExpect);
     std::mutex m_castPartitions;
@@ -170,23 +174,45 @@ void inline partition(ThreadPool& threadPool, std::vector<CastRelation>& leftRel
     }
 }
 
-void hashJoin(std::span<CastRelation> leftRelation, std::span<TitleRelation> rightRelation, std::vector<ResultRelation>& results,
-              std::mutex& m_results) {
+inline void hashJoinMultiMap(std::span<CastRelation> leftRelation, std::span<TitleRelation> rightRelation, std::vector<ResultRelation>& results,
+                      std::mutex& m_results) {
     if(leftRelation.size() == 0 || rightRelation.size() == 0) { // either span is empty so no matches
         return;
     }
     std::unordered_multimap<int32_t, const CastRelation*> map;
     map.reserve(leftRelation.size());
     for(const auto& record: leftRelation) {
-        map.insert(std::make_pair(record.movieId, &record));
+        map.insert(std::make_pair(hasher(record.movieId), &record));
     }
+    std::cout << "Max bucket count: " << map.max_bucket_count() << '\n';
+    std::cout << "Bucket count: " << map.bucket_count() << '\n';
+
     for(const auto& record: rightRelation) {
-        if(map.contains(record.titleId)) {
-            auto iterators = map.equal_range(record.titleId);
+        if(map.contains(hasher(record.titleId))) {
+            auto iterators = map.equal_range(hasher(record.titleId));
             std::scoped_lock lk (m_results);
             for(iterators.first; iterators.first != iterators.second; ++iterators.first) {
                 results.emplace_back(createResultTuple(*iterators.first->second, record));
             }
+        }
+    }
+}
+
+inline void hashJoinMap(std::span<CastRelation> leftRelation, std::span<TitleRelation> rightRelation, std::vector<ResultRelation>& results,
+                 std::mutex& m_results) {
+    if (leftRelation.empty() || rightRelation.empty()) {
+        return;
+    }
+    std::unordered_map<int32_t, const TitleRelation *> map;
+    map.reserve(rightRelation.size());
+    for (const auto &record: rightRelation) {
+        map[hasher(record.titleId)] = &record;
+    }
+    for (const auto &record: leftRelation) {
+        auto it = map.find(hasher(record.movieId));
+        if (it != map.end()) {
+            std::scoped_lock lk(m_results);
+            results.emplace_back(createResultTuple(record, *it->second));
         }
     }
 }
@@ -207,22 +233,17 @@ inline size_t averagePartitionSize(const std::vector<std::span<TitleRelation>>& 
 }
 
 std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, unsigned int numThreads = std::thread::hardware_concurrency()) {
+    setMaxBitsToCompare(3);
     std::vector<CastRelation>& castRelation = const_cast<std::vector<CastRelation>&>(leftRelation);
     std::vector<TitleRelation>& titleRelation = const_cast<std::vector<TitleRelation>&>(rightRelation);
     std::vector<std::span<CastRelation>> castPartitions;
     std::vector<std::span<TitleRelation>> titlePartitions;
     ThreadPool threadPool(numThreads);
     partition(threadPool, castRelation, titleRelation, castPartitions, titlePartitions, numThreads);
-    assert(castPartitions.size() == titlePartitions.size());
-    std::cout << "Number of bits compared: " << maxBitsToCompare << '\n';
-    std::cout << "Number of Paritions: " << castPartitions.size() << '\n';
-    std::cout << "finished Partitioning\n";
-    std::cout << "Average cast partition size: " << averagePartitionSize(castPartitions) << '\n';
-    std::cout << "Average title partition size: " << averagePartitionSize(titlePartitions) << '\n';
     std::vector<ResultRelation> results;
     results.reserve(leftRelation.size());
     std::mutex m_results;
-    for(int i = 0; i < castPartitions.size(); ++i) {
+    for(int i = 0; i < titlePartitions.size(); ++i) {
         if(castPartitions.empty() || titlePartitions[i].empty()) {
             continue;
         }
@@ -236,12 +257,13 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
             } else {
                 chunkEnd = castPartitions[i].end();
             }
+            threadPool.enqueue(hashJoinMap, std::span<CastRelation>(chunkStart, chunkEnd), titlePartitions[i], std::ref(results),
+                               std::ref(m_results));
             chunkStart = chunkEnd;
         }
-         */
-        threadPool.enqueue(hashJoin, castPartitions[i], titlePartitions[i], std::ref(results), std::ref(m_results));
+        */
+        threadPool.enqueue(hashJoinMap, castPartitions[i], titlePartitions[i], std::ref(results), std::ref(m_results));
     }
-    std::cout << "numThreads: " << numThreads << '\n';
     return results;
 }
 

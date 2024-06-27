@@ -165,14 +165,17 @@ TEST(PartitioningTest, TestMatchingBins) {
 
 
 TEST(PartitioningTest, TestPerformJoin) {
-    const auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_zipfian1mTest.csv"));
-    const auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1mb.csv"));
+    const auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_zipfian1gb.csv"));
+    const auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
 
     Timer timer("timer");
     timer.start();
-    auto results = performPartitionJoin(castRelations, titleRelations, 1);
+    auto results = performPartitionJoin(castRelations, titleRelations, 8);
     timer.pause();
     std::cout << "Join Time: " << printString(timer) << '\n';
     //auto results = performCacheSizedThreadedHashJoin(castRelations, titleRelations, std::jthread::hardware_concurrency());
     std::cout << "results.size(): " << results.size() << '\n';
+}
+
+TEST(PartitioningTest, TestBullshit) {
 }
