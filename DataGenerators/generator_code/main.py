@@ -2,6 +2,7 @@
 
 
 from util import *
+from generators.ZipfianCastInfoGenerator import ZipfianCastInfoGenerator
 from generators.UniformCastInfoGenerator import UniformCastInfoGenerator
 from generators.MatchRateCastInfoGenerator import MatchRateCastInfoGenerator
 from generators.TitleGenerator import TitleGenerator
@@ -43,7 +44,7 @@ def main():
 	parser.add_argument('--match_rate', required=False, type=float, default=100, help='Match rate, so the percentage of keys that will find/match a key')
 	parser.add_argument('--output_file_size', required=True, type=int, default=DEFAULT_OUTPUT_FILE_SIZE, help='Filesize of the output file in Byte')
 	parser.add_argument('--output_file', required=True, help='Output file for generated data')
-	parser.add_argument('--num_records', type=int)
+
 
 	print("\n\n")
 	args = parser.parse_args()
@@ -52,18 +53,14 @@ def main():
 		generator = UniformCastInfoGenerator(args.min_value, args.max_value, args.key_field_name, args.id_field_name)
 		numberOfRecords = calcNumberOfRecords(args.output_file_size, CAST_INFO["size"])
 		schema = CAST_INFO["schema"]
+	elif args.generator_type == 'Zipfian':
+		generator = ZipfianCastInfoGenerator(args.min_value, args.max_value, args.key_field_name, args.id_field_name)
+		numberOfRecords = calcNumberOfRecords(args.output_file_size, CAST_INFO["size"])
+		schema = CAST_INFO["schema"]
 	elif args.generator_type == 'Title':
 		generator = TitleGenerator(args.min_value, args.max_value, args.key_field_name, args.id_field_name)
 		numberOfRecords = calcNumberOfRecords(args.output_file_size, TITLE["size"])
 		schema = TITLE["schema"]
-	elif args.generator_type == 'MatchRate':
-		generator = MatchRateCastInfoGenerator(args.min_value, args.max_value, args.key_field_name, args.id_field_name, args.match_rate)
-		numberOfRecords = 0
-		if args.num_records:
-			numberOfRecords = args.num_records
-		else:
-			numberOfRecords = calcNumberOfRecords(args.output_file_size, TITLE["size"])
-		schema = CAST_INFO["schema"]
 	else:
 		printFail(f"Invalid generator type {args.generator_type}")
 		exit(-1)
