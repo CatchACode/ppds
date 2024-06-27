@@ -226,6 +226,7 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
         if(castPartitions.empty() || titlePartitions[i].empty()) {
             continue;
         }
+        /*
         // Split castPartition in chunks
         auto chunkStart = castPartitions[i].begin();
         auto chunkEnd = castPartitions[i].begin();
@@ -235,9 +236,10 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
             } else {
                 chunkEnd = castPartitions[i].end();
             }
-            threadPool.enqueue(hashJoin, castPartitions[i], titlePartitions[i], std::ref(results), std::ref(m_results));
             chunkStart = chunkEnd;
         }
+         */
+        threadPool.enqueue(hashJoin, castPartitions[i], titlePartitions[i], std::ref(results), std::ref(m_results));
     }
     std::cout << "numThreads: " << numThreads << '\n';
     return results;
