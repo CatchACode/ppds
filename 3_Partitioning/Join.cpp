@@ -12,7 +12,7 @@
     limitations under the License.
 */
 
-#include "TimerUtil.hpp"
+//#include "TimerUtil.hpp"
 #include "JoinUtils.hpp"
 #include <unordered_map>
 #include <iostream>
@@ -20,9 +20,10 @@
 #include "Partitioning.h"
 #include <bitset>
 #include "HashJoin.h"
+#include "TimerUtil.hpp"
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    auto results = performPartitionJoin(castRelation, titleRelation, std::jthread::hardware_concurrency());
+    auto results = performPartitionJoin(castRelation, titleRelation, std::thread::hardware_concurrency());
     //auto results = performCacheSizedThreadedHashJoin(castRelation, titleRelation);
     std::cout << "castRelation.size(): " << castRelation.size() << '\n';
     std::cout << "titleRelation.size(): " << titleRelation.size() << '\n';
@@ -64,20 +65,8 @@ TEST(PartioningTest, TestCastRadixPartition) {
     }
 }
 
-TEST(PartioningTest, uint32Partiton) {
-    std::vector<int32_t> castRelation {0b000, 0b001, 0b010, 0b100, 0b011, 0b101, 0b110, 0b111, 0b1000, 0b1001, 0b1010,0b1100,0b1101,0b1111};
-    auto threadPool = std::make_shared<ThreadPool>(1);
-
-    uint32Partition(castRelation);
-    for(const auto& num: castRelation) {
-        std::bitset<sizeof(uint32_t)> temp(num);
-        std::cout << temp << std::endl;
-    }
-
-}
-
 TEST(PartioningTest, castPartition) {
-    auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
+    auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform1gb.csv"));
     setMaxBitsToCompare(leftRelation.size());
     ThreadPool threadPool(16);
     std::mutex m;
@@ -122,7 +111,7 @@ TEST(PartioningTest, titlePartition) {
 
 
 TEST(PartitioningTest, TestTitleRadixPartition) {
-    auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
+    auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1mb.csv"));
 
     auto split = titleRadixPartition(titleRelations.begin(), titleRelations.end(), 0);
     for(auto it = titleRelations.begin(); it != split; ++it) {
@@ -134,7 +123,7 @@ TEST(PartitioningTest, TestTitleRadixPartition) {
 }
 
 TEST(PartitioningTest, TestCastRadixPartition) {
-    auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
+    auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform1mb.csv"));
     auto split = castRadixPartition(castRelations.begin(), castRelations.end(), 0);
     for(auto it = castRelations.begin(); it != split; ++it) {
         std::cout << std::bitset<sizeof(int32_t)*8>(it->movieId) << std::endl;
@@ -151,11 +140,11 @@ TEST(PartitioningTest, TestBitMask) {
 
 
 TEST(PartitioningTest, TestMatchingBins) {
-    auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"));
+    auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform1mb.csv"));
     auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
     std::vector<std::span<CastRelation>> castPartitions;
     std::vector<std::span<TitleRelation>> titlePartitions;
-    ThreadPool threadPool(std::jthread::hardware_concurrency());
+    ThreadPool threadPool(std::thread::hardware_concurrency());
     partition(threadPool, castRelations, titleRelations, castPartitions, titlePartitions);
     std::cout << "castPartitions: " << castPartitions.size() << '\n';
     std::cout << "titleParitions: " << titlePartitions.size() << '\n';
@@ -176,14 +165,14 @@ TEST(PartitioningTest, TestMatchingBins) {
 
 
 TEST(PartitioningTest, TestPerformJoin) {
-    const auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_zipfian1gb.csv"));
-    const auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
+    const auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_zipfian1mTest.csv"));
+    const auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1mb.csv"));
 
-    Timer timer("Join");
+    Timer timer("timer");
     timer.start();
-    auto results = performPartitionJoin(castRelations, titleRelations, 16);
-    //auto results = performCacheSizedThreadedHashJoin(castRelations, titleRelations, std::jthread::hardware_concurrency());
+    auto results = performPartitionJoin(castRelations, titleRelations, 1);
     timer.pause();
-    std::cout << "Join took: " << printString(timer) << '\n';
+    std::cout << "Join Time: " << printString(timer) << '\n';
+    //auto results = performCacheSizedThreadedHashJoin(castRelations, titleRelations, std::jthread::hardware_concurrency());
     std::cout << "results.size(): " << results.size() << '\n';
 }

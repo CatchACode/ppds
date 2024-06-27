@@ -29,23 +29,19 @@ twenty_mebi_byte=10485760;
 #default_output_size=1
 #default_output_size=$one_kibi_byte
 #default_output_size=$half_mebi_byte
-#default_output_size=$one_mebi_byte
-default_output_size=$one_gebi_byte
+default_output_size=$one_mebi_byte
+#default_output_size=$one_gebi_byte
 #default_output_size=$twenty_mebi_byte
 #default_output_size=$one_hundret_mebi_byte
 fldr_name="data"
 
-[ ! -d "$fldr_name" ] && mkdir -p "$fldr_name"
-echo "Deleting all data in $fldr_name..."
-rm -rf $fldr_name/*_matching.csv
-
 echo "Creating the data files now..."
 cd generator_code
 # We require only one file for the title table, as we purely change cast_info
-parallel python3 -m main --generator_type=Title --key_field_name="id" --output_file_size="$default_output_size" --output_file="../$fldr_name"/"title_info_matching.csv" --num_records=8659209
+#parallel python3 -m main --generator_type=Title --key_field_name="id" --output_file_size="$default_output_size" --output_file="../$fldr_name"/"title_info_uniform1mb.csv"
 
 # Files for Throughput over Threads figure
-parallel python3 -m main --generator_type=MatchRate --output_file_size="$default_output_size" --output_file="../$fldr_name"/"cast_info_matching80.csv" --match_rate=80.0 --max_value=8659209 --num_records=8659209
+parallel python3 -m main --generator_type=Zipfian --output_file_size="$default_output_size" --output_file="../$fldr_name"/"cast_info_zipfian1mTest.csv" --max_value=2
 
 cd ..
 

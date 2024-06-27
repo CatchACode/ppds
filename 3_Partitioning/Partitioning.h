@@ -14,6 +14,7 @@
 #include <span>
 #include "ThreadPool.h"
 #include <map>
+#include <assert.h>
 using CastIterator = std::vector<CastRelation>::iterator;
 using TitleIterator = std::vector<TitleRelation>::iterator;
 
@@ -43,52 +44,13 @@ inline size_t appendStep(const uint8_t& steps, const bool step, const uint8_t po
     return steps + (step << position);
 }
 
-
-inline std::vector<int32_t>::iterator radixPartition(std::vector<int32_t>::iterator begin, std::vector<int32_t>::iterator end, uint8_t position) {
-    auto zeroBin = begin;
-    auto oneBin = end;
-    while(zeroBin != oneBin) {
-        if(getBitAtPosition(*zeroBin, position)) {
-            std::swap(*zeroBin, *(--oneBin));
-        } else {
-            zeroBin++;
-        }
-    }
-    return zeroBin;
-}
-
-inline void uint32Partition(std::shared_ptr<ThreadPool>& threadPool, std::vector<int32_t>::iterator begin, std::vector<int32_t>::iterator end, uint8_t position, std::atomic_size_t& counter) {
-    if(position >= maxBitsToCompare) {
-        counter++;
-        counter.notify_all();
-        //std::cout << "Counter is now " << current << std::endl;
-        return;
-    }
-
-    auto split = radixPartition(begin, end, position);
-    auto p1 = threadPool->enqueue(uint32Partition, threadPool, begin, split, position + 1, std::ref(counter));
-    auto p2 = threadPool->enqueue(uint32Partition, threadPool, split, end, position + 1, std::ref(counter));
-}
-
-inline void uint32Partition(std::vector<int32_t>& vector) {
-    maxBitsToCompare = 3;
-    auto threadPool = std::make_shared<ThreadPool>(8);
-    std::atomic_size_t counter(0);
-    uint32Partition(threadPool, vector.begin(), vector.end(), 0, counter);
-    size_t expected = 8;
-    while(counter < expected) {
-        counter.wait(expected - 1, std::memory_order_acquire);
-    }
-    std::cout << "counter: " << counter.load() << std::endl;
-}
-
 constexpr const std::size_t MAX_HASHMAP_SIZE = L2_CACHE_SIZE / (sizeof(int32_t) + sizeof(CastRelation*));
 
 inline void setMaxBitsToCompare(const std::size_t relationSize) {
-    auto minimumNumOfHashMaps = std::ceil(sizeRelationVector / MAX_HASHMAP_SIZE);
-    if(minimumNumOfHashMaps == 0) {minimumNumOfHashMaps = 1;}
-    maxBitsToCompare = static_cast<std::size_t>(std::ceil(std::log2(minimumNumOfHashMaps)));
-    //maxBitsToCompare = numBitsToCompare;
+    //auto minimumNumOfHashMaps = std::ceil(relationSize / MAX_HASHMAP_SIZE);
+    //if(minimumNumOfHashMaps == 0) {minimumNumOfHashMaps = 1;}
+    //maxBitsToCompare = static_cast<std::size_t>(std::ceil(std::log2(minimumNumOfHashMaps)));
+    maxBitsToCompare = relationSize;
     if(maxBitsToCompare == 0) {maxBitsToCompare = 1;}
     numPartitionsToExpect = static_cast<std::size_t>(std::pow(2, maxBitsToCompare));
 }
@@ -189,9 +151,9 @@ void inline castPartition(ThreadPool& threadPool, const CastIterator begin, cons
 
 void inline partition(ThreadPool& threadPool, std::vector<CastRelation>& leftRelation, std::vector<TitleRelation>& rightRelation,
                       std::vector<std::span<CastRelation>>& castPartitions, std::vector<std::span<TitleRelation>>& titlePartitions,
-                      unsigned int numThreads = std::jthread::hardware_concurrency()) {
+                      unsigned int numThreads = std::thread::hardware_concurrency()) {
     std::vector<std::atomic_bool> finishedPartitions(numPartitionsToExpect);
-    setMaxBitsToCompare(leftRelation.size());
+    setMaxBitsToCompare(2);
     castPartitions.resize(numPartitionsToExpect);
     titlePartitions.resize(numPartitionsToExpect);
     std::mutex m_castPartitions;
@@ -244,7 +206,7 @@ inline size_t averagePartitionSize(const std::vector<std::span<TitleRelation>>& 
     return sum / vector.size();
 }
 
-std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, unsigned int numThreads = std::jthread::hardware_concurrency()) {
+std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, unsigned int numThreads = std::thread::hardware_concurrency()) {
     std::vector<CastRelation>& castRelation = const_cast<std::vector<CastRelation>&>(leftRelation);
     std::vector<TitleRelation>& titleRelation = const_cast<std::vector<TitleRelation>&>(rightRelation);
     std::vector<std::span<CastRelation>> castPartitions;
@@ -264,7 +226,18 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
         if(castPartitions.empty() || titlePartitions[i].empty()) {
             continue;
         }
-        threadPool.enqueue(hashJoin, castPartitions[i], titlePartitions[i], std::ref(results), std::ref(m_results));
+        // Split castPartition in chunks
+        auto chunkStart = castPartitions[i].begin();
+        auto chunkEnd = castPartitions[i].begin();
+        while(chunkStart != castPartitions[i].end()) {
+            if(std::distance(chunkEnd, castPartitions[i].end()) > MAX_HASHMAP_SIZE) {
+                chunkEnd = std::next(chunkEnd, MAX_HASHMAP_SIZE);
+            } else {
+                chunkEnd = castPartitions[i].end();
+            }
+            threadPool.enqueue(hashJoin, castPartitions[i], titlePartitions[i], std::ref(results), std::ref(m_results));
+            chunkStart = chunkEnd;
+        }
     }
     std::cout << "numThreads: " << numThreads << '\n';
     return results;

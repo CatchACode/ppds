@@ -22,21 +22,17 @@ function parallel {
 one_gebi_byte=1073741824
 one_hundret_mebi_byte=104857600
 one_mebi_byte=1048576
-default_output_size=$one_mebi_byte
-# default_output_size=$one_gebi_byte
+#default_output_size=$one_mebi_byte
+default_output_size=$one_gebi_byte
 fldr_name="data"
-
-[ ! -d "$fldr_name" ] && mkdir -p "$fldr_name"
-echo "Deleting all data in $fldr_name..."
-rm -rf $fldr_name/*
 
 echo "Creating the data files now..."
 cd generator_code
 # We require only one file for the title table, as we purely change cast_info
-parallel python3 -m main --generator_type=Title --key_field_name="id" --output_file_size="$default_output_size" --output_file="../$fldr_name"/"title_info_uniform.csv"
+parallel python3 -m main --generator_type=Title --key_field_name="id" --output_file_size="$default_output_size" --output_file="../$fldr_name"/"title_info_uniform1gb.csv"
 
 # Files for Throughput over Threads figure
-parallel python3 -m main --generator_type=Uniform --output_file_size="$default_output_size" --output_file="../$fldr_name"/"cast_info_uniform.csv"
+parallel python3 -m main --generator_type=Uniform --output_file_size="$default_output_size" --output_file="../$fldr_name"/"cast_info_uniform1gb.csv"
 cd ..
 
 wait
