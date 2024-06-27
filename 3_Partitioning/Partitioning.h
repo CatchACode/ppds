@@ -97,9 +97,9 @@ inline void probeMap(const std::span<CastRelation>& leftRelation, const std::uno
     }
 }
 
-inline void chunkProcessing(std::span<CastRelation>& leftRelation, std::span<TitleRelation>& rightRelation,
-                            std::unordered_map<int32_t, const TitleRelation*>& map,
-                            std::vector<std::pair<const CastRelation*, const TitleRelation*>>& localResults) {
+inline void
+chunkProcessing(const std::span<CastRelation> &leftRelation, std::unordered_map<int32_t, const TitleRelation *> &map,
+                std::vector<std::pair<const CastRelation *, const TitleRelation *>> &localResults) {
     auto chunkStart = leftRelation.begin();
     auto chunkEnd = leftRelation.begin();
     while(chunkStart != leftRelation.end()) {
@@ -114,7 +114,7 @@ inline void chunkProcessing(std::span<CastRelation>& leftRelation, std::span<Tit
     }
 }
 
-inline void writeLocalResults(std::vector<std::pair<const CastRelation*, const TitleRelation*>>& localResults,
+inline void writeLocalResults(const std::vector<std::pair<const CastRelation*, const TitleRelation*>>& localResults,
                               std::vector<ResultRelation>& results, std::mutex& m_results) {
     std::lock_guard lk(m_results);
     for(const auto& result: localResults) {
@@ -132,7 +132,7 @@ inline void hashJoinMap(std::span<CastRelation> leftRelation, std::span<TitleRel
     std::unordered_map<int32_t, const TitleRelation *> map;
     map.reserve(rightRelation.size());
     buildMap(rightRelation, map);
-    chunkProcessing(leftRelation, rightRelation, map, localResults);
+    chunkProcessing(leftRelation, map, localResults);
     writeLocalResults(localResults, results, m_results);
 }
 
@@ -241,7 +241,7 @@ void inline partition(ThreadPool& threadPool, std::vector<CastRelation>& leftRel
     titlePartition( std::ref(threadPool), rightRelation.begin(), rightRelation.end(), 0, std::ref(partitions), std::ref(results), std::ref(m_results));
 }
 
-std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, unsigned int numThreads = std::thread::hardware_concurrency()) {
+std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, unsigned int numThreads = std::jthread::hardware_concurrency()) {
     setMaxBitsToCompare(numThreads);
     missingPartitions.store(numPartitionsToExpect);
     auto& castRelation = const_cast<std::vector<CastRelation>&>(leftRelation);
