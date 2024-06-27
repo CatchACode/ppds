@@ -80,8 +80,47 @@ struct PartitionPair {
     std::span<TitleRelation> titleSpan;
 };
 
+inline void buildMap(const std::span<TitleRelation>& rightRelation, std::unordered_map<int32_t, const TitleRelation*>& map) {
+    for(const auto& record: rightRelation) {
+        map[record.titleId] = &record;
+    }
+}
 
+inline void probeMap(const std::span<CastRelation>& leftRelation, const std::unordered_map<int32_t, const TitleRelation*>& map,
+                     std::vector<std::pair<const CastRelation*, const TitleRelation*>>& localResults) {
+    const auto mapEnd = map.end();
+    for(const auto& record: leftRelation) {
+        auto it = map.find(record.movieId);
+        if(it != mapEnd) {
+            localResults.emplace_back(&record, it->second);
+        }
+    }
+}
 
+inline void chunkProcessing(std::span<CastRelation>& leftRelation, std::span<TitleRelation>& rightRelation,
+                            std::unordered_map<int32_t, const TitleRelation*>& map,
+                            std::vector<std::pair<const CastRelation*, const TitleRelation*>>& localResults) {
+    auto chunkStart = leftRelation.begin();
+    auto chunkEnd = leftRelation.begin();
+    while(chunkStart != leftRelation.end()) {
+        if(std::distance(chunkEnd, leftRelation.end()) < MAX_HASHMAP_SIZE) {
+            chunkEnd = std::next(chunkEnd, MAX_HASHMAP_SIZE);
+        } else {
+            chunkEnd = leftRelation.end();
+        }
+        probeMap(leftRelation, map, localResults);
+        map.clear();
+        chunkStart = chunkEnd;
+    }
+}
+
+inline void writeLocalResults(std::vector<std::pair<const CastRelation*, const TitleRelation*>>& localResults,
+                              std::vector<ResultRelation>& results, std::mutex& m_results) {
+    std::lock_guard lk(m_results);
+    for(const auto& result: localResults) {
+        results.emplace_back(createResultTuple(*result.first, *result.second));
+    }
+}
 
 inline void hashJoinMap(std::span<CastRelation> leftRelation, std::span<TitleRelation> rightRelation, std::vector<ResultRelation>& results,
                         std::mutex& m_results) {
@@ -89,25 +128,12 @@ inline void hashJoinMap(std::span<CastRelation> leftRelation, std::span<TitleRel
         return;
     }
     std::vector<std::pair<const CastRelation*, const TitleRelation*>> localResults;
-    localResults.reserve(3500);
+    localResults.reserve(leftRelation.size());
     std::unordered_map<int32_t, const TitleRelation *> map;
     map.reserve(rightRelation.size());
-    for (const auto &record: rightRelation) {
-        map[record.titleId] = &record;
-    }
-    for (const auto &record: leftRelation) {
-        auto it = map.find(record.movieId);
-        if (it != map.end()) {
-            localResults.emplace_back(&record, map[record.movieId]);
-        }
-    }
-    std::lock_guard lk(m_results);
-    if(results.capacity() <= results.size() + localResults.size()) {
-        results.reserve(localResults.size() + results.size());
-    }
-    for(const auto& result: localResults) {
-        results.emplace_back(createResultTuple(*result.first, *result.second));
-    }
+    buildMap(rightRelation, map);
+    chunkProcessing(leftRelation, rightRelation, map, localResults);
+    writeLocalResults(localResults, results, m_results);
 }
 
 
@@ -161,7 +187,7 @@ inline std::vector<TitleRelation>::iterator titleRadixPartition(const TitleItera
  * @param counter counts number of finished partitions, so main thread can know when all final partition are created
  */
 
-void inline titlePartition(ThreadPool& threadPool, const TitleIterator& begin, const TitleIterator& end,
+void inline titlePartition(ThreadPool& threadPool, const TitleIterator begin, const TitleIterator end,
                            uint8_t position, std::vector<PartitionPair>& partitions, std::vector<ResultRelation>& results,
                            std::mutex& m_results) {
     if(position >= maxBitsToCompare) { // Write to the partition vector
@@ -179,17 +205,17 @@ void inline titlePartition(ThreadPool& threadPool, const TitleIterator& begin, c
     }
     auto split = titleRadixPartition(begin, end, position);
     threadPool.enqueue(titlePartition, std::ref(threadPool), begin, split, position + 1, std::ref(partitions), std::ref(results), std::ref(m_results));
-    titlePartition(std::ref(threadPool), std::ref(split), std::ref(end),position + 1, std::ref(partitions), std::ref(results), std::ref(m_results));
+    titlePartition(std::ref(threadPool), split, end,position + 1, std::ref(partitions), std::ref(results), std::ref(m_results));
 }
 
-void inline castPartition(ThreadPool& threadPool, const CastIterator& begin, const CastIterator& end,
+void inline castPartition(ThreadPool& threadPool, const CastIterator begin, const CastIterator end,
                           uint8_t position, std::vector<PartitionPair>& partitions, std::vector<ResultRelation>& results,
                           std::mutex& m_results) {
     if(position >= maxBitsToCompare) {
         if(begin != end) {
             if(partitions[begin->movieId & bitmask()].alreadyStored.load(std::memory_order_acquire)) {
                 // Something is already stored! -> other Partition is filled
-                hashJoinMap( std::span<CastRelation>(begin, end), partitions[hasher(begin->movieId) & bitmask()].titleSpan, std::ref(results), std::ref(m_results));
+                hashJoinMap(std::span<CastRelation>(begin, end), partitions[hasher(begin->movieId) & bitmask()].titleSpan, std::ref(results), std::ref(m_results));
                 partitions[begin->movieId & bitmask()].alreadyStored.store(true, std::memory_order_release);
             } else {
                 partitions[begin->movieId & bitmask()].castSpan = std::span<CastRelation>(begin, end);
@@ -203,7 +229,7 @@ void inline castPartition(ThreadPool& threadPool, const CastIterator& begin, con
         return;
     }
     auto split = castRadixPartition(begin, end, position);
-    threadPool.enqueue(castPartition, std::ref(threadPool), std::ref(begin), std::ref(split), position + 1, std::ref(partitions), std::ref(results), std::ref(m_results));
+    threadPool.enqueue(castPartition, std::ref(threadPool), begin, split, position + 1, std::ref(partitions), std::ref(results), std::ref(m_results));
     castPartition(threadPool, split, end, position + 1, partitions, results, m_results);
 }
 

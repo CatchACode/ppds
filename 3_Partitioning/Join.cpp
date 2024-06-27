@@ -158,8 +158,8 @@ TEST(PartitioningTest, TestMatchingBins) {
 
 
 TEST(PartitioningTest, TestPerformJoin) {
-    const auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform1kb.csv"));
-    const auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1kb.csv"));
+    const auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_zipfian1gb.csv"));
+    const auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
 
     Timer timer("timer");
     timer.start();
