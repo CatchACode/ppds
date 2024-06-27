@@ -26,7 +26,6 @@ static std::hash<int32_t> hasher;
 static std::condition_variable cv_threads;
 static std::mutex m_threads;
 static std::atomic_size_t missingPartitions;
-static std::atomic_size_t indexCounter;
 
 constexpr static const std::size_t PARTITION_SIZE = L2_CACHE_SIZE / (sizeof(CastRelation*) + sizeof(uint32_t));
 
@@ -116,6 +115,7 @@ inline void hashJoinMap(std::span<CastRelation> leftRelation, std::span<TitleRel
     for(const auto& result: localResults) {
         results.emplace_back(createResultTuple(*result.first, *result.second));
     }
+    std::cout << "localresults: " << localResults.size() << std::endl;
 }
 
 
@@ -170,7 +170,7 @@ inline std::vector<TitleRelation>::iterator titleRadixPartition(const TitleItera
  * @param counter counts number of finished partitions, so main thread can know when all final partition are created
  */
 
-void inline titlePartition(ThreadPool& threadPool, const TitleIterator begin, const TitleIterator end,
+void inline titlePartition(ThreadPool& threadPool, const TitleIterator& begin, const TitleIterator& end,
                            uint8_t position, std::vector<PartitionPair>& partitions, std::vector<ResultRelation>& results,
                            std::mutex& m_results) {
     if(position >= maxBitsToCompare) { // Write to the partition vector
@@ -188,10 +188,10 @@ void inline titlePartition(ThreadPool& threadPool, const TitleIterator begin, co
     }
     auto split = titleRadixPartition(begin, end, position);
     threadPool.enqueue(titlePartition, std::ref(threadPool), begin, split, position + 1, std::ref(partitions), std::ref(results), std::ref(m_results));
-    titlePartition(std::ref(threadPool), split, end, position + 1, std::ref(partitions), std::ref(results), std::ref(m_results));
+    titlePartition(std::ref(threadPool), std::ref(split), std::ref(end),position + 1, std::ref(partitions), std::ref(results), std::ref(m_results));
 }
 
-void inline castPartition(ThreadPool& threadPool, const CastIterator begin, const CastIterator end,
+void inline castPartition(ThreadPool& threadPool, const CastIterator& begin, const CastIterator& end,
                           uint8_t position, std::vector<PartitionPair>& partitions, std::vector<ResultRelation>& results,
                           std::mutex& m_results) {
     if(position >= maxBitsToCompare) {
@@ -212,7 +212,7 @@ void inline castPartition(ThreadPool& threadPool, const CastIterator begin, cons
         return;
     }
     auto split = castRadixPartition(begin, end, position);
-    threadPool.enqueue(castPartition, std::ref(threadPool), begin, split, position + 1, std::ref(partitions), std::ref(results), std::ref(m_results));
+    threadPool.enqueue(castPartition, std::ref(threadPool), std::ref(begin), std::ref(split), position + 1, std::ref(partitions), std::ref(results), std::ref(m_results));
     castPartition(threadPool, split, end, position + 1, partitions, results, m_results);
 }
 
@@ -234,12 +234,11 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
     std::vector<PartitionPair> partitions(numPartitionsToExpect);
     ThreadPool threadPool(numThreads);
     std::vector<ResultRelation> results;
-    results.reserve(leftRelation.size());
+    results.reserve(26810);
     std::mutex m_results;
     partition(threadPool, castRelation, titleRelation, partitions, results, m_results);
     std::unique_lock l_threads(m_threads);
     cv_threads.wait(l_threads, []{return missingPartitions == 0;});
-    size_t endSize = indexCounter.load();
     return results;
 }
 
