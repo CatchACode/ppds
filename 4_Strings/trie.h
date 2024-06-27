@@ -86,18 +86,19 @@ vector<ResultRelation> performJointrie(const vector<CastRelation>& castRelation,
     vector<ResultRelation> resultTuples;
     TrieNode *root=new TrieNode();
     // Aufbau des Trie auf der CastRelation
-    /*
+    ///*
     for(int i = 0; i < castRelation.size(); i++){
-        insert(root,castRelation[i].note,i);
+        insert(root,string(castRelation[i].note, 100),i);
     }
     for(int j = 0; j < titleRelation.size(); j++){
-        Ruckgabe gefunden = search(root, titleRelation[j].title);
+        Ruckgabe gefunden = search(root, string(titleRelation[j].title, 100));
         if(gefunden.endofword){
             resultTuples.emplace_back(createResultTuple(castRelation[gefunden.index], titleRelation[j]));
             cout << "tupel Cast: " << gefunden.index << " und tupel Titel: " << j << " wurden gejoint." << endl;
         }
-    }*/
+    }//*/
     // Aufbau des Trie auf der TitleRelation
+    /*
     for(int i = 0; i < titleRelation.size(); i++){
         //insert(root,std::string(titleRelation[i].title, 100),i);
         insert(root,std::string(titleRelation[i].title, 100),i);
