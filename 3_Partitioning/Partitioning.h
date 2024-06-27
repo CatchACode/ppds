@@ -206,10 +206,10 @@ inline void hashJoinMap(std::span<CastRelation> leftRelation, std::span<TitleRel
     std::unordered_map<int32_t, const TitleRelation *> map;
     map.reserve(rightRelation.size());
     for (const auto &record: rightRelation) {
-        map[hasher(record.titleId)] = &record;
+        map[record.titleId] = &record;
     }
     for (const auto &record: leftRelation) {
-        auto it = map.find(hasher(record.movieId));
+        auto it = map.find(record.movieId);
         if (it != map.end()) {
             std::scoped_lock lk(m_results);
             results.emplace_back(createResultTuple(record, *it->second));
