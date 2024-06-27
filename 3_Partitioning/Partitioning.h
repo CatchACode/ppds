@@ -191,7 +191,7 @@ void inline partition(ThreadPool& threadPool, std::vector<CastRelation>& leftRel
                       std::vector<std::span<CastRelation>>& castPartitions, std::vector<std::span<TitleRelation>>& titlePartitions,
                       unsigned int numThreads = std::jthread::hardware_concurrency()) {
     std::vector<std::atomic_bool> finishedPartitions(numPartitionsToExpect);
-    setMaxBitsToCompare(6);
+    setMaxBitsToCompare(3);
     castPartitions.resize(numPartitionsToExpect);
     titlePartitions.resize(numPartitionsToExpect);
     std::mutex m_castPartitions;
@@ -209,7 +209,7 @@ void inline partition(ThreadPool& threadPool, std::vector<CastRelation>& leftRel
 }
 
 void hashJoin(std::span<CastRelation> leftRelation, std::span<TitleRelation> rightRelation, std::vector<ResultRelation>& results,
-              std::mutex& m_results, std::atomic_size_t& counter) {
+              std::mutex& m_results) {
     if(leftRelation.size() == 0 || rightRelation.size() == 0) { // either span is empty so no matches
         return;
     }
@@ -259,12 +259,11 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
     std::vector<ResultRelation> results;
     results.reserve(leftRelation.size());
     std::mutex m_results;
-    std::atomic_size_t counter(0);
     for(int i = 0; i < castPartitions.size(); ++i) {
         if(castPartitions.empty() || titlePartitions[i].empty()) {
             continue;
         }
-        threadPool.enqueue(hashJoin, castPartitions[i], titlePartitions[i], std::ref(results), std::ref(m_results), std::ref(counter));
+        threadPool.enqueue(hashJoin, castPartitions[i], titlePartitions[i], std::ref(results), std::ref(m_results));
     }
     std::cout << "numThreads: " << numThreads << '\n';
     return results;
