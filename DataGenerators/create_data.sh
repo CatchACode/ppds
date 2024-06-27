@@ -22,7 +22,8 @@ function parallel {
 one_gebi_byte=1073741824
 one_hundret_mebi_byte=104857600
 one_mebi_byte=1048576
-default_output_size=1024
+#default_output_size=1024
+default_output_size=2048
 #default_output_size=$one_mebi_byte
 #default_output_size=$one_gebi_byte
 fldr_name="data"
