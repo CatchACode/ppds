@@ -84,11 +84,11 @@ inline void uint32Partition(std::vector<int32_t>& vector) {
 
 constexpr const std::size_t MAX_HASHMAP_SIZE = L2_CACHE_SIZE / (sizeof(int32_t) + sizeof(CastRelation*));
 
-inline void setMaxBitsToCompare(const std::size_t sizeRelationVector) {
+inline void setMaxBitsToCompare(const std::size_t numBitsToCompare) {
     //auto minimumNumOfHashMaps = std::ceil(sizeRelationVector / MAX_HASHMAP_SIZE);
     //if(minimumNumOfHashMaps == 0) {minimumNumOfHashMaps = 1;}
     //maxBitsToCompare = static_cast<std::size_t>(std::ceil(std::log2(minimumNumOfHashMaps)));
-    maxBitsToCompare = sizeRelationVector;
+    maxBitsToCompare = numBitsToCompare;
     if(maxBitsToCompare == 0) {maxBitsToCompare = 1;}
     numPartitionsToExpect = static_cast<std::size_t>(std::pow(2, maxBitsToCompare));
 }
@@ -252,6 +252,7 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
     ThreadPool threadPool(numThreads);
     partition(threadPool, castRelation, titleRelation, castPartitions, titlePartitions, numThreads);
     assert(castPartitions.size() == titlePartitions.size());
+    std::cout << "Number of bits compared: " << maxBitsToCompare << '\n';
     std::cout << "Number of Paritions: " << castPartitions.size() << '\n';
     std::cout << "finished Partitioning\n";
     std::cout << "Average cast partition size: " << averagePartitionSize(castPartitions) << '\n';
