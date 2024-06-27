@@ -227,7 +227,7 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
     std::vector<PartitionPair> partitions(numPartitionsToExpect);
     ThreadPool threadPool(numThreads);
     std::vector<ResultRelation> results;
-    results.reserve(leftRelation.size());
+    results.reserve(26810);
     std::mutex m_results;
     partition(threadPool, castRelation, titleRelation, partitions, results, m_results);
     std::unique_lock l_threads(m_threads);
