@@ -163,7 +163,7 @@ TEST(PartitioningTest, TestPerformJoin) {
 
     Timer timer("timer");
     timer.start();
-    auto results = performJoin(castRelations, titleRelations, 8);
+    auto results = performJoin(castRelations, titleRelations, 16    );
     timer.pause();
     std::cout << "Join Time: " << printString(timer) << '\n';
     //auto results = performCacheSizedThreadedHashJoin(castRelations, titleRelations, std::jthread::hardware_concurrency());
@@ -181,8 +181,8 @@ TEST(PartitioningTest, TestBullshit) {
 
 
 TEST(PartitioningTest, TestSortMergeFaster) {
-    const auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_zipfian1gb.csv"));
-    const auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
+    const auto castRelations = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform1gb.csv"), 20000);
+    const auto titleRelations = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"), 20000);
     Timer timer("timer");
     timer.start();
     auto& castRelation = const_cast<std::vector<CastRelation>&>(castRelations);

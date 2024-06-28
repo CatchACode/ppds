@@ -22,7 +22,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set Optimization Flags
-set(CMAKE_CXX_FLAGS_DEBUG "-ggdb -O0 -fno-omit-frame-pointer")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fno-omit-frame-pointer -fno-inline")
 set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -mtune=native -fPIC -flto -funroll-loops -fno-stack-protector -fno-math-errno -fno-exceptions -fno-rtti -ffast-math -ftree-vectorize -funswitch-loops -fprefetch-loop-arrays")
 
 set(PPDS_PROJECT_DIR "${CMAKE_SOURCE_DIR}/..")
