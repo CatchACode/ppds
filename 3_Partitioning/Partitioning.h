@@ -133,10 +133,28 @@ inline void hashJoinMap(std::span<CastRelation> leftRelation, std::span<TitleRel
     }
     std::vector<std::pair<const CastRelation*, const TitleRelation*>> localResults;
     localResults.reserve(leftRelation.size());
+    std::unordered_map<int32_t, const TitleRelation*> map;
+    map.reserve(MAX_HASHMAP_SIZE);
+    auto chunkStart = rightRelation.begin();
+    auto chunkEnd = rightRelation.begin();
+    while(chunkStart != rightRelation.end()) {
+        if(std::distance(chunkEnd, rightRelation.end()) < MAX_HASHMAP_SIZE) {
+            chunkEnd = std::next(chunkEnd, MAX_HASHMAP_SIZE);
+        } else {
+            chunkEnd = rightRelation.end();
+        }
+        buildMap(std::span<TitleRelation>(chunkStart, chunkEnd), map);
+        chunkProcessing(leftRelation, map, localResults);
+        //writeLocalResults(localResults, results, m_results);
+        map.clear();
+        chunkStart = chunkEnd;
+    }
+    /*
     std::unordered_map<int32_t, const TitleRelation *> map;
     map.reserve(rightRelation.size());
     buildMap(rightRelation, map);
     chunkProcessing(leftRelation, map, localResults);
+    */
     writeLocalResults(localResults, results, m_results);
 }
 
@@ -258,7 +276,6 @@ void unlockAllMemory() {
 }
 
 std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, unsigned int numThreads = std::jthread::hardware_concurrency()) {
-    lockAllMemory();
     setMaxBitsToCompare(numThreads);
     missingPartitions.store(numPartitionsToExpect);
     auto& castRelation = const_cast<std::vector<CastRelation>&>(leftRelation);
@@ -269,15 +286,10 @@ std::vector<ResultRelation> performPartitionJoin(const std::vector<CastRelation>
     ThreadPool threadPool(numThreads);
     std::vector<ResultRelation> results;
     results.reserve(leftRelation.size());
-    //auto vectorMLock = MemoryLocker(results.data(), results.size());
-    //auto cLock = MemoryLocker(castRelation.data(), castRelation.size());
-    //auto tLock = MemoryLocker(titleRelation.data(), titleRelation.size());
-    //setRealtimePriority();
     std::mutex m_results;
     partition(threadPool, castRelation, titleRelation, partitions, results, m_results);
     std::unique_lock l_threads(m_threads);
     cv_threads.wait(l_threads, []{return missingPartitions == 0;});
-    unlockAllMemory();
     return results;
 }
 
