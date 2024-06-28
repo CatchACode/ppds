@@ -48,8 +48,8 @@ protected:
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
     //printCacheSizes();
     //std::cout << "numThreads: " << numThreads << std::endl;
-    //return performThreadedSortJoin(castRelation, titleRelation, numThreads);
-    return performSortMergeJoin(castRelation, titleRelation);
+    return performThreadedSortJoin(castRelation, titleRelation, numThreads);
+    //return performSortMergeJoin(castRelation, titleRelation);
 }
 
 TEST_F(MemoryHierarchyTest, TestJoiningTuples) {
