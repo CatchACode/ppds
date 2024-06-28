@@ -99,6 +99,13 @@ void inline processChunk(const ChunkCastRelation& chunkCastRelation, const Chunk
     size_t index = 0;
 
     while (l_it != chunkCastRelation.end && r_it != chunkTitleRelation.end) {
+        r_it = std::ranges::lower_bound(
+                chunkTitleRelation.start, chunkTitleRelation.end,
+                TitleRelation{.titleId = chunkCastRelation.start->movieId},
+                [](const TitleRelation &a, const TitleRelation &b) {
+                    return a.titleId < b.titleId;
+                }
+        ); // a Binary Search, as the spaces between matches might be very small!
         if (l_it->movieId < r_it->titleId) {
             ++l_it;
         } else if (l_it->movieId > r_it->titleId) {
@@ -161,10 +168,10 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     if(leftRelation.size() < 20000) {
         return performSortMergeJoin(leftRelation, rightRelation);
     }
-    std::cout << "CastRelation Min: " << leftRelation[0].movieId << '\n';
-    std::cout << "CastRelation Max: " << leftRelation[leftRelation.size()].movieId << '\n';
-    std::cout << "TitleRelation Min: " << rightRelation[0].titleId << '\n';
-    std::cout << "TitleRelation Max: " << rightRelation[rightRelation.size()].titleId << '\n';
+    int32_t maxTitleId = rightRelation[rightRelation.size()].titleId;
+    int32_t minTitleId = rightRelation[0].titleId;
+    int32_t maxMovieId = leftRelation[leftRelation.size()].movieId;
+    int32_t minMovieId = leftRelation[0].movieId;
     const std::size_t chunkSize = (leftRelation.size() / numThreads) > 0 ? leftRelation.size() / numThreads: leftRelation.size();
     //std::vector<ResultRelation> results(leftRelation.size());
     //std::cout << "Initialized results with a size of " << leftRelation.size() << " | size: " << results.size() << std::endl;
@@ -202,6 +209,9 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     auto chunkStart = leftRelation.begin();
     auto chunkEnd = leftRelation.begin();
     while(chunkEnd != leftRelation.end()) {
+        if(chunkStart->movieId > maxTitleId) {
+            break; // We have passed available chunks with data that may contain a match
+        }
         if((long unsigned int)std::distance(chunkEnd, leftRelation.end()) > chunkSize) {
             chunkEnd = std::next(chunkEnd, chunkSize);
         } else {
