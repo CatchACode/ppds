@@ -23,6 +23,7 @@
 #include <omp.h>
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
+
     std::cout << "Printing CastRelation notes!\n";
     for(const auto& record: castRelation) {
         std::cout << record.note << std::endl;
@@ -32,16 +33,16 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
         std::cout << record.title << std::endl;
     }
     std::cout << "\n\n";
-    Trie trie;
+    Trie<CastRelation> trie;
     std::vector<ResultRelation> results;
     // Use numThreads threads to insert into Trie
     std::vector<std::jthread> threads;
     std::atomic_size_t counter = 0;
     for(int i = 0; i < numThreads; ++i) {
-        threads.emplace_back([&trie, &titleRelation, &counter ] {
-            while(counter < titleRelation.size()) {
+        threads.emplace_back([&trie, &castRelation, &counter ] {
+            while(counter < castRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
-                trie.insert(std::string_view(titleRelation[localCounter].title), &titleRelation[localCounter]);
+                trie.insert(std::string_view(castRelation[localCounter].note), &castRelation[localCounter]);
             }
         });
     }
@@ -51,12 +52,11 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     std::vector<std::jthread> searchThreads;
     counter = 0;
     std::mutex m_results;
-    /*
     for(int i = 0; i < numThreads; ++i) {
         searchThreads.emplace_back([&trie, &titleRelation, &results, &counter, &m_results] {
             while(counter < titleRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
-                auto result = trie.search(std::string_view(titleRelation[localCounter].title, 200));
+                auto result = trie.search(std::string_view(titleRelation[localCounter].title));
                 if(result != nullptr) {
                     std::lock_guard lock(m_results);
                     results.emplace_back(createResultTuple(*result, titleRelation[localCounter]));
@@ -67,14 +67,6 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     for(auto& thread : searchThreads) {
         thread.join();
     }
-     */
-    for(const auto& title: titleRelation){
-        auto result = trie.search(std::string_view(title.title));
-        if(result != nullptr) {
-            results.emplace_back(createResultTuple(*result, title));
-        }
-    }
-
     return results;
 
     //---------------------------------------------------------------------------------------

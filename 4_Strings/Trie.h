@@ -5,15 +5,15 @@
 #include <map>
 
 #include "JoinUtils.hpp"
-
+template<typename T>
 class Trie {
 private:
     struct TrieNode {
         std::map<char, TrieNode*> children;
-        const TitleRelation* titleRelationPtr;
+        const T* dataPtr;
         std::mutex nodeMutex;  // Mutex for thread safety
 
-        TrieNode() : titleRelationPtr(nullptr) {}
+        TrieNode() : dataPtr(nullptr) {}
     };
     TrieNode* root;
 
@@ -27,9 +27,9 @@ private:
     }
 
     // Helper function to perform insertion recursively
-    void insertRecursive(TrieNode* node, std::string_view key, size_t depth, const TitleRelation* ptr) {
+    void insertRecursive(TrieNode* node, std::string_view key, size_t depth, const T* ptr) {
         if (depth == key.length()) {
-            node->titleRelationPtr = ptr;
+            node->dataPtr = ptr;
             return;
         }
 
@@ -44,9 +44,9 @@ private:
     }
 
     // Helper function to perform search recursively
-    const TitleRelation* searchRecursive(TrieNode* node, std::string_view key, size_t depth) {
+    const T* searchRecursive(TrieNode* node, std::string_view key, size_t depth) {
         if (node == nullptr) return nullptr;
-        if (depth == key.length()) return node->titleRelationPtr;
+        if (depth == key.length()) return node->dataPtr;
 
         char currentChar = key[depth];
         std::lock_guard<std::mutex> lock(node->nodeMutex); // Lock this node
@@ -68,12 +68,12 @@ public:
     }
 
     // Insert a string_view and corresponding pointer into the Trie
-    void insert(std::string_view key, const TitleRelation* ptr) {
+    void insert(std::string_view key, const T* ptr) {
         insertRecursive(root, key, 0, ptr);
     }
 
     // Search for a string_view in the Trie and return corresponding pointer
-    const TitleRelation* search(std::string_view key) {
+    const T* search(std::string_view key) {
         return searchRecursive(root, key, 0);
     }
 };
