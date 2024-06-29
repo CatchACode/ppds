@@ -126,7 +126,7 @@ TEST(StringTest, TestNestedLoopjoin) {
 }
 
 TEST(StringTest, TestTrieJoin) {
-    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_short_strings_20000.csv"), 20000);
+    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_stolen_strings.csv"), 20000);
     const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_short_strings_20000.csv"), 20000);
     Timer timer("Trie");
     timer.start();
@@ -139,7 +139,7 @@ TEST(StringTest, TestTrieJoin) {
 
 
 TEST(StringTest, TestTrieJoinSingle) {
-    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_short_strings_20000.csv"), 20000);
+    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_stolen_strings.csv"), 20000);
     const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_short_strings_20000.csv"), 20000);
     Trie<CastRelation> trie;
     std::vector<ResultRelation> results;

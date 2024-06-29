@@ -31,7 +31,8 @@ private:
     // Helper function to perform insertion recursively
     void insertRecursive(TrieNode* node, std::string_view key, size_t depth, const T* ptr) {
         if (depth == key.length()) {
-            node->dataVector.push_back(ptr);
+            std::lock_guard lock(node->nodeMutex); // Lock this node
+            node->dataVector.emplace_back(ptr);
             return;
         }
 
