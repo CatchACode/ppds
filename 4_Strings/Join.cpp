@@ -23,6 +23,9 @@
 #include <omp.h>
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
+    for(const auto& record: castRelation) {
+        std::cout << record.note << std::endl;
+    }
     Trie trie;
     std::vector<ResultRelation> results;
     // Use numThreads threads to insert into Trie
@@ -85,8 +88,8 @@ TEST(StringTest, TestNestedLoopjoin) {
 }
 
 TEST(StringTest, TestTrieJoin) {
-    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_1StringMatch.csv"), 20000);
-    const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_1StringMatch.csv"), 20000);
+    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_short_strings_1000.csv"), 20000);
+    const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_short_strings_1000.csv"), 20000);
 
     auto results = performJoin(leftRelation, rightRelation, 8);
 
