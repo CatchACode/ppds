@@ -58,6 +58,23 @@ private:
         return searchRecursive(node->children[currentChar], key, depth + 1);
     }
 
+    const T* longestPrefixMatch(TrieNode* node, std::string_view key, size_t depth, const T* longestMatchPtr) {
+        if (node == nullptr) return longestMatchPtr;
+        if (node->dataPtr != nullptr) {
+            longestMatchPtr = node->dataPtr;
+        }
+        if (depth == key.length()) return longestMatchPtr;
+
+        char currentChar = key[depth];
+        std::lock_guard<std::mutex> lock(node->nodeMutex); // Lock this node
+
+        if (node->children.find(currentChar) == node->children.end()) {
+            return longestMatchPtr;
+        }
+
+        return longestPrefixMatch(node->children[currentChar], key, depth + 1, longestMatchPtr);
+    }
+
 public:
     Trie() {
         root = new TrieNode();
@@ -75,6 +92,11 @@ public:
     // Search for a string_view in the Trie and return corresponding pointer
     const T* search(std::string_view key) {
         return searchRecursive(root, key, 0);
+    }
+
+    // Find the longest prefix match and return its dataPtr
+    const T* longestPrefix(std::string_view key) {
+        return longestPrefixMatch(root, key, 0, nullptr);
     }
 };
 #endif //PPDS_PARALLELISM_TRIE_H

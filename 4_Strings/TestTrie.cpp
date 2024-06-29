@@ -157,5 +157,16 @@ TEST_F(TestTrie, TestSharingNodes) {
     EXPECT_EQ(result, &a);
     result = trie.search("app");
     EXPECT_EQ(result, &b);
+}
 
+TEST_F(TestTrie, TestPrefixes) {
+    std::string dnbme = "Don't Be a Menace to South Central While Drinking Your Juice in the Hood (1996)";
+    std::string s = "Don't";
+
+    Trie<uint32_t> trie;
+    uint32_t a = 1;
+    uint32_t b = 2;
+    trie.insert(s, &a);
+    auto resultPtr = trie.longestPrefix(dnbme);
+    EXPECT_EQ(resultPtr, &a);
 }
