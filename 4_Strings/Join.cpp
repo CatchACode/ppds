@@ -25,6 +25,7 @@
 static int counterTest = 0;
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
+    /*
     if(counterTest == 3) {
         std::cout << "Test: " << counterTest++ << std::endl;
         std::cout << "Printing CastRelation notes!\n";
@@ -45,6 +46,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
         }
     }
     std::cout << "Test: " << counterTest++ << std::endl;
+    */
     /*
     std::cout << "Printing CastRelation notes!\n";
     for(const auto& record: castRelation) {
