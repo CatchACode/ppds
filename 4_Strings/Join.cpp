@@ -14,7 +14,7 @@
 
 #include "TimerUtil.hpp"
 #include "JoinUtils.hpp"
-#include "trie.h"
+#include "Trie.h"
 #include <unordered_map>
 #include <iostream>
 #include <gtest/gtest.h>
@@ -49,7 +49,8 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     //---------------------------------------------------------------------------------------
     // TODO: Implement a join on the strings cast.note and title.title
     // The benchmark will join on increasing string sizes: cast.note% LIKE title.title
-    return performJointrie(castRelation, titleRelation, numThreads);
+    //return performJointrie(castRelation, titleRelation, numThreads);
+    return {};
 }
 /*
 int main(){
