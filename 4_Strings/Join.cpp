@@ -34,7 +34,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
         threads.emplace_back([&trie, &castRelation, &counter ] {
             while(counter < castRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
-                trie.insert(std::string_view(castRelation[localCounter].note, 100), &castRelation[localCounter]);
+                trie.insert(std::string_view(castRelation[localCounter].note), &castRelation[localCounter]);
             }
         });
     }
@@ -44,11 +44,12 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     std::vector<std::jthread> searchThreads;
     counter = 0;
     std::mutex m_results;
+    /*
     for(int i = 0; i < numThreads; ++i) {
         searchThreads.emplace_back([&trie, &titleRelation, &results, &counter, &m_results] {
             while(counter < titleRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
-                auto result = trie.search(std::string_view(titleRelation[localCounter].title, 100));
+                auto result = trie.search(std::string_view(titleRelation[localCounter].title, 200));
                 if(result != nullptr) {
                     std::lock_guard lock(m_results);
                     results.emplace_back(createResultTuple(*result, titleRelation[localCounter]));
@@ -59,6 +60,14 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     for(auto& thread : searchThreads) {
         thread.join();
     }
+     */
+    for(const auto& title: titleRelation){
+        auto result = trie.search(std::string_view(title.title));
+        if(result != nullptr) {
+            results.emplace_back(createResultTuple(*result, title));
+        }
+    }
+
     return results;
 
     //---------------------------------------------------------------------------------------
@@ -94,8 +103,10 @@ TEST(StringTest, TestNestedLoopjoin) {
 TEST(StringTest, TestTrieJoin) {
     const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_short_strings_20000.csv"), 20000);
     const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_short_strings_20000.csv"), 20000);
-
+    Timer timer("Trie");
+    timer.start();
     auto results = performJoin(leftRelation, rightRelation, 8);
-    sleep(1);
+    timer.pause();
+    std::cout << "Join took: " << printString(timer) << std::endl;
     std::cout << results.size() << std::endl;
 }
