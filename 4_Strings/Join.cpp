@@ -23,18 +23,25 @@
 #include <omp.h>
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    std::cout << castRelationToString(castRelation[0]) << std::endl;
-    std::cout << titleRelationToString(titleRelation[0]) << std::endl;
+    std::cout << "Printing CastRelation notes!\n";
+    for(const auto& record: castRelation) {
+        std::cout << record.note << std::endl;
+    }
+    std::cout << "\n\nPrinting TitleRelation titles!\n";
+    for(const auto& record: titleRelation) {
+        std::cout << record.title << std::endl;
+    }
+    std::cout << "\n\n";
     Trie trie;
     std::vector<ResultRelation> results;
     // Use numThreads threads to insert into Trie
     std::vector<std::jthread> threads;
     std::atomic_size_t counter = 0;
     for(int i = 0; i < numThreads; ++i) {
-        threads.emplace_back([&trie, &castRelation, &counter ] {
-            while(counter < castRelation.size()) {
+        threads.emplace_back([&trie, &titleRelation, &counter ] {
+            while(counter < titleRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
-                trie.insert(std::string_view(castRelation[localCounter].note), &castRelation[localCounter]);
+                trie.insert(std::string_view(titleRelation[localCounter].title), &titleRelation[localCounter]);
             }
         });
     }

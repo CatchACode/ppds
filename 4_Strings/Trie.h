@@ -10,10 +10,10 @@ class Trie {
 private:
     struct TrieNode {
         std::map<char, TrieNode*> children;
-        const CastRelation* castRelationPtr;
+        const TitleRelation* titleRelationPtr;
         std::mutex nodeMutex;  // Mutex for thread safety
 
-        TrieNode() : castRelationPtr(nullptr) {}
+        TrieNode() : titleRelationPtr(nullptr) {}
     };
     TrieNode* root;
 
@@ -27,9 +27,9 @@ private:
     }
 
     // Helper function to perform insertion recursively
-    void insertRecursive(TrieNode* node, std::string_view key, size_t depth, const CastRelation* ptr) {
+    void insertRecursive(TrieNode* node, std::string_view key, size_t depth, const TitleRelation* ptr) {
         if (depth == key.length()) {
-            node->castRelationPtr = ptr;
+            node->titleRelationPtr = ptr;
             return;
         }
 
@@ -44,9 +44,9 @@ private:
     }
 
     // Helper function to perform search recursively
-    const CastRelation* searchRecursive(TrieNode* node, std::string_view key, size_t depth) {
+    const TitleRelation* searchRecursive(TrieNode* node, std::string_view key, size_t depth) {
         if (node == nullptr) return nullptr;
-        if (depth == key.length()) return node->castRelationPtr;
+        if (depth == key.length()) return node->titleRelationPtr;
 
         char currentChar = key[depth];
         std::lock_guard<std::mutex> lock(node->nodeMutex); // Lock this node
@@ -68,12 +68,12 @@ public:
     }
 
     // Insert a string_view and corresponding pointer into the Trie
-    void insert(std::string_view key, const CastRelation* ptr) {
+    void insert(std::string_view key, const TitleRelation* ptr) {
         insertRecursive(root, key, 0, ptr);
     }
 
     // Search for a string_view in the Trie and return corresponding pointer
-    const CastRelation* search(std::string_view key) {
+    const TitleRelation* search(std::string_view key) {
         return searchRecursive(root, key, 0);
     }
 };
