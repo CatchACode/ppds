@@ -22,7 +22,10 @@
 #include <string_view>
 #include <omp.h>
 
+static int counterTest = 0;
+
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
+    std::cout << "Test: " << counterTest++ << std::endl;
     /*
     std::cout << "Printing CastRelation notes!\n";
     for(const auto& record: castRelation) {
@@ -35,7 +38,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
 
     std::cout << "\n\n";
     */
-     Trie<CastRelation> trie;
+    Trie<CastRelation> trie;
     std::vector<ResultRelation> results;
     // Use numThreads threads to insert into Trie
     std::vector<std::jthread> threads;
