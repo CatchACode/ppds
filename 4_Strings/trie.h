@@ -62,12 +62,12 @@ Ruckgabe search(TrieNode *root,string word)
         TrieNode *node=current->children[ch];
         if(!node) {
             ret.endofword = false;
-            ret.index = INT32_MAX;
+            ret.index = -1;
             return ret;
         }
         current=node;
     }
-    ret.endofword = current->endofword;
+    ret.endofword = true; //current->endofword;
     ret.index = current->index;
     return ret;
 }
