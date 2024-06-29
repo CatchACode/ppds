@@ -24,7 +24,7 @@ protected:
 };
 
 TEST_F(TestTrie, TestSingleThreadedInsertion) {
-    Trie trie;
+    Trie<CastRelation> trie;
     Timer timer("Trie");
     timer.start();
     for(const auto& castTuple : castTuples) {
@@ -35,7 +35,7 @@ TEST_F(TestTrie, TestSingleThreadedInsertion) {
 }
 
 TEST_F(TestTrie, TestingThreadedInsertion) {
-    Trie trie;
+    Trie<CastRelation> trie;
     std::atomic_size_t counter = 0;
     std::vector<std::jthread> threads;
     threads.reserve(std::jthread::hardware_concurrency());
@@ -57,7 +57,7 @@ TEST_F(TestTrie, TestingThreadedInsertion) {
 }
 
 TEST_F(TestTrie, TestSingleThreadedSearch) {
-    Trie trie;
+    Trie<CastRelation> trie;
     for(const auto& castTuple : castTuples) {
         trie.insert(std::string_view(castTuple.note, 100), &castTuple);
     }
@@ -69,7 +69,7 @@ TEST_F(TestTrie, TestSingleThreadedSearch) {
 }
 
 TEST_F(TestTrie, TestThreadedSearch) {
-    Trie trie;
+    Trie<CastRelation> trie;
     for(const auto& castTuple : castTuples) {
         trie.insert(std::string_view(castTuple.note, 100), &castTuple);
     }
@@ -92,7 +92,7 @@ TEST_F(TestTrie, TestThreadedSearch) {
 
 
 TEST_F(TestTrie, TestThreadedInsertionValidation) {
-    Trie trie;
+    Trie<CastRelation> trie;
     std::atomic_size_t counter = 0;
     std::vector<std::jthread> threads;
     threads.reserve(std::jthread::hardware_concurrency());
@@ -122,7 +122,7 @@ TEST_F(TestTrie, TestThreadedInsertionValidation) {
 }
 
 TEST_F(TestTrie, TestJoining) {
-    Trie trie;
+    Trie<CastRelation> trie;
     std::atomic_size_t counter = 0;
     std::vector<std::jthread> threads;
     threads.reserve(std::jthread::hardware_concurrency());
@@ -143,4 +143,19 @@ TEST_F(TestTrie, TestJoining) {
     }
     timer.pause();
     std::cout << "Insertion took: " << printString(timer) << "ms" << std::endl;
+}
+
+
+TEST_F(TestTrie, TestSharingNodes) {
+    Trie<uint32_t> trie;
+    uint32_t a = 1;
+    uint32_t b = 2;
+    trie.insert("apple", &a);
+    trie.insert("app", &b);
+
+    const uint32_t* result = trie.search("apple");
+    EXPECT_EQ(result, &a);
+    result = trie.search("app");
+    EXPECT_EQ(result, &b);
+
 }
