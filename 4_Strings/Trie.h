@@ -39,7 +39,7 @@ private:
         char currentChar = key[depth];
         std::unique_lock<std::mutex> lock(node->nodeMutex); // Lock this node
 
-        if (node->children.find(currentChar) == node->children.end()) {
+        if (node->children[currentChar] == nullptr || node->children.find(currentChar) == node->children.end()) {
             node->children[currentChar] = new TrieNode();
         }
         lock.unlock();
@@ -70,7 +70,7 @@ private:
         static std::vector<const T*> emptyVector;  // Static empty vector to return if no match found
 
         if (node == nullptr) return emptyVector;
-        if (depth == key.length() || node->dataVector.size() > 0) {
+        if (depth >= key.length() || node->dataVector.size() > 0) {
             return node->dataVector;
         }
 
@@ -95,6 +95,7 @@ public:
 
     // Insert a string_view and corresponding pointer into the Trie
     void insert(std::string_view key, const T* ptr) {
+        if(key.empty()) return;
         insertRecursive(root, key, 0, ptr);
     }
 

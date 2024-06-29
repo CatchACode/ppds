@@ -25,6 +25,7 @@
 static int counterTest = 0;
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
+    /*
     if(counterTest == 3) {
         std::cout << "Test: " << counterTest++ << std::endl;
         std::cout << "Printing CastRelation notes!\n";
@@ -37,6 +38,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
         }
     }
     std::cout << "Test: " << counterTest++ << std::endl;
+    */
     /*
     std::cout << "Printing CastRelation notes!\n";
     for(const auto& record: castRelation) {
@@ -126,8 +128,8 @@ TEST(StringTest, TestNestedLoopjoin) {
 }
 
 TEST(StringTest, TestTrieJoin) {
-    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_stolen_strings.csv"), 20000);
-    const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_short_strings_20000.csv"), 20000);
+    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_stolen_strings.csv"));
+    const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_short_strings_30.csv"));
     Timer timer("Trie");
     timer.start();
     auto results = performJoin(leftRelation, rightRelation, 8);
@@ -139,8 +141,8 @@ TEST(StringTest, TestTrieJoin) {
 
 
 TEST(StringTest, TestTrieJoinSingle) {
-    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_stolen_strings.csv"), 20000);
-    const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_short_strings_20000.csv"), 20000);
+    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_stolen_strings.csv"), 10);
+    const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_short_strings_30.csv"), 30);
     Trie<CastRelation> trie;
     std::vector<ResultRelation> results;
     for(const auto& record: leftRelation) {
@@ -152,5 +154,5 @@ TEST(StringTest, TestTrieJoinSingle) {
             results.emplace_back(createResultTuple(*result, record));
         }
     }
-
+    std::cout << "results.size(): " << results.size() << std::endl;
 }

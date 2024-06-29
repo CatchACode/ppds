@@ -13,6 +13,8 @@ class TestTrie : public ::testing::Test {
 protected:
     const std::vector<CastRelation> castTuples = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_short_strings_20000.csv"));;
     const std::vector<TitleRelation> titleTuples = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_short_strings_20000.csv"));;
+    const std::vector<CastRelation> stolenCastTuples = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_stolen_strings.csv"), 100);;
+    const std::vector<TitleRelation> thirtyTitleTuples = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_short_strings_30.csv"));;
     void SetUp() override {
         // Code here will be called immediately after the constructor (right before each test).
     }
@@ -174,4 +176,55 @@ TEST_F(TestTrie, TestPrefixes) {
     EXPECT_EQ(resultPtr[0], &a);
     EXPECT_EQ(resultPtr[1], &a);
     EXPECT_EQ(resultPtr[2], &b);
+}
+
+TEST_F(TestTrie, TestStolenDataCastInsertion) {
+    Trie<CastRelation> trie;
+    std::atomic_size_t counter = 0;
+    std::vector<std::jthread> threads;
+    threads.reserve(std::jthread::hardware_concurrency());
+    Timer timer("Trie");
+    timer.start();
+    for(int i = 0; i < std::jthread::hardware_concurrency(); ++i) {
+        threads.emplace_back(
+                [&trie, &counter, i, this] {
+                    while(counter < stolenCastTuples.size()) {
+                        auto localCounter = counter.fetch_add(1);
+                        trie.insert(std::string_view(stolenCastTuples[localCounter].note, 100), &stolenCastTuples[localCounter]);
+                    }
+                }
+        );
+    }
+    for(auto& thread : threads) {
+        thread.join();
+    }
+    timer.pause();
+    std::cout << "Insertion took: " << printString(timer) << "ms" << std::endl;
+    // Validate the insertion
+    for(const auto& castTuple : stolenCastTuples) {
+        const auto result = trie.search(std::string_view(castTuple.note, 100));
+        int test = std::memcmp(result[0], &castTuple, sizeof(CastRelation));
+        std::cout << "Testing id: " << castTuple.castInfoId << " with result: " << test << "\n";
+        EXPECT_EQ(test, 0) << "Failed comparsion with notes:\n" << castTuple.note << "\n" << result[0]->note << "\n";
+    }
+}
+
+TEST_F(TestTrie, TestMultipleSharedNodes) {
+    const auto castTuples = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_broken_values.csv"));
+    Trie<CastRelation> trie;
+    for(const auto& castTuple : castTuples) {
+        trie.insert(std::string_view(castTuple.note, 100), &castTuple);
+    }
+    for(const auto& castTuple : castTuples) {
+        const auto result = trie.search(std::string_view(castTuple.note, 100));
+        bool found = false;
+        for(const auto& res : result) {
+            // Check if res and castTuple point to the same memory location
+            if(res == &castTuple) {
+                found = true;
+                break;
+            }
+        }
+        EXPECT_TRUE(found) << "Failed to find castTuple with id: " << castTuple.castInfoId << " " << castTuple.note;
+    }
 }
