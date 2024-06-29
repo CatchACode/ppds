@@ -16,36 +16,44 @@
 #include "JoinUtils.hpp"
 #include "Trie.h"
 #include <unordered_map>
+#include <thread>
 #include <iostream>
 #include <gtest/gtest.h>
+#include <string_view>
 #include <omp.h>
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-//void performJoin() {
+    Trie trie;
+    std::vector<ResultRelation> results;
+    // Use numThreads threads to insert into Trie
+    std::vector<std::jthread> threads;
+    std::atomic_size_t counter = 0;
+    for(int i = 0; i < numThreads; ++i) {
+        threads.emplace_back([&trie, &castRelation, &counter ] {
+            while(counter < castRelation.size()) {
+                auto localCounter = counter.fetch_add(1);
+                trie.insert(std::string_view(castRelation[localCounter].note, 100), &castRelation[localCounter]);
+            }
+        });
+    }
+    for(auto& thread : threads) {
+        thread.join();
+    }
+    std::vector<std::jthread> searchThreads;
+    counter = 0;
+    for(int i = 0; i < numThreads; ++i) {
+        searchThreads.emplace_back([&trie, &titleRelation, &results, &counter] {
+            while(counter < titleRelation.size()) {
+                auto localCounter = counter.fetch_add(1);
+                auto result = trie.search(std::string_view(titleRelation[localCounter].title, 100));
+                if(result != nullptr) {
+                    results.emplace_back(createResultTuple(*result, titleRelation[localCounter]));
+                }
+            }
+        });
+    }
+    return results;
 
-    //omp_set_num_threads(numThreads);
-    //std::vector<ResultRelation> resultTuples;
-    /*
-    //------------------------- Trie Test ----------------------------------
-    vector<string> strs = {"apple", "banana", "orange", "apricot", "app"};
-    for (int i = 0; i < strs.size(); i++) {
-        cout << "Der Eintrag mit Index " << i << " lautet: " << strs[i] << endl;
-    }
-    TrieNode *root=new TrieNode();
-    for (int i = 0; i < strs.size(); i++) {
-        insert(root,strs[i],i);
-    }
-    string wordToSearch = "app";
-    Ruckgabe found = search(root, wordToSearch);
-    if(found.endofword){
-        cout << "Das Wort '" << wordToSearch << "' ist im Präfixbaum enthalten und hat den index: " << found.index << endl;
-    } else{
-    cout << "Das Wort '" << wordToSearch << "' ist im Präfixbaum nicht enthalte." << endl;
-    }
-
-    cout << "----------------------------------------" << endl;
-    printTrie(root);
-     */
     //---------------------------------------------------------------------------------------
     // TODO: Implement a join on the strings cast.note and title.title
     // The benchmark will join on increasing string sizes: cast.note% LIKE title.title

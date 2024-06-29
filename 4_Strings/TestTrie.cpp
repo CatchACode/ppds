@@ -11,7 +11,7 @@
 
 class TestTrie : public ::testing::Test {
 protected:
-    const std::vector<CastRelation> castTuples = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform1mb.csv"));;
+    const std::vector<CastRelation> castTuples = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_short_strings_1000.csv"));;
     void SetUp() override {
         // Code here will be called immediately after the constructor (right before each test).
     }
