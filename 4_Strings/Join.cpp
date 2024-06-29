@@ -25,6 +25,25 @@
 static int counterTest = 0;
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
+    if(counterTest == 3) {
+        std::cout << "Test: " << counterTest++ << std::endl;
+        std::cout << "Printing CastRelation notes!\n";
+        for(const auto& record: castRelation) {
+            std::string_view noteView(record.note);
+            if(noteView.size() > 200) {
+                noteView = noteView.substr(0, 200);
+            }
+            std::cout << noteView << std::endl;
+        }
+        std::cout << "\n\nPrinting TitleRelation titles!\n";
+        for(const auto& record: titleRelation) {
+            std::string_view noteView(record.title);
+            if(noteView.size() > 200) {
+                noteView = noteView.substr(0, 200);
+            }
+            std::cout << noteView << std::endl;
+        }
+    }
     std::cout << "Test: " << counterTest++ << std::endl;
     /*
     std::cout << "Printing CastRelation notes!\n";
