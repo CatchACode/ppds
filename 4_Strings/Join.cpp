@@ -23,9 +23,11 @@
 #include <omp.h>
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
+    /*
     for(const auto& record: castRelation) {
         std::cout << record.note << std::endl;
     }
+     */
     Trie trie;
     std::vector<ResultRelation> results;
     // Use numThreads threads to insert into Trie
@@ -44,12 +46,14 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     }
     std::vector<std::jthread> searchThreads;
     counter = 0;
+    std::mutex m_results;
     for(int i = 0; i < numThreads; ++i) {
-        searchThreads.emplace_back([&trie, &titleRelation, &results, &counter] {
+        searchThreads.emplace_back([&trie, &titleRelation, &results, &counter, &m_results] {
             while(counter < titleRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
                 auto result = trie.search(std::string_view(titleRelation[localCounter].title, 100));
                 if(result != nullptr) {
+                    std::lock_guard lock(m_results);
                     results.emplace_back(createResultTuple(*result, titleRelation[localCounter]));
                 }
             }
@@ -92,6 +96,6 @@ TEST(StringTest, TestTrieJoin) {
     const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_short_strings_1000.csv"), 20000);
 
     auto results = performJoin(leftRelation, rightRelation, 8);
-
+    sleep(1);
     std::cout << results.size() << std::endl;
 }

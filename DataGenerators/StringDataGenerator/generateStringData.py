@@ -17,24 +17,24 @@ CAST_INFO = {"schema": [("id", "INTEGER"),
 						("role_id", "INTEGER")],
 			 "size" : 124}
 
-TITLE = {"schema": [("id", "INTEGER"),
-					("title", "VARCHAR(200)"),
-					("kind_id", "INTEGER"),
-					("imdb_id", "INTEGER")],
-			 "size" : 212}
-# TITLE = {"schema": [("id" , "INTEGER"),
-# 					("title", "VARCHAR(200)"),
-# 					("imdb_index", "VARCHAR(12)"),
-# 					("kind_id", "INTEGER"),
-# 					("production_year", "INTEGER"),
-# 					("imdb_id", "INTEGER"),
-# 					("phonetic_code", "VARCHAR(5)"),
-# 					("episode_of_id", "INTEGER"),
-# 					("season_nr", "INTEGER"),
-# 					("episode_nr", "INTEGER"),
-# 					("series_years", "VARCHAR(49)"),
-# 					("md5sum", "VARCHAR(32)")],
-# 			 "size" : 322}
+#TITLE = {"schema": [("id", "INTEGER"),
+#					("title", "VARCHAR(200)"),
+#					("kind_id", "INTEGER"),
+#					("imdb_id", "INTEGER")],
+#			 "size" : 212}
+TITLE = {"schema": [("id" , "INTEGER"),
+ 					("title", "VARCHAR(200)"),
+ 					("imdb_index", "VARCHAR(12)"),
+ 					("kind_id", "INTEGER"),
+ 					("production_year", "INTEGER"),
+ 					("imdb_id", "INTEGER"),
+ 					("phonetic_code", "VARCHAR(5)"),
+ 					("episode_of_id", "INTEGER"),
+ 					("season_nr", "INTEGER"),
+ 					("episode_nr", "INTEGER"),
+ 					("series_years", "VARCHAR(49)"),
+ 					("md5sum", "VARCHAR(32)")],
+ 			 "size" : 322}
 
 def main():
 	parser = argparse.ArgumentParser(description='Generate data using different types of data generators.')
