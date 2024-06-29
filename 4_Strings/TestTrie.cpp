@@ -7,6 +7,7 @@
 
 #include "Trie.h"
 #include "JoinUtils.hpp"
+#include "TimerUtil.hpp"
 
 class TestTrie : public ::testing::Test {
 protected:
@@ -23,9 +24,13 @@ protected:
 
 TEST_F(TestTrie, TestSingleThreadedInsertion) {
     Trie trie;
+    Timer timer("Trie");
+    timer.start();
     for(const auto& castTuple : castTuples) {
         trie.insert(std::string_view(castTuple.note, 100), &castTuple);
     }
+    timer.pause();
+    std::cout << "Insertion took: " << printString(timer) << "ms" << std::endl;
 }
 
 TEST_F(TestTrie, TestingThreadedInsertion) {
@@ -33,13 +38,84 @@ TEST_F(TestTrie, TestingThreadedInsertion) {
     std::atomic_size_t counter = 0;
     std::vector<std::jthread> threads;
     threads.reserve(std::jthread::hardware_concurrency());
+    Timer timer("Trie");
+    timer.start();
+    for(int i = 0; i < std::jthread::hardware_concurrency(); ++i) {
+        threads.emplace_back(
+                [&trie, &counter, i, this] {
+                    auto localCounter = counter.fetch_add(1);
+                    trie.insert(std::string_view(castTuples[localCounter].note, 100), &castTuples[localCounter]);
+                }
+                );
+    }
+    for(auto& thread : threads) {
+        thread.join();
+    }
+    timer.pause();
+    std::cout << "Insertion took: " << printString(timer) << "ms" << std::endl;
+}
+
+TEST_F(TestTrie, TestSingleThreadedSearch) {
+    Trie trie;
+    for(const auto& castTuple : castTuples) {
+        trie.insert(std::string_view(castTuple.note, 100), &castTuple);
+    }
+
+    for(const auto& castTuple : castTuples) {
+        const auto* result = trie.search(std::string_view(castTuple.note, 100));
+        ASSERT_EQ(result, &castTuple);
+    }
+}
+
+TEST_F(TestTrie, TestThreadedSearch) {
+    Trie trie;
+    for(const auto& castTuple : castTuples) {
+        trie.insert(std::string_view(castTuple.note, 100), &castTuple);
+    }
+
+    std::atomic_size_t counter = 0;
+    std::vector<std::jthread> threads;
+    threads.reserve(std::jthread::hardware_concurrency());
     for(int i = 0; i < std::jthread::hardware_concurrency(); ++i) {
         threads.emplace_back(
                 [&trie, &counter, i, this] {
                     while(counter < castTuples.size()) {
-                        trie.insert(std::string_view(castTuples[counter++].note, 100), &castTuples[counter]);
+                        auto localCounter = counter.fetch_add(1);
+                        const auto* result = trie.search(std::string_view(castTuples[localCounter].note, 100));
+                        ASSERT_EQ(result, &castTuples[localCounter]);
                     }
                 }
                 );
+    }
+}
+
+
+TEST_F(TestTrie, TestThreadedInsertionValidation) {
+    Trie trie;
+    std::atomic_size_t counter = 0;
+    std::vector<std::jthread> threads;
+    threads.reserve(std::jthread::hardware_concurrency());
+    Timer timer("Trie");
+    timer.start();
+    for(int i = 0; i < std::jthread::hardware_concurrency(); ++i) {
+        threads.emplace_back(
+                [&trie, &counter, i, this] {
+                    while(counter < castTuples.size()) {
+                        auto localCounter = counter.fetch_add(1);
+                        trie.insert(std::string_view(castTuples[localCounter].note, 100), &castTuples[localCounter]);
+                    }
+                }
+        );
+    }
+    for(auto& thread : threads) {
+        thread.join();
+    }
+    timer.pause();
+    std::cout << "Insertion took: " << printString(timer) << "ms" << std::endl;
+    for(const auto& castTuple : castTuples) {
+        const auto* result = trie.search(std::string_view(castTuple.note, 100));
+        int test = std::memcmp(result, &castTuple, sizeof(CastRelation));
+        std::cout << "Testing id: " << castTuple.castInfoId << " with result: " << test << "\n";
+        EXPECT_EQ(test, 0) << "Failed comparsion with notes:\n" << castTuple.note << "\n" << result->note << "\n";
     }
 }
