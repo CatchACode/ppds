@@ -91,7 +91,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
                     titleView = titleView.substr(0, 200);
                 }
                 auto foundResults = trie.longestPrefix(titleView);
-                if(!results.empty()) {
+                if(!foundResults.empty()) {
                     std::lock_guard lock(m_results);
                     for(const auto& result : foundResults) {
                         results.emplace_back(createResultTuple(*result, titleRelation[localCounter]));
@@ -144,4 +144,23 @@ TEST(StringTest, TestTrieJoin) {
     timer.pause();
     std::cout << "Join took: " << printString(timer) << std::endl;
     std::cout << results.size() << std::endl;
+}
+
+
+
+TEST(StringTest, TestTrieJoinSingle) {
+    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_short_strings_20000.csv"), 20000);
+    const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_short_strings_20000.csv"), 20000);
+    Trie<CastRelation> trie;
+    std::vector<ResultRelation> results;
+    for(const auto& record: leftRelation) {
+        trie.insert(record.note, &record);
+    }
+    for(const auto& record: rightRelation) {
+        auto foundResults = trie.longestPrefix(record.title);
+        for(const auto& result : foundResults) {
+            results.emplace_back(createResultTuple(*result, record));
+        }
+    }
+
 }
