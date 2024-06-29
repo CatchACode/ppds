@@ -1,19 +1,21 @@
 #ifndef PPDS_PARALLELISM_TRIE_H
+#define PPDS_PARALLELISM_TRIE_H
+
 #include <mutex>
 #include <string>
 #include <optional>
 #include <map>
+#include <vector>
 
-#include "JoinUtils.hpp"
 template<typename T>
 class Trie {
 private:
     struct TrieNode {
         std::map<char, TrieNode*> children;
-        const T* dataPtr;
+        std::vector<const T*> dataVector;
         std::mutex nodeMutex;  // Mutex for thread safety
 
-        TrieNode() : dataPtr(nullptr) {}
+        TrieNode() {}
     };
     TrieNode* root;
 
@@ -29,7 +31,7 @@ private:
     // Helper function to perform insertion recursively
     void insertRecursive(TrieNode* node, std::string_view key, size_t depth, const T* ptr) {
         if (depth == key.length()) {
-            node->dataPtr = ptr;
+            node->dataVector.push_back(ptr);
             return;
         }
 
@@ -44,35 +46,41 @@ private:
     }
 
     // Helper function to perform search recursively
-    const T* searchRecursive(TrieNode* node, std::string_view key, size_t depth) {
-        if (node == nullptr) return nullptr;
-        if (depth == key.length()) return node->dataPtr;
+    const std::vector<const T*>& searchRecursive(TrieNode* node, std::string_view key, size_t depth) {
+        static std::vector<const T*> emptyVector;  // Static empty vector to return if no match found
+
+        if (node == nullptr) return emptyVector;
+        if (depth == key.length()) {
+            return node->dataVector;
+        }
 
         char currentChar = key[depth];
         std::lock_guard<std::mutex> lock(node->nodeMutex); // Lock this node
 
         if (node->children.find(currentChar) == node->children.end()) {
-            return nullptr;
+            return emptyVector;
         }
 
         return searchRecursive(node->children[currentChar], key, depth + 1);
     }
 
-    const T* longestPrefixMatch(TrieNode* node, std::string_view key, size_t depth, const T* longestMatchPtr) {
-        if (node == nullptr) return longestMatchPtr;
-        if (node->dataPtr != nullptr) {
-            longestMatchPtr = node->dataPtr;
+    // Helper function to perform longest prefix match recursively and return a reference to the vector of data pointers
+    const std::vector<const T*>& longestPrefixRecursive(TrieNode* node, std::string_view key, size_t depth) {
+        static std::vector<const T*> emptyVector;  // Static empty vector to return if no match found
+
+        if (node == nullptr) return emptyVector;
+        if (depth == key.length() || node->dataVector.size() > 0) {
+            return node->dataVector;
         }
-        if (depth == key.length()) return longestMatchPtr;
 
         char currentChar = key[depth];
         std::lock_guard<std::mutex> lock(node->nodeMutex); // Lock this node
 
         if (node->children.find(currentChar) == node->children.end()) {
-            return longestMatchPtr;
+            return emptyVector;
         }
 
-        return longestPrefixMatch(node->children[currentChar], key, depth + 1, longestMatchPtr);
+        return longestPrefixRecursive(node->children[currentChar], key, depth + 1);
     }
 
 public:
@@ -89,14 +97,15 @@ public:
         insertRecursive(root, key, 0, ptr);
     }
 
-    // Search for a string_view in the Trie and return corresponding pointer
-    const T* search(std::string_view key) {
+    // Search for an exact string_view in the Trie and return the first associated pointer
+    const std::vector<const T*>& search(std::string_view key) {
         return searchRecursive(root, key, 0);
     }
 
-    // Find the longest prefix match and return its dataPtr
-    const T* longestPrefix(std::string_view key) {
-        return longestPrefixMatch(root, key, 0, nullptr);
+    // Find the longest prefix match and return a reference to the vector of associated pointers
+    const std::vector<const T*>& longestPrefix(std::string_view key) {
+        return longestPrefixRecursive(root, key, 0);
     }
 };
-#endif //PPDS_PARALLELISM_TRIE_H
+
+#endif // PPDS_PARALLELISM_TRIE_H

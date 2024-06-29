@@ -90,10 +90,12 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
                 if(titleView.size() > 200) {
                     titleView = titleView.substr(0, 200);
                 }
-                auto result = trie.longestPrefix(titleView);
-                if(result != nullptr) {
+                auto foundResults = trie.longestPrefix(titleView);
+                if(!results.empty()) {
                     std::lock_guard lock(m_results);
-                    results.emplace_back(createResultTuple(*result, titleRelation[localCounter]));
+                    for(const auto& result : foundResults) {
+                        results.emplace_back(createResultTuple(*result, titleRelation[localCounter]));
+                    }
                 }
             }
         });

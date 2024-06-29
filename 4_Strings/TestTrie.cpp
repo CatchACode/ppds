@@ -63,8 +63,8 @@ TEST_F(TestTrie, TestSingleThreadedSearch) {
     }
 
     for(const auto& castTuple : castTuples) {
-        const auto* result = trie.search(std::string_view(castTuple.note, 100));
-        ASSERT_EQ(result, &castTuple);
+        const auto result = trie.search(std::string_view(castTuple.note, 100));
+        ASSERT_EQ(result[0], &castTuple);
     }
 }
 
@@ -82,8 +82,8 @@ TEST_F(TestTrie, TestThreadedSearch) {
                 [&trie, &counter, i, this] {
                     while(counter < castTuples.size()) {
                         auto localCounter = counter.fetch_add(1);
-                        const auto* result = trie.search(std::string_view(castTuples[localCounter].note, 100));
-                        ASSERT_EQ(result, &castTuples[localCounter]);
+                        const auto result = trie.search(std::string_view(castTuples[localCounter].note, 100));
+                        EXPECT_EQ(result[0], &castTuples[localCounter]);
                     }
                 }
                 );
@@ -114,10 +114,10 @@ TEST_F(TestTrie, TestThreadedInsertionValidation) {
     timer.pause();
     std::cout << "Insertion took: " << printString(timer) << "ms" << std::endl;
     for(const auto& castTuple : castTuples) {
-        const auto* result = trie.search(std::string_view(castTuple.note, 100));
-        int test = std::memcmp(result, &castTuple, sizeof(CastRelation));
+        const auto result = trie.search(std::string_view(castTuple.note, 100));
+        int test = std::memcmp(result[0], &castTuple, sizeof(CastRelation));
         std::cout << "Testing id: " << castTuple.castInfoId << " with result: " << test << "\n";
-        EXPECT_EQ(test, 0) << "Failed comparsion with notes:\n" << castTuple.note << "\n" << result->note << "\n";
+        EXPECT_EQ(test, 0) << "Failed comparsion with notes:\n" << castTuple.note << "\n" << result[0]->note << "\n";
     }
 }
 
@@ -153,20 +153,25 @@ TEST_F(TestTrie, TestSharingNodes) {
     trie.insert("apple", &a);
     trie.insert("app", &b);
 
-    const uint32_t* result = trie.search("apple");
-    EXPECT_EQ(result, &a);
-    result = trie.search("app");
-    EXPECT_EQ(result, &b);
+    auto results = trie.search("apple");
+    EXPECT_EQ(results[0], &a);
+    results = trie.search("app");
+    EXPECT_EQ(results[0], &b);
 }
 
 TEST_F(TestTrie, TestPrefixes) {
     std::string dnbme = "Don't Be a Menace to South Central While Drinking Your Juice in the Hood (1996)";
     std::string s = "Don't";
+    std::string s2 = "Don't";
 
     Trie<uint32_t> trie;
     uint32_t a = 1;
     uint32_t b = 2;
     trie.insert(s, &a);
+    trie.insert(s2, &a);
+    trie.insert(s2, &b);
     auto resultPtr = trie.longestPrefix(dnbme);
-    EXPECT_EQ(resultPtr, &a);
+    EXPECT_EQ(resultPtr[0], &a);
+    EXPECT_EQ(resultPtr[1], &a);
+    EXPECT_EQ(resultPtr[2], &b);
 }
