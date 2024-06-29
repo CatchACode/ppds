@@ -56,6 +56,9 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
             }
         });
     }
+    for(auto& thread : searchThreads) {
+        thread.join();
+    }
     return results;
 
     //---------------------------------------------------------------------------------------
@@ -89,8 +92,8 @@ TEST(StringTest, TestNestedLoopjoin) {
 }
 
 TEST(StringTest, TestTrieJoin) {
-    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_short_strings_1000.csv"), 20000);
-    const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_short_strings_1000.csv"), 20000);
+    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_short_strings_20000.csv"), 20000);
+    const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_short_strings_20000.csv"), 20000);
 
     auto results = performJoin(leftRelation, rightRelation, 8);
     sleep(1);

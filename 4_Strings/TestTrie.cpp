@@ -11,7 +11,8 @@
 
 class TestTrie : public ::testing::Test {
 protected:
-    const std::vector<CastRelation> castTuples = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_short_strings_1000.csv"));;
+    const std::vector<CastRelation> castTuples = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_short_strings_20000.csv"));;
+    const std::vector<TitleRelation> titleTuples = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_short_strings_20000.csv"));;
     void SetUp() override {
         // Code here will be called immediately after the constructor (right before each test).
     }
@@ -118,4 +119,28 @@ TEST_F(TestTrie, TestThreadedInsertionValidation) {
         std::cout << "Testing id: " << castTuple.castInfoId << " with result: " << test << "\n";
         EXPECT_EQ(test, 0) << "Failed comparsion with notes:\n" << castTuple.note << "\n" << result->note << "\n";
     }
+}
+
+TEST_F(TestTrie, TestJoining) {
+    Trie trie;
+    std::atomic_size_t counter = 0;
+    std::vector<std::jthread> threads;
+    threads.reserve(std::jthread::hardware_concurrency());
+    Timer timer("Trie");
+    timer.start();
+    for(int i = 0; i < std::jthread::hardware_concurrency(); ++i) {
+        threads.emplace_back(
+                [&trie, &counter, i, this] {
+                    while(counter < castTuples.size()) {
+                        auto localCounter = counter.fetch_add(1);
+                        trie.insert(std::string_view(castTuples[localCounter].note, 100), &castTuples[localCounter]);
+                    }
+                }
+        );
+    }
+    for(auto& thread : threads) {
+        thread.join();
+    }
+    timer.pause();
+    std::cout << "Insertion took: " << printString(timer) << "ms" << std::endl;
 }
