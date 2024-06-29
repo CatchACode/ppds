@@ -23,11 +23,8 @@
 #include <omp.h>
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    /*
-    for(const auto& record: castRelation) {
-        std::cout << record.note << std::endl;
-    }
-     */
+    std::cout << castRelationToString(castRelation[0]) << std::endl;
+    std::cout << titleRelationToString(titleRelation[0]) << std::endl;
     Trie trie;
     std::vector<ResultRelation> results;
     // Use numThreads threads to insert into Trie
