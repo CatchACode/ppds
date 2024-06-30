@@ -83,7 +83,6 @@ add_library(${PROJECT_ROOT} SHARED Join.cpp
         HashJoin.h
         Partitioning.h
         ThreadPool.h
-        MemoryLocker.h
         TestPartitioning.cpp
 )
 
@@ -92,7 +91,6 @@ add_executable(${PROJECT_EXECUTABLE} Join.cpp
         HashJoin.h
         Partitioning.h
         ThreadPool.h
-        MemoryLocker.h
         TestPartitioning.cpp
 )
 
