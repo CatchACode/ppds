@@ -52,6 +52,8 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
 
     std::cout << "\n\n";
     */
+
+    /*
     Trie<CastRelation> trie;
     std::vector<ResultRelation> results;
     // Use numThreads threads to insert into Trie
@@ -98,6 +100,14 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
         thread.join();
     }
     return results;
+    */
+    for(const auto& castRecord: castRelation) {
+        for(const auto& titleRecord: titleRelation) {
+            if(strncmp(castRecord.note, titleRecord.title, 100) == 0) {
+                std::cout << "Found match: " << castRecord.note << " == " << titleRecord.title << std::endl;
+            }
+        }
+    }
 
     //---------------------------------------------------------------------------------------
     // TODO: Implement a join on the strings cast.note and title.title
