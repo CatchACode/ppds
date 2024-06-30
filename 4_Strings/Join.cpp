@@ -22,40 +22,20 @@
 #include <string_view>
 #include <omp.h>
 
+
 static int counterTest = 0;
+
+std::vector<ResultRelation> performStolenTrieJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
+
+}
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
     std::cout << "Test: " << counterTest++ << std::endl;
     std::cout <<"castRelation.size(): " << castRelation.size() << std::endl;
     std::cout <<"titleRelation.size(): " << titleRelation.size() << std::endl;
-    /*
-    if(counterTest == 3) {
-        std::cout << "Test: " << counterTest++ << std::endl;
-        std::cout << "Printing CastRelation notes!\n";
-        for(const auto& record: castRelation) {
-            std::cout << castRelationToString(record) << std::endl;
-        }
-        std::cout << "\n\nPrinting TitleRelation titles!\n";
-        for(const auto& record: titleRelation) {
-            std::cout << titleRelationToString(record) << std::endl;
-        }
-    }
-    std::cout << "Test: " << counterTest++ << std::endl;
-    */
-    /*
-    std::cout << "Printing CastRelation notes!\n";
-    for(const auto& record: castRelation) {
-        std::cout << record.note << std::endl;
-    }
-    std::cout << "\n\nPrinting TitleRelation titles!\n";
-    for(const auto& record: titleRelation) {
-        std::cout << record.title << std::endl;
-    }
-
-    std::cout << "\n\n";
-    */
     Trie<CastRelation> trie;
     std::vector<ResultRelation> results;
+    results.reserve(200000);
     // Use numThreads threads to insert into Trie
     std::vector<std::jthread> threads;
     std::atomic_size_t counter = 0;
@@ -79,6 +59,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     std::mutex m_results;
     for(int i = 0; i < numThreads; ++i) {
         searchThreads.emplace_back([&trie, &titleRelation, &results, &counter, &m_results] {
+            std::vector<std::pair<const CastRelation*, const TitleRelation*>> localResults;
             while(counter < titleRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
                 std::string_view titleView(titleRelation[localCounter].title);
@@ -87,11 +68,14 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
                 }
                 auto foundResults = trie.longestPrefix(titleView);
                 if(!foundResults.empty()) {
-                    std::lock_guard lock(m_results);
                     for(const auto& result : foundResults) {
-                        results.emplace_back(createResultTuple(*result, titleRelation[localCounter]));
+                        localResults.emplace_back(result, &titleRelation[localCounter]);
                     }
                 }
+            }
+            std::scoped_lock l_results(m_results);
+            for(const auto&[castPtr, titlePtr]: localResults) {
+                results.emplace_back(createResultTuple(*castPtr, *titlePtr));
             }
         });
     }
