@@ -135,7 +135,7 @@ TEST(StringTest, TestTrieJoin) {
     const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_short_strings_200000.csv"));
     Timer timer("Trie");
     timer.start();
-    auto results = performJoin(leftRelation, rightRelation, 8);
+    auto results = performJoin(leftRelation, rightRelation, 16);
     timer.pause();
     std::cout << "Join took: " << printString(timer) << std::endl;
     std::cout << results.size() << std::endl;

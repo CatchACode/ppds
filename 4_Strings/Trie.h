@@ -14,6 +14,7 @@ private:
     struct TrieNode {
         std::map<char, TrieNode*> children;
         std::vector<const T*> dataVector;
+        std::mutex m_dataVector;  // Mutex for thread safety
         std::mutex nodeMutex;  // Mutex for thread safety
 
         TrieNode() {}
@@ -37,7 +38,7 @@ private:
                 std::cout << std::flush << std::endl;
                 return; // Return if node is null (should not happen
             }
-            std::lock_guard lock(node->nodeMutex); // Lock this node
+            std::lock_guard lock(node->m_dataVector); // Lock this node
             node->dataVector.emplace_back(ptr);
             return;
         }
@@ -49,7 +50,8 @@ private:
             node->children[currentChar] = new TrieNode();
         }
         lock.unlock();
-        insertRecursive(node->children[currentChar], key, depth + 1, ptr);
+        TrieNode* nextNode = node->children[currentChar];
+        insertRecursive(nextNode, key, depth + 1, ptr);
     }
 
     // Helper function to perform search recursively
