@@ -8,6 +8,7 @@
 #include <vector>
 #include <iostream>
 #include <shared_mutex>
+#include <unordered_map>
 
 template<typename T>
 class Trie {

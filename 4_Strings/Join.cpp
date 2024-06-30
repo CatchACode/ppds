@@ -61,16 +61,16 @@ std::string compressString(const std::string &input) {
 
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    std::cout << "Test: " << counterTest++ << std::endl;
-    std::cout <<"castRelation.size(): " << castRelation.size() << std::endl;
-    std::cout <<"titleRelation.size(): " << titleRelation.size() << std::endl;
+    //std::cout << "Test: " << counterTest++ << std::endl;
+    //std::cout <<"castRelation.size(): " << castRelation.size() << std::endl;
+    //std::cout <<"titleRelation.size(): " << titleRelation.size() << std::endl;
     Trie<CastRelation> trie;
     std::vector<ResultRelation> results;
     results.reserve(200000);
     // Use numThreads threads to insert into Trie
     std::vector<std::jthread> threads;
     std::atomic_size_t counter = 0;
-    for(int i = 0; i < numThreads; ++i) {
+    for(int i = 0; i < std::thread::hardware_concurrency(); ++i) {
         threads.emplace_back([&trie, &castRelation, &counter ] {
             while(counter < castRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
@@ -86,9 +86,10 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     std::vector<std::jthread> searchThreads;
     counter = 0;
     std::mutex m_results;
-    for(int i = 0; i < numThreads; ++i) {
+    for(int i = 0; i < std::thread::hardware_concurrency(); ++i) {
         searchThreads.emplace_back([&trie, &titleRelation, &results, &counter, &m_results] {
             std::vector<std::pair<const CastRelation*, const TitleRelation*>> localResults;
+
             while(counter < titleRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
                 //auto compressed = compressString(titleRelation[localCounter].title);
@@ -101,7 +102,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
                 }
             }
             std::scoped_lock l_results(m_results);
-            std::cout << "localResults.size(): " << localResults.size() << std::endl;
+            //std::cout << "localResults.size(): " << localResults.size() << std::endl;
             for(const auto&[castPtr, titlePtr]: localResults) {
                 results.emplace_back(createResultTuple(*castPtr, *titlePtr));
             }
@@ -148,7 +149,7 @@ TEST(StringTest, TestTrieJoin) {
     const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_long_strings_200000.csv"));
     Timer timer("Trie");
     timer.start();
-    auto results = performJoin(leftRelation, rightRelation, 16);
+    auto results = performJoin(leftRelation, rightRelation, 8);
     timer.pause();
     std::cout << "Join took: " << printString(timer) << std::endl;
     std::cout << results.size() << std::endl;
@@ -175,7 +176,6 @@ TEST(StringTest, TestTrieJoinSingle) {
 
 
 TEST(StringTest, Bullshit) {
-    std::string input = "Englishman Who Went Up a Hill But Came Down a Mountain  The (1995)";
-    std::string compressed = compressString(input);
-    std::cout << "Compressed string: " << compressed << std::endl;
+    std::unordered_map<int32_t, int32_t> map;
+    std::cout << map.max_size();
 }
