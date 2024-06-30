@@ -89,6 +89,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     for(const auto& castTuple: castRelation) {
         trie.insert(compressString(castTuple.note), &castTuple);
     }
+    /*
     std::atomic_size_t counter = 0;
     std::vector<std::jthread> searchThreads;
     counter = 0;
@@ -111,6 +112,18 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     }
     for(auto& thread : searchThreads) {
         thread.join();
+    }
+     */
+    std::atomic_size_t resultIndex = 0;
+    // OMP for loop to search for longest prefix
+    #pragma omp parallel for num_threads(numThreads)
+    for(const auto& titleTuple: titleRelation) {
+        auto foundResults = trie.longestPrefix(compressString(titleTuple.title));
+        if(!foundResults.empty()) {
+            for(const auto& result : foundResults) {
+                results[resultIndex++] = createResultTuple(*result, titleTuple);
+            }
+        }
     }
     results.resize(resultIndex);
     std::cout << "results.size(): " << results.size() << std::endl;
