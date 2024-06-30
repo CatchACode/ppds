@@ -73,6 +73,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
                 }
             }
             std::scoped_lock l_results(m_results);
+            std::cout << "localResults.size(): " << localResults.size() << std::endl;
             for(const auto&[castPtr, titlePtr]: localResults) {
                 results.emplace_back(createResultTuple(*castPtr, *titlePtr));
             }
