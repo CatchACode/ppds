@@ -7,6 +7,7 @@
 #include <map>
 #include <vector>
 #include <iostream>
+#include <shared_mutex>
 
 template<typename T>
 class Trie {
@@ -28,49 +29,6 @@ private:
             recursiveDelete(child.second);
         }
         delete node;
-    }
-
-    // Helper function to perform insertion recursively
-    inline void insertRecursive(TrieNode* node, std::string_view key, size_t depth, const T* ptr) {
-        if (depth == key.length()) {
-            if(node == nullptr) {
-                std::cout << "Attempting insertion on null node!" << std::endl;
-                std::cout << std::flush << std::endl;
-                return; // Return if node is null (should not happen
-            }
-            std::lock_guard lock(node->m_dataVector); // Lock this node
-            node->dataVector.emplace_back(ptr);
-            return;
-        }
-
-        char currentChar = key[depth];
-        std::unique_lock<std::mutex> lock(node->nodeMutex); // Lock this node
-
-        if (node->children[currentChar] == nullptr || node->children.find(currentChar) == node->children.end()) {
-            node->children[currentChar] = new TrieNode();
-        }
-        lock.unlock();
-        TrieNode* nextNode = node->children[currentChar];
-        insertRecursive(nextNode, key, depth + 1, ptr);
-    }
-
-    // Helper function to perform search recursively
-    inline const std::vector<const T*>& searchRecursive(TrieNode* node, std::string_view key, size_t depth) {
-        static std::vector<const T*> emptyVector;  // Static empty vector to return if no match found
-
-        if (node == nullptr) return emptyVector;
-        if (depth == key.length()) {
-            return node->dataVector;
-        }
-
-        char currentChar = key[depth];
-        std::lock_guard<std::mutex> lock(node->nodeMutex); // Lock this node
-
-        if (node->children.find(currentChar) == node->children.end()) {
-            return emptyVector;
-        }
-
-        return searchRecursive(node->children[currentChar], key, depth + 1);
     }
 
     // Helper function to perform longest prefix match recursively and return a reference to the vector of data pointers
@@ -108,12 +66,12 @@ public:
         for (size_t depth = 0; depth < key.length(); ++depth) {
             char currentChar = key[depth];
 
-            std::unique_lock<std::mutex> lock(currentNode->nodeMutex);
+            currentNode->nodeMutex.lock();
             if (currentNode->children.find(currentChar) == currentNode->children.end()) {
                 currentNode->children[currentChar] = new TrieNode();
             }
             TrieNode* nextNode = currentNode->children[currentChar];
-            lock.unlock();
+            currentNode->nodeMutex.unlock();
             currentNode = nextNode;
         }
 
@@ -129,7 +87,6 @@ public:
         for (size_t depth = 0; depth < key.length(); ++depth) {
             char currentChar = key[depth];
 
-            std::lock_guard<std::mutex> lock(currentNode->nodeMutex); // Lock this node
             if (currentNode->children.find(currentChar) == currentNode->children.end()) {
                 return emptyVector;
             }
