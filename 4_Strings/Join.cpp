@@ -25,6 +25,9 @@
 static int counterTest = 0;
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
+    std::cout << "Test: " << counterTest++ << std::endl;
+    std::cout <<"castRelation.size(): " << castRelation.size() << std::endl;
+    std::cout <<"titleRelation.size(): " << titleRelation.size() << std::endl;
     /*
     if(counterTest == 3) {
         std::cout << "Test: " << counterTest++ << std::endl;
