@@ -21,7 +21,7 @@
 #include <gtest/gtest.h>
 #include <string_view>
 #include <omp.h>
-
+#include "PathCompressionTrie.h"
 
 static int counterTest = 0;
 
@@ -33,7 +33,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     std::cout << "Test: " << counterTest++ << std::endl;
     std::cout <<"castRelation.size(): " << castRelation.size() << std::endl;
     std::cout <<"titleRelation.size(): " << titleRelation.size() << std::endl;
-    Trie<CastRelation> trie;
+    PathCompressionTrie<CastRelation> trie;
     std::vector<ResultRelation> results;
     results.reserve(200000);
     // Use numThreads threads to insert into Trie
@@ -82,6 +82,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     for(auto& thread : searchThreads) {
         thread.join();
     }
+    std::cout << "results.size(): " << results.size() << std::endl;
     return results;
 
     //---------------------------------------------------------------------------------------
