@@ -323,11 +323,11 @@ TEST_F(TestTrie, TestStolenDataSingle) {
 
     Trie<CastRelation> trie;
     for(const auto& castTuple : leftRelation) {
-        trie.insert(std::string_view(castTuple.note), &castTuple);
+        trie.insert(std::string_view(castTuple.note, 100), &castTuple);
     }
     // Validate insertion
     for(const auto& castTuple : leftRelation) {
-        const auto result = trie.search(std::string_view(castTuple.note));
+        const auto result = trie.longestPrefix(std::string_view(castTuple.note, 100));
         bool found = false;
         for(const auto& res : result) {
             // Check if res and castTuple point to the same memory location
@@ -342,5 +342,30 @@ TEST_F(TestTrie, TestStolenDataSingle) {
     // Perform search
     for(const auto& titleTuple : rightRelation) {
         auto searchResult = trie.longestPrefix(std::string_view(titleTuple.title, 200));
+    }
+}
+
+
+TEST_F(TestTrie, MaxChar) {
+    const auto castTuples = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), 2000);
+    Trie<CastRelation> trie;
+    for(const auto& castTuple : castTuples) {
+        std::string_view sv(castTuple.note);
+        if(sv.size() > 100) {
+            sv = sv.substr(0, 100);
+        }
+        trie.insert(std::string_view(sv), &castTuple);
+    }
+    for(const auto& castTuple : castTuples) {
+        const auto result = trie.search(std::string_view(castTuple.note, 100));
+        bool found = false;
+        for(const auto& res : result) {
+            // Check if res and castTuple point to the same memory location
+            if(res == &castTuple) {
+                found = true;
+                break;
+            }
+        }
+        EXPECT_TRUE(found) << "Failed to find castTuple with id: " << castTuple.castInfoId << " " << castTuple.note;
     }
 }

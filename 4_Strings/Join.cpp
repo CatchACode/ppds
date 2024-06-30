@@ -63,14 +63,8 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
             while(counter < castRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
                 std::string_view noteView(castRelation[localCounter].note);
-                /*
-                if(noteView.size() > 200) {
-                    noteView = noteView.substr(0, 200);
-                }
-                 */
-                {
-                    std::lock_guard lock(m_out);
-                    std::cout << "Inserting note: " << noteView << "\n";
+                if(noteView.size() > 100) {
+                    noteView = noteView.substr(0, 100);
                 }
                 trie.insert(noteView, &castRelation[localCounter]);
             }
@@ -86,15 +80,9 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
         searchThreads.emplace_back([&trie, &titleRelation, &results, &counter, &m_results, &m_out] {
             while(counter < titleRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
-                std::string_view titleView(titleRelation[localCounter].title);
-                /*
+                std::string_view titleView(titleRelation[localCounter].title, 200);
                 if(titleView.size() > 200) {
                     titleView = titleView.substr(0, 200);
-                }
-                */
-                {
-                    std::lock_guard lock(m_out);
-                    std::cout << "Searching title: " << titleView << "\n";
                 }
                 auto foundResults = trie.longestPrefix(titleView);
                 if(!foundResults.empty()) {

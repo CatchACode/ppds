@@ -278,7 +278,7 @@ static constexpr size_t NUM_FIELD_CAST_RELATION = 7;
           firstLine = false;
           continue;
         }
-        Relation record;
+        Relation record = {};
         if (parseLine(line, record)) {
           data.emplace_back(record);
         } else {
