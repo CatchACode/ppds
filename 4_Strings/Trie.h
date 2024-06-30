@@ -75,7 +75,6 @@ private:
         }
 
         char currentChar = key[depth];
-        std::lock_guard<std::mutex> lock(node->nodeMutex); // Lock this node
 
         if (node->children.find(currentChar) == node->children.end()) {
             return emptyVector;
