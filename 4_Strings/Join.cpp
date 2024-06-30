@@ -24,9 +24,32 @@
 
 static int counterTest = 0;
 
-std::vector<ResultRelation> performStolenTrieJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
+std::string compressString(const std::string &input) {
+    // Handle empty string
+    if (input.empty()) {
+        return "";
+    }
 
+    std::ostringstream compressed;
+    char lastChar = input[0];
+    int count = 1;
+
+    for (size_t i = 1; i < input.length(); ++i) {
+        if (input[i] == lastChar) {
+            ++count;
+        } else {
+            compressed << lastChar << count;
+            lastChar = input[i];
+            count = 1;
+        }
+    }
+    // Append the last character and its count
+    compressed << lastChar << count;
+
+    return compressed.str();
 }
+
+
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
     std::cout << "Test: " << counterTest++ << std::endl;
@@ -42,7 +65,8 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
         threads.emplace_back([&trie, &castRelation, &counter ] {
             while(counter < castRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
-                std::string_view noteView(castRelation[localCounter].note);
+                auto compressed = compressString(castRelation[localCounter].note);
+                std::string_view noteView(compressed);
                 trie.insert(noteView, &castRelation[localCounter]);
             }
         });
@@ -58,7 +82,8 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
             std::vector<std::pair<const CastRelation*, const TitleRelation*>> localResults;
             while(counter < titleRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
-                std::string_view titleView(titleRelation[localCounter].title);
+                auto compressed = compressString(titleRelation[localCounter].title);
+                std::string_view titleView(compressed);
                 auto foundResults = trie.longestPrefix(titleView);
                 if(!foundResults.empty()) {
                     for(const auto& result : foundResults) {
@@ -137,4 +162,11 @@ TEST(StringTest, TestTrieJoinSingle) {
         }
     }
     std::cout << "results.size(): " << results.size() << std::endl;
+}
+
+
+TEST(StringTest, Bullshit) {
+    std::string input = "aaabbccccd";
+    std::string compressed = compressString(input);
+    std::cout << "Compressed string: " << compressed << std::endl;
 }
