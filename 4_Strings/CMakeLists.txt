@@ -58,12 +58,12 @@ FetchContent_MakeAvailable(googletest)
 # Define the shared library
 add_library(${PROJECT_ROOT} SHARED Join.cpp
         TestTrie.cpp
-        Trie.cpp)
+        )
 
 # Define the executable target that uses the shared library
 add_executable(${PROJECT_EXECUTABLE} Join.cpp
         TestTrie.cpp
-        Trie.cpp)
+        )
 
 # Link with Libraries
 find_package(OpenMP REQUIRED)

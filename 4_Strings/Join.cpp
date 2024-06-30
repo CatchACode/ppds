@@ -57,8 +57,9 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     // Use numThreads threads to insert into Trie
     std::vector<std::jthread> threads;
     std::atomic_size_t counter = 0;
+    std::mutex m_out;
     for(int i = 0; i < numThreads; ++i) {
-        threads.emplace_back([&trie, &castRelation, &counter ] {
+        threads.emplace_back([&trie, &castRelation, &counter, &m_out] {
             while(counter < castRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
                 std::string_view noteView(castRelation[localCounter].note);
@@ -67,6 +68,10 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
                     noteView = noteView.substr(0, 200);
                 }
                  */
+                {
+                    std::lock_guard lock(m_out);
+                    std::cout << "Inserting note: " << noteView << "\n";
+                }
                 trie.insert(noteView, &castRelation[localCounter]);
             }
         });
@@ -78,7 +83,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     counter = 0;
     std::mutex m_results;
     for(int i = 0; i < numThreads; ++i) {
-        searchThreads.emplace_back([&trie, &titleRelation, &results, &counter, &m_results] {
+        searchThreads.emplace_back([&trie, &titleRelation, &results, &counter, &m_results, &m_out] {
             while(counter < titleRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
                 std::string_view titleView(titleRelation[localCounter].title);
@@ -87,6 +92,10 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
                     titleView = titleView.substr(0, 200);
                 }
                 */
+                {
+                    std::lock_guard lock(m_out);
+                    std::cout << "Searching title: " << titleView << "\n";
+                }
                 auto foundResults = trie.longestPrefix(titleView);
                 if(!foundResults.empty()) {
                     std::lock_guard lock(m_results);
