@@ -350,17 +350,12 @@ TEST_F(TestTrie, MaxChar) {
     const auto castTuples = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_stolen_strings.csv"), 2000);
     Trie<CastRelation> trie;
     for(const auto& castTuple : castTuples) {
-        std::string_view sv(castTuple.note);
-        if(sv.size() > 100) {
-            sv = sv.substr(0, 100);
-        }
+        std::string_view sv(castTuple.note, 100);
+
         trie.insert(std::string_view(sv), &castTuple);
     }
     for(const auto& castTuple : castTuples) {
-        std::string_view sv(castTuple.note);
-        if(sv.size() > 100) {
-            sv = sv.substr(0, 100);
-        }
+        std::string_view sv(castTuple.note, 100);
         const auto result = trie.search(sv);
         bool found = false;
         for(const auto& res : result) {

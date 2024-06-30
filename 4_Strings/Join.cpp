@@ -52,8 +52,6 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
 
     std::cout << "\n\n";
     */
-
-    /*
     Trie<CastRelation> trie;
     std::vector<ResultRelation> results;
     // Use numThreads threads to insert into Trie
@@ -100,22 +98,10 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
         thread.join();
     }
     return results;
-    */
-    std::vector<ResultRelation> results;
-    for(const auto& castRecord: castRelation) {
-        for(const auto& titleRecord: titleRelation) {
-            if(strncmp(castRecord.note, titleRecord.title, 100) == 0) {
-                std::cout << "Found match: " << castRecord.note << " == " << titleRecord.title << std::endl;
-                results.emplace_back(createResultTuple(castRecord, titleRecord));
-            }
-        }
-    }
-
     //---------------------------------------------------------------------------------------
     // TODO: Implement a join on the strings cast.note and title.title
     // The benchmark will join on increasing string sizes: cast.note% LIKE title.title
     //return performJointrie(castRelation, titleRelation, numThreads);
-    return {};
 }
 /*
 int main(){
@@ -170,3 +156,5 @@ TEST(StringTest, TestTrieJoinSingle) {
     }
     std::cout << "results.size(): " << results.size() << std::endl;
 }
+
+TEST(StringTest)
