@@ -43,9 +43,6 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
             while(counter < castRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
                 std::string_view noteView(castRelation[localCounter].note);
-                if(noteView.size() > 200) {
-                    noteView = noteView.substr(0, 200);
-                }
                 trie.insert(noteView, &castRelation[localCounter]);
             }
         });
@@ -62,9 +59,6 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
             while(counter < titleRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
                 std::string_view titleView(titleRelation[localCounter].title);
-                if(titleView.size() > 200) {
-                    titleView = titleView.substr(0, 200);
-                }
                 auto foundResults = trie.longestPrefix(titleView);
                 if(!foundResults.empty()) {
                     for(const auto& result : foundResults) {
