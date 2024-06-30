@@ -25,28 +25,37 @@
 static int counterTest = 0;
 
 std::string compressString(const std::string &input) {
-    // Handle empty string
-    if (input.empty()) {
-        return "";
-    }
+    if (input.empty()) return "";
+    if(input[0] != '1') return input;
 
-    std::ostringstream compressed;
-    char lastChar = input[0];
+    std::string compressed;
+    compressed.reserve(input.size()); // Reserve space to avoid multiple allocations
+
+    char currentChar = input[0];
     int count = 1;
 
-    for (size_t i = 1; i < input.length(); ++i) {
-        if (input[i] == lastChar) {
+    for (size_t i = 1; i < input.size(); ++i) {
+        if (input[i] == currentChar) {
             ++count;
         } else {
-            compressed << lastChar << count;
-            lastChar = input[i];
+            compressed += currentChar;
+            if (count > 1) {
+                compressed += '*';
+                compressed += std::to_string(count);
+            }
+            currentChar = input[i];
             count = 1;
         }
     }
-    // Append the last character and its count
-    compressed << lastChar << count;
 
-    return compressed.str();
+    // Append the last character and its count
+    compressed += currentChar;
+    if (count > 1) {
+        compressed += '*';
+        compressed += std::to_string(count);
+    }
+
+    return compressed;
 }
 
 
@@ -65,9 +74,9 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
         threads.emplace_back([&trie, &castRelation, &counter ] {
             while(counter < castRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
-                auto compressed = compressString(castRelation[localCounter].note);
-                std::string_view noteView(compressed);
-                trie.insert(noteView, &castRelation[localCounter]);
+                //auto compressed = compressString(castRelation[localCounter].note);
+                //std::string_view noteView(compressed);
+                trie.insert(compressString(castRelation[localCounter].note), &castRelation[localCounter]);
             }
         });
     }
@@ -82,9 +91,9 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
             std::vector<std::pair<const CastRelation*, const TitleRelation*>> localResults;
             while(counter < titleRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
-                auto compressed = compressString(titleRelation[localCounter].title);
-                std::string_view titleView(compressed);
-                auto foundResults = trie.longestPrefix(titleView);
+                //auto compressed = compressString(titleRelation[localCounter].title);
+                //std::string_view titleView(compressed);
+                auto foundResults = trie.longestPrefix(compressString(titleRelation[localCounter].title));
                 if(!foundResults.empty()) {
                     for(const auto& result : foundResults) {
                         localResults.emplace_back(result, &titleRelation[localCounter]);
@@ -135,8 +144,8 @@ TEST(StringTest, TestNestedLoopjoin) {
 }
 
 TEST(StringTest, TestTrieJoin) {
-    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_short_strings_200000.csv"));
-    const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_short_strings_200000.csv"));
+    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_long_strings_200000.csv"));
+    const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_long_strings_200000.csv"));
     Timer timer("Trie");
     timer.start();
     auto results = performJoin(leftRelation, rightRelation, 16);
@@ -166,7 +175,7 @@ TEST(StringTest, TestTrieJoinSingle) {
 
 
 TEST(StringTest, Bullshit) {
-    std::string input = "aaabbccccd";
+    std::string input = "Englishman Who Went Up a Hill But Came Down a Mountain  The (1995)";
     std::string compressed = compressString(input);
     std::cout << "Compressed string: " << compressed << std::endl;
 }
