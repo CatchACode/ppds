@@ -347,7 +347,7 @@ TEST_F(TestTrie, TestStolenDataSingle) {
 
 
 TEST_F(TestTrie, MaxChar) {
-    const auto castTuples = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), 2000);
+    const auto castTuples = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_stolen_strings.csv"), 2000);
     Trie<CastRelation> trie;
     for(const auto& castTuple : castTuples) {
         std::string_view sv(castTuple.note);
@@ -357,7 +357,11 @@ TEST_F(TestTrie, MaxChar) {
         trie.insert(std::string_view(sv), &castTuple);
     }
     for(const auto& castTuple : castTuples) {
-        const auto result = trie.search(std::string_view(castTuple.note, 100));
+        std::string_view sv(castTuple.note);
+        if(sv.size() > 100) {
+            sv = sv.substr(0, 100);
+        }
+        const auto result = trie.search(sv);
         bool found = false;
         for(const auto& res : result) {
             // Check if res and castTuple point to the same memory location

@@ -186,7 +186,7 @@ static constexpr size_t NUM_FIELD_CAST_RELATION = 7;
     inline void assignValueFromString(TitleRelation& titleRelation, const std::string& value, const size_t fieldIndex) {
       switch (fieldIndex) {
       case 0: titleRelation.titleId = std::stoi(value); break;
-      case 1: std::memcpy(titleRelation.title, value.c_str(), 200); break;
+      case 1: std::memcpy(titleRelation.title, value.c_str(), strlen(value.c_str())); break;
       case 2: std::memcpy(titleRelation.imdbIndex, value.c_str(), 12); break;
       case 3: titleRelation.kindId = std::stoi(value); break;
       case 4: titleRelation.productionYear = std::stoi(value); break;
@@ -207,7 +207,7 @@ static constexpr size_t NUM_FIELD_CAST_RELATION = 7;
       case 1: castRelation.personId = std::stoi(value); break;
       case 2: castRelation.movieId = std::stoi(value); break;
       case 3: castRelation.personRoleId = std::stoi(value); break;
-      case 4: std::memcpy(castRelation.note, value.c_str(), 100); break;
+      case 4: std::memcpy(castRelation.note, value.c_str(), strlen(value.c_str())); break;
       case 5: castRelation.nrOrder = std::stoi(value); break;
       case 6: castRelation.roleId = std::stoi(value); break;
       default: break;
