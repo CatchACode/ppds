@@ -101,10 +101,12 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     }
     return results;
     */
+    std::vector<ResultRelation> results;
     for(const auto& castRecord: castRelation) {
         for(const auto& titleRecord: titleRelation) {
             if(strncmp(castRecord.note, titleRecord.title, 100) == 0) {
                 std::cout << "Found match: " << castRecord.note << " == " << titleRecord.title << std::endl;
+                results.emplace_back(createResultTuple(castRecord, titleRecord));
             }
         }
     }
