@@ -66,11 +66,11 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     //std::cout <<"titleRelation.size(): " << titleRelation.size() << std::endl;
     Trie<CastRelation> trie;
     std::vector<ResultRelation> results;
-    results.reserve(200000);
+    results.resize(200000);
     // Use numThreads threads to insert into Trie
     std::vector<std::jthread> threads;
     std::atomic_size_t counter = 0;
-    for(int i = 0; i < std::thread::hardware_concurrency(); ++i) {
+    for(int i = 0; i < numThreads; ++i) {
         threads.emplace_back([&trie, &castRelation, &counter ] {
             while(counter < castRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
@@ -86,10 +86,9 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     std::vector<std::jthread> searchThreads;
     counter = 0;
     std::mutex m_results;
-    for(int i = 0; i < std::thread::hardware_concurrency(); ++i) {
-        searchThreads.emplace_back([&trie, &titleRelation, &results, &counter, &m_results] {
-            std::vector<std::pair<const CastRelation*, const TitleRelation*>> localResults;
-
+    std::atomic_size_t resultIndex = 0;
+    for(int i = 0; i < numThreads; ++i) {
+        searchThreads.emplace_back([&trie, &titleRelation, &results, &counter, &m_results, &resultIndex] {
             while(counter < titleRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
                 //auto compressed = compressString(titleRelation[localCounter].title);
@@ -97,14 +96,9 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
                 auto foundResults = trie.longestPrefix(compressString(titleRelation[localCounter].title));
                 if(!foundResults.empty()) {
                     for(const auto& result : foundResults) {
-                        localResults.emplace_back(result, &titleRelation[localCounter]);
+                        results[resultIndex++] = createResultTuple(*result, titleRelation[localCounter]);
                     }
                 }
-            }
-            std::scoped_lock l_results(m_results);
-            //std::cout << "localResults.size(): " << localResults.size() << std::endl;
-            for(const auto&[castPtr, titlePtr]: localResults) {
-                results.emplace_back(createResultTuple(*castPtr, *titlePtr));
             }
         });
     }
@@ -176,6 +170,17 @@ TEST(StringTest, TestTrieJoinSingle) {
 
 
 TEST(StringTest, Bullshit) {
-    std::unordered_map<int32_t, int32_t> map;
-    std::cout << map.max_size();
+    std::vector<int32_t> test;
+    test.reserve(128);
+    std::vector<std::thread> threads;
+    std::atomic_size_t counter = 0;
+    for(int i = 0; i < std::thread::hardware_concurrency(); ++i) {
+        threads.emplace_back([&test, &counter ] {
+            while(counter < 128) {
+                auto localCounter = counter.fetch_add(1);
+                test.emplace(test.begin() + localCounter, localCounter);
+            }
+        });
+    }
 }
+
