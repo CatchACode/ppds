@@ -62,10 +62,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
         threads.emplace_back([&trie, &castRelation, &counter, &m_out] {
             while(counter < castRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
-                std::string_view noteView(castRelation[localCounter].note);
-                if(noteView.size() > 100) {
-                    noteView = noteView.substr(0, 100);
-                }
+                std::string noteView(castRelation[localCounter].note, 100);
                 trie.insert(noteView, &castRelation[localCounter]);
             }
         });
@@ -80,7 +77,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
         searchThreads.emplace_back([&trie, &titleRelation, &results, &counter, &m_results, &m_out] {
             while(counter < titleRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
-                std::string_view titleView(titleRelation[localCounter].title, 200);
+                std::string titleView(titleRelation[localCounter].title, 200);
                 if(titleView.size() > 200) {
                     titleView = titleView.substr(0, 200);
                 }
@@ -157,4 +154,6 @@ TEST(StringTest, TestTrieJoinSingle) {
     std::cout << "results.size(): " << results.size() << std::endl;
 }
 
-TEST(StringTest)
+TEST(StringTest, TestNumbers) {
+
+}

@@ -32,7 +32,7 @@ TEST_F(TestTrie, TestSingleThreadedInsertion) {
     Timer timer("Trie");
     timer.start();
     for(const auto& castTuple : castTuples) {
-        trie.insert(std::string_view(castTuple.note, 100), &castTuple);
+        trie.insert(std::string(castTuple.note, 100), &castTuple);
     }
     timer.pause();
     std::cout << "Insertion took: " << printString(timer) << "ms" << std::endl;
@@ -50,7 +50,7 @@ TEST_F(TestTrie, TestingThreadedInsertion) {
         threads.emplace_back(
                 [&trie, &counter, i, this, &castTuples] {
                     auto localCounter = counter.fetch_add(1);
-                    trie.insert(std::string_view(castTuples[localCounter].note, 100), &castTuples[localCounter]);
+                    trie.insert(std::string(castTuples[localCounter].note, 100), &castTuples[localCounter]);
                 }
                 );
     }
@@ -65,11 +65,11 @@ TEST_F(TestTrie, TestSingleThreadedSearch) {
     const auto castTuples = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_short_strings_20000.csv"));
     Trie<CastRelation> trie;
     for(const auto& castTuple : castTuples) {
-        trie.insert(std::string_view(castTuple.note, 100), &castTuple);
+        trie.insert(std::string(castTuple.note, 100), &castTuple);
     }
 
     for(const auto& castTuple : castTuples) {
-        const auto result = trie.search(std::string_view(castTuple.note, 100));
+        const auto result = trie.search(std::string(castTuple.note, 100));
         EXPECT_EQ(result[0], &castTuple);
     }
 }
@@ -78,7 +78,7 @@ TEST_F(TestTrie, TestThreadedSearch) {
     const auto castTuples = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_short_strings_20000.csv"));
     Trie<CastRelation> trie;
     for(const auto& castTuple : castTuples) {
-        trie.insert(std::string_view(castTuple.note, 100), &castTuple);
+        trie.insert(std::string(castTuple.note, 100), &castTuple);
     }
 
     std::atomic_size_t counter = 0;
@@ -89,7 +89,7 @@ TEST_F(TestTrie, TestThreadedSearch) {
                 [&trie, &counter, i, this, &castTuples] {
                     while(counter < castTuples.size()) {
                         auto localCounter = counter.fetch_add(1);
-                        const auto result = trie.search(std::string_view(castTuples[localCounter].note, 100));
+                        const auto result = trie.search(std::string(castTuples[localCounter].note, 100));
                         EXPECT_EQ(result[0], &castTuples[localCounter]);
                     }
                 }
@@ -111,7 +111,7 @@ TEST_F(TestTrie, TestThreadedInsertionValidation) {
                 [&trie, &counter, i, this, &castTuples] {
                     while(counter < castTuples.size()) {
                         auto localCounter = counter.fetch_add(1);
-                        trie.insert(std::string_view(castTuples[localCounter].note, 100), &castTuples[localCounter]);
+                        trie.insert(std::string(castTuples[localCounter].note, 100), &castTuples[localCounter]);
                     }
                 }
         );
@@ -122,7 +122,7 @@ TEST_F(TestTrie, TestThreadedInsertionValidation) {
     timer.pause();
     std::cout << "Insertion took: " << printString(timer) << "ms" << std::endl;
     for(const auto& castTuple : castTuples) {
-        const auto result = trie.search(std::string_view(castTuple.note, 100));
+        const auto result = trie.search(std::string(castTuple.note, 100));
         int test = std::memcmp(result[0], &castTuple, sizeof(CastRelation));
         std::cout << "Testing id: " << castTuple.castInfoId << " with result: " << test << "\n";
         EXPECT_EQ(test, 0) << "Failed comparsion with notes:\n" << castTuple.note << "\n" << result[0]->note << "\n";
@@ -142,7 +142,7 @@ TEST_F(TestTrie, TestJoining) {
                 [&trie, &counter, i, this, &castTuples] {
                     while(counter < castTuples.size()) {
                         auto localCounter = counter.fetch_add(1);
-                        trie.insert(std::string_view(castTuples[localCounter].note, 100), &castTuples[localCounter]);
+                        trie.insert(std::string(castTuples[localCounter].note, 100), &castTuples[localCounter]);
                     }
                 }
         );
@@ -198,7 +198,7 @@ TEST_F(TestTrie, TestStolenDataCastInsertion) {
                 [&trie, &counter, i, this, &stolenCastTuples] {
                     while(counter < stolenCastTuples.size()) {
                         auto localCounter = counter.fetch_add(1);
-                        trie.insert(std::string_view(stolenCastTuples[localCounter].note, 100), &stolenCastTuples[localCounter]);
+                        trie.insert(std::string(stolenCastTuples[localCounter].note, 100), &stolenCastTuples[localCounter]);
                     }
                 }
         );
@@ -210,7 +210,7 @@ TEST_F(TestTrie, TestStolenDataCastInsertion) {
     std::cout << "Insertion took: " << printString(timer) << "ms" << std::endl;
     // Validate the insertion
     for(const auto& castTuple : stolenCastTuples) {
-        const auto result = trie.search(std::string_view(castTuple.note, 100));
+        const auto result = trie.search(std::string(castTuple.note, 100));
         int test = std::memcmp(result[0], &castTuple, sizeof(CastRelation));
         std::cout << "Testing id: " << castTuple.castInfoId << " with result: " << test << "\n";
         EXPECT_EQ(test, 0) << "Failed comparsion with notes:\n" << castTuple.note << "\n" << result[0]->note << "\n";
@@ -221,10 +221,10 @@ TEST_F(TestTrie, TestMultipleSharedNodes) {
     const auto castTuples = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_broken_values.csv"));
     Trie<CastRelation> trie;
     for(const auto& castTuple : castTuples) {
-        trie.insert(std::string_view(castTuple.note, 100), &castTuple);
+        trie.insert(std::string(castTuple.note, 100), &castTuple);
     }
     for(const auto& castTuple : castTuples) {
-        const auto result = trie.search(std::string_view(castTuple.note, 100));
+        const auto result = trie.search(std::string(castTuple.note, 100));
         bool found = false;
         for(const auto& res : result) {
             // Check if res and castTuple point to the same memory location
@@ -252,7 +252,7 @@ TEST_F(TestTrie, TestNumber30) {
         insertionThreads.emplace_back(
                 [&trie, chunkStart, chunkEnd] {
                     for(auto it = chunkStart; it != chunkEnd; ++it) {
-                        trie.insert(std::string_view(it->note, 100), &(*it));
+                        trie.insert(std::string(it->note, 100), &(*it));
                     }
                 }
         );
@@ -271,7 +271,7 @@ TEST_F(TestTrie, TestNumber30) {
         searchThreads.emplace_back(
                 [&trie, chunkStartTitle, chunkEndTitle, &results, &resultsMutex] {
                     for(auto it = chunkStartTitle; it != chunkEndTitle; ++it) {
-                        auto searchResult = trie.search(std::string_view(it->title, 200));
+                        auto searchResult = trie.search(std::string(it->title, 200));
                         EXPECT_TRUE(!searchResult.empty());
                         std::lock_guard lock(resultsMutex);
                         for(const auto& res : searchResult) {
@@ -294,12 +294,12 @@ TEST_F(TestTrie, TestNumber30Single) {
 
     Trie<CastRelation> trie;
     for(const auto& castTuple : castTuples) {
-        trie.insert(std::string_view(castTuple.note, 100), &castTuple);
+        trie.insert(std::string(castTuple.note, 100), &castTuple);
     }
 
     std::vector<ResultRelation> results;
     for(const auto& titleTuple : titleTuples) {
-        auto searchResult = trie.longestPrefix(std::string_view(titleTuple.title, 200));
+        auto searchResult = trie.longestPrefix(std::string(titleTuple.title, 200));
         EXPECT_TRUE(!searchResult.empty());
         for(const auto& res : searchResult) {
             results.emplace_back(createResultTuple(*res, titleTuple));
@@ -323,11 +323,11 @@ TEST_F(TestTrie, TestStolenDataSingle) {
 
     Trie<CastRelation> trie;
     for(const auto& castTuple : leftRelation) {
-        trie.insert(std::string_view(castTuple.note, 100), &castTuple);
+        trie.insert(std::string(castTuple.note, 100), &castTuple);
     }
     // Validate insertion
     for(const auto& castTuple : leftRelation) {
-        const auto result = trie.longestPrefix(std::string_view(castTuple.note, 100));
+        const auto result = trie.longestPrefix(std::string(castTuple.note, 100));
         bool found = false;
         for(const auto& res : result) {
             // Check if res and castTuple point to the same memory location
@@ -341,7 +341,7 @@ TEST_F(TestTrie, TestStolenDataSingle) {
 
     // Perform search
     for(const auto& titleTuple : rightRelation) {
-        auto searchResult = trie.longestPrefix(std::string_view(titleTuple.title, 200));
+        auto searchResult = trie.longestPrefix(std::string(titleTuple.title, 200));
     }
 }
 
@@ -352,10 +352,10 @@ TEST_F(TestTrie, MaxChar) {
     for(const auto& castTuple : castTuples) {
         std::string_view sv(castTuple.note, 100);
 
-        trie.insert(std::string_view(sv), &castTuple);
+        trie.insert(std::string(sv), &castTuple);
     }
     for(const auto& castTuple : castTuples) {
-        std::string_view sv(castTuple.note, 100);
+        std::string sv(castTuple.note, 100);
         const auto result = trie.search(sv);
         bool found = false;
         for(const auto& res : result) {

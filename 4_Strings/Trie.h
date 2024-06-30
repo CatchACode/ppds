@@ -29,7 +29,7 @@ private:
     }
 
     // Helper function to perform insertion recursively
-    void insertRecursive(TrieNode* node, std::string_view key, size_t depth, const T* ptr) {
+    void insertRecursive(TrieNode* node, const std::string& key, size_t depth, const T* ptr) {
         if (depth == key.length()) {
             std::lock_guard lock(node->nodeMutex); // Lock this node
             node->dataVector.emplace_back(ptr);
@@ -47,7 +47,7 @@ private:
     }
 
     // Helper function to perform search recursively
-    const std::vector<const T*>& searchRecursive(TrieNode* node, std::string_view key, size_t depth) {
+    const std::vector<const T*>& searchRecursive(TrieNode* node, const std::string& key, size_t depth) {
         static std::vector<const T*> emptyVector;  // Static empty vector to return if no match found
 
         if (node == nullptr) return emptyVector;
@@ -66,7 +66,7 @@ private:
     }
 
     // Helper function to perform longest prefix match recursively and return a reference to the vector of data pointers
-    const std::vector<const T*>& longestPrefixRecursive(TrieNode* node, std::string_view key, size_t depth) {
+    const std::vector<const T*>& longestPrefixRecursive(TrieNode* node, const std::string& key, size_t depth) {
         static std::vector<const T*> emptyVector;  // Static empty vector to return if no match found
 
         if (node == nullptr) return emptyVector;
@@ -94,18 +94,18 @@ public:
     }
 
     // Insert a string_view and corresponding pointer into the Trie
-    void insert(std::string_view key, const T* ptr) {
+    void insert(const std::string& key, const T* ptr) {
         if(key.empty()) return;
         insertRecursive(root, key, 0, ptr);
     }
 
     // Search for an exact string_view in the Trie and return the first associated pointer
-    const std::vector<const T*>& search(std::string_view key) {
+    const std::vector<const T*>& search(const std::string& key) {
         return searchRecursive(root, key, 0);
     }
 
     // Find the longest prefix match and return a reference to the vector of associated pointers
-    const std::vector<const T*>& longestPrefix(std::string_view key) {
+    const std::vector<const T*>& longestPrefix(const std::string& key) {
         return longestPrefixRecursive(root, key, 0);
     }
 };
