@@ -22,7 +22,7 @@ private:
     TrieNode* root;
 
     // Helper function to recursively delete nodes
-    void recursiveDelete(TrieNode* node) {
+    inline void recursiveDelete(TrieNode* node) {
         if (node == nullptr) return;
         for (auto& child : node->children) {
             recursiveDelete(child.second);
@@ -31,7 +31,7 @@ private:
     }
 
     // Helper function to perform insertion recursively
-    void insertRecursive(TrieNode* node, std::string_view key, size_t depth, const T* ptr) {
+    inline void insertRecursive(TrieNode* node, std::string_view key, size_t depth, const T* ptr) {
         if (depth == key.length()) {
             if(node == nullptr) {
                 std::cout << "Attempting insertion on null node!" << std::endl;
@@ -55,7 +55,7 @@ private:
     }
 
     // Helper function to perform search recursively
-    const std::vector<const T*>& searchRecursive(TrieNode* node, std::string_view key, size_t depth) {
+    inline const std::vector<const T*>& searchRecursive(TrieNode* node, std::string_view key, size_t depth) {
         static std::vector<const T*> emptyVector;  // Static empty vector to return if no match found
 
         if (node == nullptr) return emptyVector;
@@ -74,7 +74,7 @@ private:
     }
 
     // Helper function to perform longest prefix match recursively and return a reference to the vector of data pointers
-    const std::vector<const T*>& longestPrefixRecursive(TrieNode* node, std::string_view key, size_t depth) {
+    inline const std::vector<const T*>& longestPrefixRecursive(TrieNode* node, std::string_view key, size_t depth) {
         static std::vector<const T*> emptyVector;  // Static empty vector to return if no match found
 
         if (node == nullptr) return emptyVector;
@@ -101,7 +101,7 @@ public:
     }
 
     // Insert a string_view and corresponding pointer into the Trie
-    void insert(std::string_view key, const T* ptr) {
+    inline void insert(std::string_view key, const T* ptr) {
         if (key.empty()) return;
 
         TrieNode* currentNode = root;
@@ -121,13 +121,26 @@ public:
         currentNode->dataVector.emplace_back(ptr);
     }
 
-    // Search for an exact string_view in the Trie and return the first associated pointer
-    const std::vector<const T*>& search(std::string_view key) {
-        return searchRecursive(root, key, 0);
+    // Search for an exact string_view in the Trie iteratively
+    inline const std::vector<const T*>& search(std::string_view key) {
+        static std::vector<const T*> emptyVector;  // Static empty vector to return if no match found
+        TrieNode* currentNode = root;
+
+        for (size_t depth = 0; depth < key.length(); ++depth) {
+            char currentChar = key[depth];
+
+            std::lock_guard<std::mutex> lock(currentNode->nodeMutex); // Lock this node
+            if (currentNode->children.find(currentChar) == currentNode->children.end()) {
+                return emptyVector;
+            }
+            currentNode = currentNode->children[currentChar];
+        }
+
+        return currentNode->dataVector;
     }
 
     // Find the longest prefix match and return a reference to the vector of associated pointers
-    const std::vector<const T*>& longestPrefix(std::string_view key) {
+    inline const std::vector<const T*>& longestPrefix(std::string_view key) {
         return longestPrefixRecursive(root, key, 0);
     }
 };
