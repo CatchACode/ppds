@@ -105,6 +105,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     for(auto& thread : searchThreads) {
         thread.join();
     }
+    results.resize(resultIndex);
     std::cout << "results.size(): " << results.size() << std::endl;
     return results;
 
