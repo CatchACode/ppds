@@ -66,8 +66,9 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     //std::cout <<"titleRelation.size(): " << titleRelation.size() << std::endl;
     Trie<CastRelation> trie;
     std::vector<ResultRelation> results;
-    results.resize(200000);
+    results.resize(castRelation.size());
     // Use numThreads threads to insert into Trie
+    /*
     std::vector<std::jthread> threads;
     std::atomic_size_t counter = 0;
     for(int i = 0; i < numThreads; ++i) {
@@ -83,6 +84,12 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
     for(auto& thread : threads) {
         thread.join();
     }
+     */
+    #pragma omp parallel for num_threads(numThreads)
+    for(const auto& castTuple: castRelation) {
+        trie.insert(compressString(castTuple.note), &castTuple);
+    }
+    std::atomic_size_t counter = 0;
     std::vector<std::jthread> searchThreads;
     counter = 0;
     std::mutex m_results;
