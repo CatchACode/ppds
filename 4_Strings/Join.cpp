@@ -62,9 +62,11 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
             while(counter < castRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
                 std::string_view noteView(castRelation[localCounter].note);
+                /*
                 if(noteView.size() > 200) {
                     noteView = noteView.substr(0, 200);
                 }
+                 */
                 trie.insert(noteView, &castRelation[localCounter]);
             }
         });
@@ -80,9 +82,11 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
             while(counter < titleRelation.size()) {
                 auto localCounter = counter.fetch_add(1);
                 std::string_view titleView(titleRelation[localCounter].title);
+                /*
                 if(titleView.size() > 200) {
                     titleView = titleView.substr(0, 200);
                 }
+                */
                 auto foundResults = trie.longestPrefix(titleView);
                 if(!foundResults.empty()) {
                     std::lock_guard lock(m_results);
@@ -142,7 +146,7 @@ TEST(StringTest, TestTrieJoin) {
 
 
 TEST(StringTest, TestTrieJoinSingle) {
-    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_stolen_strings.csv"), 10);
+    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_stolen_strings.csv"));
     const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_short_strings_30.csv"), 30);
     Trie<CastRelation> trie;
     std::vector<ResultRelation> results;
