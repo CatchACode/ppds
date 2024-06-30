@@ -61,59 +61,13 @@ std::string compressString(const std::string &input) {
 
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    //std::cout << "Test: " << counterTest++ << std::endl;
-    //std::cout <<"castRelation.size(): " << castRelation.size() << std::endl;
-    //std::cout <<"titleRelation.size(): " << titleRelation.size() << std::endl;
     Trie<CastRelation> trie;
     std::vector<ResultRelation> results;
     results.resize(castRelation.size());
-    // Use numThreads threads to insert into Trie
-    /*
-    std::vector<std::jthread> threads;
-    std::atomic_size_t counter = 0;
-    for(int i = 0; i < numThreads; ++i) {
-        threads.emplace_back([&trie, &castRelation, &counter ] {
-            while(counter < castRelation.size()) {
-                auto localCounter = counter.fetch_add(1);
-                //auto compressed = compressString(castRelation[localCounter].note);
-                //std::string_view noteView(compressed);
-                trie.insert(compressString(castRelation[localCounter].note), &castRelation[localCounter]);
-            }
-        });
-    }
-    for(auto& thread : threads) {
-        thread.join();
-    }
-     */
     #pragma omp parallel for num_threads(numThreads)
     for(const auto& castTuple: castRelation) {
         trie.insert(compressString(castTuple.note), &castTuple);
     }
-    /*
-    std::atomic_size_t counter = 0;
-    std::vector<std::jthread> searchThreads;
-    counter = 0;
-    std::mutex m_results;
-    std::atomic_size_t resultIndex = 0;
-    for(int i = 0; i < numThreads; ++i) {
-        searchThreads.emplace_back([&trie, &titleRelation, &results, &counter, &m_results, &resultIndex] {
-            while(counter < titleRelation.size()) {
-                auto localCounter = counter.fetch_add(1);
-                //auto compressed = compressString(titleRelation[localCounter].title);
-                //std::string_view titleView(compressed);
-                auto foundResults = trie.longestPrefix(compressString(titleRelation[localCounter].title));
-                if(!foundResults.empty()) {
-                    for(const auto& result : foundResults) {
-                        results[resultIndex++] = createResultTuple(*result, titleRelation[localCounter]);
-                    }
-                }
-            }
-        });
-    }
-    for(auto& thread : searchThreads) {
-        thread.join();
-    }
-     */
     std::atomic_size_t resultIndex = 0;
     // OMP for loop to search for longest prefix
     #pragma omp parallel for num_threads(numThreads)
@@ -126,23 +80,8 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
         }
     }
     results.resize(resultIndex);
-    std::cout << "results.size(): " << results.size() << std::endl;
     return results;
-
-    //---------------------------------------------------------------------------------------
-    // TODO: Implement a join on the strings cast.note and title.title
-    // The benchmark will join on increasing string sizes: cast.note% LIKE title.title
-    //return performJointrie(castRelation, titleRelation, numThreads);
-    //return {};
 }
-/*
-int main(){
-    const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), 20000);
-    const auto rightRelation = load<TitleRelation>(DATA_DIRECTORY + std::string("title_info_uniform.csv"), 20000);
-    auto result=  performJoin(leftRelation, rightRelation, 1);
-    return 0;
-}
- */
 
 TEST(StringTest, TestNestedLoopjoin) {
     const auto leftRelation = load<CastRelation>(DATA_DIRECTORY + std::string("cast_info_uniform.csv"), 20000);
