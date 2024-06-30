@@ -6,6 +6,7 @@
 #include <optional>
 #include <map>
 #include <vector>
+#include <iostream>
 
 template<typename T>
 class Trie {
@@ -31,6 +32,11 @@ private:
     // Helper function to perform insertion recursively
     void insertRecursive(TrieNode* node, std::string_view key, size_t depth, const T* ptr) {
         if (depth == key.length()) {
+            if(node == nullptr) {
+                std::cout << "Attempting insertion on null node!" << std::endl;
+                std::cout << std::flush << std::endl;
+                return; // Return if node is null (should not happen
+            }
             std::lock_guard lock(node->nodeMutex); // Lock this node
             node->dataVector.emplace_back(ptr);
             return;
