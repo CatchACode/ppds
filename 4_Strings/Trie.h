@@ -9,6 +9,7 @@
 #include <iostream>
 #include <shared_mutex>
 #include <unordered_map>
+#include <stack>
 
 template<typename T>
 class Trie {
@@ -24,12 +25,46 @@ private:
     TrieNode* root;
 
     // Helper function to recursively delete nodes
-    inline void recursiveDelete(TrieNode* node) {
+    inline void iterativeDelete(TrieNode* node) {
         if (node == nullptr) return;
-        for (auto& child : node->children) {
-            recursiveDelete(child.second);
+
+        std::stack<TrieNode*> nodes;
+        nodes.push(node);
+
+        // Parallelize using OpenMP
+        #pragma omp parallel
+        {
+            // Each thread will maintain its own stack of nodes to delete
+            std::stack<TrieNode*> localStack;
+
+            #pragma omp single nowait
+            {
+                while (!nodes.empty()) {
+                    TrieNode* currentNode = nodes.top();
+                    nodes.pop();
+
+                    // Push children to the local stack for parallel processing
+                    #pragma omp task firstprivate(currentNode)
+                    {
+                        for (auto& child : currentNode->children) {
+                            localStack.push(child.second);
+                        }
+                        delete currentNode;
+                    }
+                }
+            }
+
+            // Delete nodes in the local stack
+            while (!localStack.empty()) {
+                TrieNode* currentNode = localStack.top();
+                localStack.pop();
+
+                for (auto& child : currentNode->children) {
+                    localStack.push(child.second);
+                }
+                delete currentNode;
+            }
         }
-        delete node;
     }
 
     // Helper function to perform longest prefix match recursively and return a reference to the vector of data pointers
@@ -56,7 +91,7 @@ public:
     }
 
     ~Trie() {
-        recursiveDelete(root);
+        iterativeDelete(root);
     }
 
     // Insert a string_view and corresponding pointer into the Trie
