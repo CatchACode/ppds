@@ -102,8 +102,23 @@ public:
 
     // Insert a string_view and corresponding pointer into the Trie
     void insert(std::string_view key, const T* ptr) {
-        if(key.empty()) return;
-        insertRecursive(root, key, 0, ptr);
+        if (key.empty()) return;
+
+        TrieNode* currentNode = root;
+        for (size_t depth = 0; depth < key.length(); ++depth) {
+            char currentChar = key[depth];
+
+            std::unique_lock<std::mutex> lock(currentNode->nodeMutex);
+            if (currentNode->children.find(currentChar) == currentNode->children.end()) {
+                currentNode->children[currentChar] = new TrieNode();
+            }
+            TrieNode* nextNode = currentNode->children[currentChar];
+            lock.unlock();
+            currentNode = nextNode;
+        }
+
+        std::lock_guard<std::mutex> lock(currentNode->m_dataVector);
+        currentNode->dataVector.emplace_back(ptr);
     }
 
     // Search for an exact string_view in the Trie and return the first associated pointer
