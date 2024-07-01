@@ -22,7 +22,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set Optimization Flags
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC -fno-omit-frame-pointer -fno-inline")
+#set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -mtune=native -fPIC -flto -funroll-loops -fno-stack-protector -fno-math-errno -fno-exceptions -fno-rtti -ffast-math -ftree-vectorize -funswitch-loops -fprefetch-loop-arrays")
 set(CMAKE_CXX_FLAGS_RELEASE "-g -O2 -march=native -mtune=native -fPIC")
 
 set(PPDS_PROJECT_DIR "${CMAKE_SOURCE_DIR}/..")
@@ -55,10 +56,14 @@ endif()
 FetchContent_MakeAvailable(googletest)
 
 # Define the shared library
-add_library(${PROJECT_ROOT} SHARED Join.cpp)
+add_library(${PROJECT_ROOT} SHARED Join.cpp
+        TestTrie.cpp
+        Trie.cpp)
 
 # Define the executable target that uses the shared library
-add_executable(${PROJECT_EXECUTABLE} Join.cpp)
+add_executable(${PROJECT_EXECUTABLE} Join.cpp
+        TestTrie.cpp
+        Trie.cpp)
 
 # Link with Libraries
 find_package(OpenMP REQUIRED)
