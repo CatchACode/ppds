@@ -7,7 +7,7 @@
 #include <bitset>
 
 #include "Partitioning.h"
-#include "../4_Strings/TimerUtil.hpp"
+#include "TimerUtil.hpp"
 
 class TestPartitioning : public ::testing::Test {};
 
