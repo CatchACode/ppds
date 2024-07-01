@@ -69,7 +69,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
 
         size_t numChunks = (titleSpan.size() / MAX_HASHMAP_SIZE);
 
-        //#pragma omp parallel for
+        #pragma omp parallel for
         for(int i = 0; i < numChunks; ++i) {
             std::unordered_map<int32_t, const TitleRelation*> map;
             map.reserve(MAX_HASHMAP_SIZE);
