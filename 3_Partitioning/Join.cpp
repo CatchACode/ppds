@@ -15,7 +15,73 @@
 //#include "TimerUtil.hpp"
 #include "JoinUtils.hpp"
 #include <vector>
+#include <span>
+#include <unordered_map>
+#include <gtest/gtest.h>
+#include <mutex>
+#include "Partitioning.h"
+#include "TimerUtil.hpp"
+
+void inline buildMap(const std::span<const CastRelation*>& castSpan, std::unordered_map<int32_t, const CastRelation*>& map) {
+    //#pragma omp parallel for
+    for(const auto& record: castSpan) {
+        //#pragma omp critical
+        map[record->movieId] = record;
+    }
+}
+
+void probeMap(const std::span<const TitleRelation*> titleSpan, std::unordered_map<int32_t, const CastRelation*>& map,
+              std::vector<ResultRelation>& results) {
+    std::vector<std::pair<const CastRelation*, const TitleRelation*>> localResults;
+    #pragma omp parallel for
+    for(const auto& record:titleSpan) {
+        auto it = map.find(record->titleId);
+        if(it != map.end()) {
+            #pragma omp critical
+            localResults.emplace_back(it->second, record);
+        }
+    }
+    #pragma omp parallel for
+    for(const auto&[castPtr, titlePtr]: localResults) {
+        #pragma omp critical
+        results.emplace_back(createResultTuple(*castPtr, *titlePtr));
+    }
+}
+
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
-    return {};
+    auto [castPartitionIndexes, castPartitioned] = radixCastPartition(castRelation, numThreads);
+    auto [titlePartitionIndexes, titlePartitioned] = radixTitlePartition(titleRelation, numThreads);
+
+    std::vector<ResultRelation> results;
+    results.reserve(castRelation.size());
+    std::unordered_map<int32_t, const CastRelation*> map;
+    for(int i = 0; i < castPartitionIndexes.size(); ++i) {
+        auto castSpanStart = castPartitioned.begin() + castPartitionIndexes[i];
+        auto castSpanEnd =  (i == castPartitionIndexes.size() - 1 ? castPartitioned.end(): castPartitioned.begin() + castPartitionIndexes[i+1]);
+        std::span<const CastRelation*> castSpan(castSpanStart, castSpanEnd);
+
+        auto titleSpanStart = titlePartitioned.begin() + titlePartitionIndexes[i];
+        auto titleSpanEnd = (i == titlePartitionIndexes.size() - 1 ? titlePartitioned.end(): titlePartitioned.begin() + titlePartitionIndexes[i+1]);
+        std::span<const TitleRelation*> titleSpan(titleSpanStart, titleSpanEnd);
+
+        map.reserve(castSpan.size());
+        buildMap(castSpan, map);
+        probeMap(titleSpan, map, results);
+        map.clear();
+    }
+    std::cout << "results.size(): " << results.size() << '\n';
+    return std::move(results);
+}
+
+
+TEST(PartitioninJoinTest, TestJoin) {
+    const auto castRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_zipfian1gb.csv"));
+    const auto titleRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
+
+    Timer timer("Join");
+    timer.start();
+    auto results = performJoin(castRelation, titleRelation, 8);
+    timer.pause();
+    std::cout << "Timer: " << printString(timer) << std::endl;
 }

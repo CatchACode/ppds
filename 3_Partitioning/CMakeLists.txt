@@ -84,6 +84,7 @@ add_library(${PROJECT_ROOT} SHARED Join.cpp
         Partitioning.h
         ThreadPool.h
         TestPartitioning.cpp
+        Partitioning.cpp
 )
 
 # Define the executable target that uses the shared library
@@ -92,6 +93,7 @@ add_executable(${PROJECT_EXECUTABLE} Join.cpp
         Partitioning.h
         ThreadPool.h
         TestPartitioning.cpp
+        Partitioning.cpp
 )
 
 # Ensure the print_git_hash target runs before building the executable

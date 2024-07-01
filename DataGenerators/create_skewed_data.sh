@@ -27,9 +27,9 @@ half_mebi_byte=524288;
 twenty_mebi_byte=10485760;
 #default_output_size=12400;
 #default_output_size=1
-#default_output_size=$one_kibi_byte
+default_output_size=$one_kibi_byte
 #default_output_size=$half_mebi_byte
-default_output_size=$one_mebi_byte
+#default_output_size=$one_mebi_byte
 #default_output_size=$one_gebi_byte
 #default_output_size=$twenty_mebi_byte
 #default_output_size=$one_hundret_mebi_byte
@@ -38,10 +38,10 @@ fldr_name="data"
 echo "Creating the data files now..."
 cd generator_code
 # We require only one file for the title table, as we purely change cast_info
-#parallel python3 -m main --generator_type=Title --key_field_name="id" --output_file_size="$default_output_size" --output_file="../$fldr_name"/"title_info_uniform1mb.csv"
+parallel python3 -m main --generator_type=Title --key_field_name="id" --output_file_size="$default_output_size" --output_file="../$fldr_name"/"title_info_uniform1kb.csv"
 
 # Files for Throughput over Threads figure
-parallel python3 -m main --generator_type=Zipfian --output_file_size="$default_output_size" --output_file="../$fldr_name"/"cast_info_zipfian1mTest.csv"
+parallel python3 -m main --generator_type=Zipfian --output_file_size="$default_output_size" --output_file="../$fldr_name"/"cast_info_zipfian1kb.csv"
 
 cd ..
 
