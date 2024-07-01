@@ -21,6 +21,7 @@
 #include <mutex>
 #include "Partitioning.h"
 #include "TimerUtil.hpp"
+#include "generated_variables.h"
 
 void inline buildMap(const std::span<const TitleRelation*>& titleSpan, std::unordered_map<int32_t, const TitleRelation*>& map) {
     //#pragma omp parallel for
@@ -48,6 +49,8 @@ void probeMap(const std::span<const CastRelation*> titleSpan, std::unordered_map
     }
 }
 
+constexpr const size_t MAX_HASHMAP_SIZE = L2_CACHE_SIZE / (sizeof(int32_t) + sizeof(CastRelation*));
+
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRelation, const std::vector<TitleRelation>& titleRelation, int numThreads) {
     auto [castPartitionIndexes, castPartitioned] = radixCastPartition(castRelation, numThreads);
@@ -55,7 +58,6 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
 
     std::vector<ResultRelation> results;
     results.reserve(castRelation.size());
-    std::unordered_map<int32_t, const TitleRelation*> map;
     for(int i = 0; i < castPartitionIndexes.size(); ++i) {
         auto castSpanStart = castPartitioned.begin() + castPartitionIndexes[i];
         auto castSpanEnd =  (i == castPartitionIndexes.size() - 1 ? castPartitioned.end(): castPartitioned.begin() + castPartitionIndexes[i+1]);
@@ -65,10 +67,19 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
         auto titleSpanEnd = (i == titlePartitionIndexes.size() - 1 ? titlePartitioned.end(): titlePartitioned.begin() + titlePartitionIndexes[i+1]);
         std::span<const TitleRelation*> titleSpan(titleSpanStart, titleSpanEnd);
 
-        map.reserve(castSpan.size());
-        buildMap(titleSpan, map);
-        probeMap(castSpan, map, results);
-        map.clear();
+        size_t numChunks = (titleSpan.size() / MAX_HASHMAP_SIZE);
+
+        //#pragma omp parallel for
+        for(int i = 0; i < numChunks; ++i) {
+            std::unordered_map<int32_t, const TitleRelation*> map;
+            map.reserve(MAX_HASHMAP_SIZE);
+            auto chunkStart = titleSpan.begin() + i*MAX_HASHMAP_SIZE;
+            auto chunkEnd = chunkStart + std::min(std::distance(chunkStart, chunkStart + MAX_HASHMAP_SIZE), std::distance(chunkStart, titleSpan.end()));
+            auto chunk = std::span<const TitleRelation*>(chunkStart, chunkEnd);
+            buildMap(chunk, map);
+            probeMap(castSpan, map, results);
+            map.clear();
+        }
     }
     std::cout << "results.size(): " << results.size() << '\n';
     return std::move(results);
@@ -93,8 +104,8 @@ TEST(PartitioninJoinTest, TestJoin) {
 
 
 TEST(PartitionJoinTest, NestedLoopJoin) {
-    const auto castRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_zipfian1gb.csv"));
-    const auto titleRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
+    const auto castRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_zipfian1kb.csv"));
+    const auto titleRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1kb.csv"));
 
     std::vector<ResultRelation> results;
     for(const auto& castTuple: castRelation) {
