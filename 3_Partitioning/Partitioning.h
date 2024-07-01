@@ -7,7 +7,10 @@
 #include "JoinUtils.hpp"
 #include <omp.h>
 
-std::vector<CastRelation> radixCastPartition(const std::vector<CastRelation>& castRelation, int numThreads) {
+static std::vector<size_t> castPartitionIndexes, titlePartitionIndexes;
+
+
+std::vector<const CastRelation*> radixCastPartition(const std::vector<CastRelation>& castRelation, int numThreads) {
     omp_set_num_threads(numThreads);
     size_t n = castRelation.size();
     const size_t numBits = 3;
@@ -32,24 +35,26 @@ std::vector<CastRelation> radixCastPartition(const std::vector<CastRelation>& ca
             }
         }
     }
-
+    castPartitionIndexes = std::vector<size_t>(numBuckets);
+    castPartitionIndexes[0] = 0;
     for(int i = 1; i < numBuckets; ++i) {
        count[i] += count[i - 1];
+       castPartitionIndexes[i] = count[i - 1];
     }
-    std::vector<CastRelation> result(n);
+    std::vector<const CastRelation*> result(n);
 
     #pragma omp parallel for
     for(int i = castRelation.size() - 1; i >= 0; i--) {
         int position;
         #pragma omp atomic capture
         position = count[castRelation[i].castInfoId & mask]--;
-        result[position] = castRelation[i];
+        result[position] = &castRelation[i];
     }
 
     return std::move(result);
 }
 
-std::vector<TitleRelation> radixTitlePartition(const std::vector<TitleRelation>& titleRelation, int numThreads) {
+std::vector<const TitleRelation*> radixTitlePartition(const std::vector<TitleRelation>& titleRelation, int numThreads) {
     omp_set_num_threads(numThreads);
     size_t n = titleRelation.size();
     const size_t numBits = 3;
@@ -74,18 +79,20 @@ std::vector<TitleRelation> radixTitlePartition(const std::vector<TitleRelation>&
             }
         }
     }
-
+    titlePartitionIndexes = std::vector<size_t>(numBuckets);
+    titlePartitionIndexes[0] = 0;
     for(int i = 1; i < numBuckets; ++i) {
         count[i] += count[i - 1];
+        titlePartitionIndexes[i] = count[i-1];
     }
 
-    std::vector<TitleRelation> result(n);
+    std::vector<const TitleRelation*> result(n);
     #pragma omp parallel for
     for(int i = titleRelation.size() - 1; i >= 0; i--) {
         int position;
         #pragma omp atomic capture
         position = count[titleRelation[i].titleId & mask]--;
-        result[position] = titleRelation[i];
+        result[position] = &titleRelation[i];
     }
 
     return std::move(result);
