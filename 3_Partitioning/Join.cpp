@@ -22,23 +22,23 @@
 #include "Partitioning.h"
 #include "TimerUtil.hpp"
 
-void inline buildMap(const std::span<const CastRelation*>& castSpan, std::unordered_map<int32_t, const CastRelation*>& map) {
+void inline buildMap(const std::span<const TitleRelation*>& titleSpan, std::unordered_map<int32_t, const TitleRelation*>& map) {
     //#pragma omp parallel for
-    for(const auto& record: castSpan) {
+    for(const auto& record: titleSpan) {
         //#pragma omp critical
-        map[record->movieId] = record;
+        map[record->titleId] = record;
     }
 }
 
-void probeMap(const std::span<const TitleRelation*> titleSpan, std::unordered_map<int32_t, const CastRelation*>& map,
+void probeMap(const std::span<const CastRelation*> titleSpan, std::unordered_map<int32_t, const TitleRelation*>& map,
               std::vector<ResultRelation>& results) {
     std::vector<std::pair<const CastRelation*, const TitleRelation*>> localResults;
     #pragma omp parallel for
     for(const auto& record:titleSpan) {
-        auto it = map.find(record->titleId);
+        auto it = map.find(record->movieId);
         if(it != map.end()) {
             #pragma omp critical
-            localResults.emplace_back(it->second, record);
+            localResults.emplace_back(record, it->second);
         }
     }
     #pragma omp parallel for
@@ -55,7 +55,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
 
     std::vector<ResultRelation> results;
     results.reserve(castRelation.size());
-    std::unordered_map<int32_t, const CastRelation*> map;
+    std::unordered_map<int32_t, const TitleRelation*> map;
     for(int i = 0; i < castPartitionIndexes.size(); ++i) {
         auto castSpanStart = castPartitioned.begin() + castPartitionIndexes[i];
         auto castSpanEnd =  (i == castPartitionIndexes.size() - 1 ? castPartitioned.end(): castPartitioned.begin() + castPartitionIndexes[i+1]);
@@ -66,8 +66,8 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& castRel
         std::span<const TitleRelation*> titleSpan(titleSpanStart, titleSpanEnd);
 
         map.reserve(castSpan.size());
-        buildMap(castSpan, map);
-        probeMap(titleSpan, map, results);
+        buildMap(titleSpan, map);
+        probeMap(castSpan, map, results);
         map.clear();
     }
     std::cout << "results.size(): " << results.size() << '\n';
@@ -84,4 +84,25 @@ TEST(PartitioninJoinTest, TestJoin) {
     auto results = performJoin(castRelation, titleRelation, 8);
     timer.pause();
     std::cout << "Timer: " << printString(timer) << std::endl;
+    /*
+    for(const auto& result: results) {
+        std::cout << resultRelationToString(result) << '\n';
+    }
+     */
+}
+
+
+TEST(PartitionJoinTest, NestedLoopJoin) {
+    const auto castRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_zipfian1gb.csv"));
+    const auto titleRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
+
+    std::vector<ResultRelation> results;
+    for(const auto& castTuple: castRelation) {
+        for(const auto& titleTuple: titleRelation) {
+            if(castTuple.movieId == titleTuple.titleId) {
+                results.emplace_back(createResultTuple(castTuple, titleTuple));
+            }
+        }
+    }
+    std::cout << "results.size(): " << results.size() << '\n';
 }
