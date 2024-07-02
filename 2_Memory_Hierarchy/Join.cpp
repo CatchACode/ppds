@@ -33,11 +33,11 @@ protected:
     const std::vector<TitleRelation> rightRelationSorted;
 
     void SetUp() override {
-        auto l_v = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_matching.csv"));
+        auto l_v = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_no_matches.csv"));
         const_cast<std::vector<CastRelation>&>(leftRelation) = l_v;
         sortCastRelations(l_v);
         const_cast<std::vector<CastRelation>&>(leftRelationSorted) = l_v;
-        auto r_v = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_matching.csv"));
+        auto r_v = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform.csv"));
         const_cast<std::vector<TitleRelation>&>(rightRelation) = r_v;
         sortTitleRelations(r_v);
         const_cast<std::vector<TitleRelation>&>(rightRelationSorted) = r_v;

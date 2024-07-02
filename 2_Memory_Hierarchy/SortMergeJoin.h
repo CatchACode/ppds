@@ -97,15 +97,15 @@ void inline processChunk(const ChunkCastRelation& chunkCastRelation, const Chunk
     std::forward_iterator auto l_it = chunkCastRelation.start;
     int32_t currentId = 0;
     size_t index = 0;
-
     while (l_it != chunkCastRelation.end && r_it != chunkTitleRelation.end) {
         r_it = std::ranges::lower_bound(
-                chunkTitleRelation.start, chunkTitleRelation.end,
-                TitleRelation{.titleId = chunkCastRelation.start->movieId},
+                r_it, chunkTitleRelation.end,
+                TitleRelation{.titleId = l_it->movieId},
                 [](const TitleRelation &a, const TitleRelation &b) {
                     return a.titleId < b.titleId;
                 }
-        ); // a Binary Search, as the spaces between matches might be very small!
+        );
+
         if (l_it->movieId < r_it->titleId) {
             ++l_it;
         } else if (l_it->movieId > r_it->titleId) {
@@ -209,9 +209,6 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     auto chunkStart = leftRelation.begin();
     auto chunkEnd = leftRelation.begin();
     while(chunkEnd != leftRelation.end()) {
-        if(chunkStart->movieId > maxTitleId) {
-            break; // We have passed available chunks with data that may contain a match
-        }
         if((long unsigned int)std::distance(chunkEnd, leftRelation.end()) > chunkSize) {
             chunkEnd = std::next(chunkEnd, chunkSize);
         } else {
