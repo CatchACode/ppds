@@ -33,24 +33,28 @@
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
     omp_set_num_threads(numThreads);
     std::cout << "TitleInfo min: " << rightRelation.front().titleId << " max: " << rightRelation.back().titleId << '\n';
+    std::size_t maxCastMovieId = 0;
+    std::size_t minCastMovieId = std::numeric_limits<std::size_t>::max();
     std::vector<ResultRelation> results;
     results.reserve(leftRelation.size());
 
-    std::size_t chunkSize = rightRelation.size() / numThreads;
+    std::size_t chunkSize = (rightRelation.size() / numThreads) + 1;
 
     //#pragma omp parallel
     {
         #pragma omp parallel for
         for(std::size_t thread = 0; thread < numThreads; ++thread) {
             std::unordered_map<int32_t, const TitleRelation*> map;
-            map.reserve(rightRelation.size() / numThreads);
+            map.reserve(chunkSize);
 
             std::size_t start = thread * chunkSize;
-            std::size_t end = std::min(start + chunkSize, rightRelation.size());
+            std::size_t end = start + chunkSize < rightRelation.size() ? start + chunkSize : rightRelation.size();
             for(std::size_t i = start; i < end; ++i) {
                 map[rightRelation[i].titleId] = &rightRelation[i];
             }
             for(const auto& record : leftRelation) {
+                maxCastMovieId = std::max(maxCastMovieId, (size_t)record.movieId);
+                minCastMovieId = std::min(minCastMovieId, (size_t)record.movieId);
                 auto it = map.find(record.movieId);
                 if (it != map.end()) {
                     #pragma omp critical
@@ -59,6 +63,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
             }
         }
     }
+    std::cout << "Max CastMovieId: " << maxCastMovieId << " Min CastMovieId: " << minCastMovieId << '\n';
     std::cout << "Results size: " << results.size() << std::endl;
     return results;
 }
