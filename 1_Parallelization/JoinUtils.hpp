@@ -21,19 +21,6 @@
 #include <iostream>
 #include <vector>
 
-#ifndef L1_CACHE_SIZE
-#define L1_CACHE_SIZE 65526
-#endif
-#ifndef L2_CACHE_SIZE
-#define L2_CACHE_SIZE 262144
-#endif
-#ifndef L3_CACHE_SIZE
-#define L3_CACHE_SIZE 2097152
-#endif
-#ifndef BLOCK_SIZE
-#define BLOCK_SIZE 4096
-#endif
-
 //==--------------------------------------------------------------------==//
 //==------------------ RELATION & RELATION UTILITY----------------------==//
 //==--------------------------------------------------------------------==//
@@ -367,13 +354,17 @@ inline bool compareCastRelations(const CastRelation& a, const CastRelation& b) {
     return a.movieId < b.movieId;
 }
 
+constexpr const std::size_t L1_CACHE_SIZE = 256 * 1024 / 8;
+constexpr const std::size_t L2_CACHE_SIZE = 8 * 1024 * 1024 / 8;
+constexpr const std::size_t L3_CACHE_SIZE = 16 * 1024 * 1024;
+
+
 void inline printCacheSizes() {
     std::cout << "L1 cache size: " << L1_CACHE_SIZE << std::endl;
     std::cout << "L2 cache size: " << L2_CACHE_SIZE << std::endl;
     std::cout << "L3 cache size: " << L3_CACHE_SIZE << std::endl;
     std::cout << "Hash map size: " << HASHMAP_SIZE << std::endl;
     std::cout << "Sizeof(CastRelation*): " << sizeof(CastRelation*) << " Sizeof(uint32_t): " << sizeof(uint32_t) << std::endl;
-    std::cout << "CPU: " << CPU_NAME << std::endl;
 }
 
 

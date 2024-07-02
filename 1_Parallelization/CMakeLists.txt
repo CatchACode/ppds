@@ -121,19 +121,11 @@ target_include_directories(ParallelismExecutable PRIVATE ${gtest_SOURCE_DIR}/inc
 target_compile_definitions(1_Parallelization PRIVATE
     DATA_DIRECTORY="${DATA_DIRECTORY}"
     SOURCE_DIRECTORY="${SOURCE_DIRECTORY}"
-        CPU_NAME="${CPU_NAME}"
-        L1_CACHE_SIZE=${L1_CACHE_SIZE}
-        L2_CACHE_SIZE=${L2_CACHE_SIZE}
-        L3_CACHE_SIZE=${L3_CACHE_SIZE}
         BLOCK_SIZE=${BLOCK_SIZE}
     )
 
 target_compile_definitions(ParallelismExecutable PRIVATE
     DATA_DIRECTORY="${DATA_DIRECTORY}"
     SOURCE_DIRECTORY="${SOURCE_DIRECTORY}"
-        CPU_NAME="${CPU_NAME}"
-        L1_CACHE_SIZE=${L1_CACHE_SIZE}
-        L2_CACHE_SIZE=${L2_CACHE_SIZE}
-        L3_CACHE_SIZE=${L3_CACHE_SIZE}
         BLOCK_SIZE=${BLOCK_SIZE}
     )
