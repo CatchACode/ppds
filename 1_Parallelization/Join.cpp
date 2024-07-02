@@ -33,6 +33,7 @@
 std::pair<int32_t, int32_t> minMaxCast(const std::vector<CastRelation>& leftRelation) {
     int32_t min = std::numeric_limits<int32_t>::max();
     int32_t max = std::numeric_limits<int32_t>::min();
+    #pragma omp parallel for reduction(min:min) reduction(max:max)
     for(const auto& record : leftRelation) {
         min = std::min(min, record.movieId);
         max = std::max(max, record.movieId);
@@ -43,6 +44,7 @@ std::pair<int32_t, int32_t> minMaxCast(const std::vector<CastRelation>& leftRela
 std::pair<int32_t, int32_t> minMaxTitle(const std::vector<TitleRelation>& rightRelation) {
     int32_t min = std::numeric_limits<int32_t>::max();
     int32_t max = std::numeric_limits<int32_t>::min();
+    #pragma omp parallel for reduction(min:min) reduction(max:max)
     for(const auto& record : rightRelation) {
         min = std::min(min, record.titleId);
         max = std::max(max, record.titleId);
@@ -59,6 +61,8 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
     std::vector<ResultRelation> results;
     results.reserve(leftRelation.size());
 
+    std::cout << "Titles are sorted? " << std::ranges::is_sorted(rightRelation.begin(), rightRelation.end(), [](const auto& a, const auto& b) {return a.titleId < b.titleId;}) << '\n';
+
     std::size_t chunkSize = (rightRelation.size() / numThreads) + 1;
 
     //#pragma omp parallel
@@ -70,6 +74,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
 
             std::size_t start = thread * chunkSize;
             std::size_t end = start + chunkSize < rightRelation.size() ? start + chunkSize : rightRelation.size();
+
             for(std::size_t i = start; i < end; ++i) {
                 map[rightRelation[i].titleId] = &rightRelation[i];
             }
