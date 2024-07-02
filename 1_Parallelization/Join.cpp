@@ -30,12 +30,32 @@
 #include <span>
 //#include <experimental/simd>
 
+std::pair<int32_t, int32_t> minMaxCast(const std::vector<CastRelation>& leftRelation) {
+    int32_t min = std::numeric_limits<int32_t>::max();
+    int32_t max = std::numeric_limits<int32_t>::min();
+    for(const auto& record : leftRelation) {
+        min = std::min(min, record.movieId);
+        max = std::max(max, record.movieId);
+    }
+    return {min, max};
+}
+
+std::pair<int32_t, int32_t> minMaxTitle(const std::vector<TitleRelation>& rightRelation) {
+    int32_t min = std::numeric_limits<int32_t>::max();
+    int32_t max = std::numeric_limits<int32_t>::min();
+    for(const auto& record : rightRelation) {
+        min = std::min(min, record.titleId);
+        max = std::max(max, record.titleId);
+    }
+    return {min, max};
+}
+
+
+
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
     omp_set_num_threads(numThreads);
-    int32_t maxTitleId = std::numeric_limits<int32_t>::min();
-    int32_t minTitleId = std::numeric_limits<int32_t>::max();
-    int32_t maxCastMovieId = std::numeric_limits<int32_t>::min();
-    int32_t minCastMovieId = std::numeric_limits<int32_t>::max();
+    const auto [minCastMovieId, maxCastMovieId] = minMaxCast(leftRelation);
+    const auto [minTitleId, maxTitleId] = minMaxTitle(rightRelation);
     std::vector<ResultRelation> results;
     results.reserve(leftRelation.size());
 
@@ -52,12 +72,8 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
             std::size_t end = start + chunkSize < rightRelation.size() ? start + chunkSize : rightRelation.size();
             for(std::size_t i = start; i < end; ++i) {
                 map[rightRelation[i].titleId] = &rightRelation[i];
-                maxTitleId = std::max(maxTitleId, rightRelation[i].titleId);
-                minTitleId = std::min(minTitleId, rightRelation[i].titleId);
             }
             for(const auto& record : leftRelation) {
-                maxCastMovieId = std::max(maxCastMovieId, record.movieId);
-                minCastMovieId = std::min(minCastMovieId, record.movieId);
                 auto it = map.find(record.movieId);
                 if (it != map.end()) {
                     #pragma omp critical
