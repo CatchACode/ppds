@@ -55,7 +55,6 @@ std::pair<int32_t, int32_t> minMaxTitle(const std::vector<TitleRelation>& rightR
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
     omp_set_num_threads(numThreads);
     std::vector<ResultRelation> results;
-    results.reserve(leftRelation.size());
     std::size_t chunkSize = (rightRelation.size() / numThreads) + 1;
     #pragma omp parallel for
     for(std::size_t thread = 0; thread < numThreads; ++thread) {
