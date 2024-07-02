@@ -358,13 +358,13 @@ constexpr const std::size_t L1_CACHE_SIZE = 256 * 1024 / 8;
 constexpr const std::size_t L2_CACHE_SIZE = 8 * 1024 * 1024 / 8;
 constexpr const std::size_t L3_CACHE_SIZE = 16 * 1024 * 1024;
 
+constexpr const std::size_t MAX_HASH_MAP_SIZE = L2_CACHE_SIZE / (sizeof(CastRelation*) + sizeof(int32_t));
+
 
 void inline printCacheSizes() {
     std::cout << "L1 cache size: " << L1_CACHE_SIZE << std::endl;
     std::cout << "L2 cache size: " << L2_CACHE_SIZE << std::endl;
     std::cout << "L3 cache size: " << L3_CACHE_SIZE << std::endl;
-    std::cout << "Hash map size: " << HASHMAP_SIZE << std::endl;
-    std::cout << "Sizeof(CastRelation*): " << sizeof(CastRelation*) << " Sizeof(uint32_t): " << sizeof(uint32_t) << std::endl;
 }
 
 

@@ -34,17 +34,41 @@
 static int test_counter = 0;
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
-    //std::cout << "Running test: " << test_counter++ << std::endl;
-    //printCacheSizes();
-    return performCacheSizedThreadedHashJoin(leftRelation, rightRelation, numThreads);
-    //return performCHJ_MAP(leftRelation, rightRelation, numThreads);
+    omp_set_num_threads(numThreads);
+    std::vector<ResultRelation> results;
+    results.reserve(leftRelation.size());
+
+    std::size_t chunkSize = rightRelation.size() / numThreads;
+
+    #pragma omp parallel
+    {
+        #pragma omp for schedule(static)
+        for(std::size_t thread = 0; thread < numThreads; ++thread) {
+            std::unordered_map<int32_t, const TitleRelation*> map;
+            map.reserve(MAX_HASH_MAP_SIZE);
+
+            std::size_t start = thread * chunkSize;
+            std::size_t end = std::min(start + chunkSize, rightRelation.size());
+            for(std::size_t i = start; i < end; ++i) {
+                map[rightRelation[i].titleId] = &rightRelation[i];
+            }
+            for(const auto& record : leftRelation) {
+                auto it = map.find(record.movieId);
+                if (it != map.end()) {
+                    #pragma omp critical
+                    results.emplace_back(createResultTuple(record, *it->second));
+                }
+            }
+        }
+    }
+    return results;
 }
 
 
 
 TEST(ParallelizationTest, TestJoiningTuples) {
-    const auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_matching.csv"));
-    const auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_matching.csv"));
+    const auto leftRelation = loadCastRelation(DATA_DIRECTORY + std::string("cast_info_uniform1gb.csv"));
+    const auto rightRelation = loadTitleRelation(DATA_DIRECTORY + std::string("title_info_uniform1gb.csv"));
     printCacheSizes();
 
     std::cout << "Sizeof leftRelation: " << leftRelation.size()*sizeof(CastRelation) / (1024*1024) << '\n';
@@ -55,8 +79,9 @@ TEST(ParallelizationTest, TestJoiningTuples) {
     timer.start();
 
     //auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation, 8); // 8457
-    auto resultTuples = performCacheSizedThreadedHashJoin(leftRelation, rightRelation, 2); //5797
+    //auto resultTuples = performCacheSizedThreadedHashJoin(leftRelation, rightRelation, 2); //5797
     //auto resultTuples = performCHJ_MAP(leftRelation, rightRelation, 8); // 4996.84
+    //auto resultTuples = performJoin(leftRelation, rightRelation, 8); // 4996.84
 
     timer.pause();
 
