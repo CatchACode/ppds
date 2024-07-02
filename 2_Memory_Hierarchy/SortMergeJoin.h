@@ -105,6 +105,9 @@ void inline processChunk(const ChunkCastRelation& chunkCastRelation, const Chunk
                     return a.titleId < b.titleId;
                 }
         );
+        if(r_it == chunkTitleRelation.end) { // lower bound returns end if no lower bound is found
+            break;
+        }
 
         if (l_it->movieId < r_it->titleId) {
             ++l_it;
@@ -168,9 +171,9 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     if(leftRelation.size() < 20000) {
         return performSortMergeJoin(leftRelation, rightRelation);
     }
-    int32_t maxTitleId = rightRelation[rightRelation.size()].titleId;
+    int32_t maxTitleId = rightRelation[rightRelation.size() - 1].titleId;
     int32_t minTitleId = rightRelation[0].titleId;
-    int32_t maxMovieId = leftRelation[leftRelation.size()].movieId;
+    int32_t maxMovieId = leftRelation[leftRelation.size() - 1].movieId;
     int32_t minMovieId = leftRelation[0].movieId;
     std::cout << "CastRelation Min: " << minMovieId << " Max: " << maxMovieId << '\n';
     std::cout << "TitleRelation Min: " << minTitleId << " Max: " << maxTitleId << '\n';
