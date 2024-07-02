@@ -31,82 +31,25 @@ if(NOT DEFINED SOURCE_DIRECTORY)
     set(SOURCE_DIRECTORY "${CMAKE_SOURCE_DIR}")
 endif()
 
+# Get the current Git commit hash
+find_package(Git QUIET)
+
+if(GIT_FOUND)
+    execute_process(
+            COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            OUTPUT_VARIABLE GIT_COMMIT_HASH
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+else()
+    set(GIT_COMMIT_HASH "unknown")
+endif()
+
+
+
 # Determine block size
 # Might not be possible for static library...
 set(BLOCK_SIZE 4096)
-
-set(CACHE_SCRIPT_PATH "${PPDS_PROJECT_DIR}/Util/cache_sizes.py")
-
-# Set cache sizes
-set(L1_CACHE_SIZE 0)
-set(L2_CACHE_SIZE 0)
-set(L3_CACHE_SIZE 0)
-
-execute_process(
-        COMMAND python3 ${CACHE_SCRIPT_PATH} 1
-        RESULT_VARIABLE SCRIPT_RESULT
-        OUTPUT_VARIABLE SCRIPT_OUTPUT
-        ERROR_VARIABLE SCRIPT_ERROR
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-message(STATUS "Python script result: ${SCRIPT_RESULT}")
-message(STATUS "Output from Python script: ${SCRIPT_OUTPUT}")
-message(STATUS "Error from Python script: ${SCRIPT_ERROR}")
-set(L1_CACHE_SIZE ${SCRIPT_OUTPUT})
-
-execute_process(
-        COMMAND python3 ${CACHE_SCRIPT_PATH} 2
-        RESULT_VARIABLE SCRIPT_RESULT
-        OUTPUT_VARIABLE SCRIPT_OUTPUT
-        ERROR_VARIABLE SCRIPT_ERROR
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-message(STATUS "Python script result: ${SCRIPT_RESULT}")
-message(STATUS "Output from Python script: ${SCRIPT_OUTPUT}")
-message(STATUS "Error from Python script: ${SCRIPT_ERROR}")
-set(L2_CACHE_SIZE ${SCRIPT_OUTPUT})
-
-execute_process(
-        COMMAND python3 ${CACHE_SCRIPT_PATH} 3
-        RESULT_VARIABLE SCRIPT_RESULT
-        OUTPUT_VARIABLE SCRIPT_OUTPUT
-        ERROR_VARIABLE SCRIPT_ERROR
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-message(STATUS "Python script result: ${SCRIPT_RESULT}")
-message(STATUS "Output from Python script: ${SCRIPT_OUTPUT}")
-message(STATUS "Error from Python script: ${SCRIPT_ERROR}")
-set(L3_CACHE_SIZE ${SCRIPT_OUTPUT})
-
-execute_process(
-        COMMAND python3 ${CACHE_SCRIPT_PATH} 4
-        RESULT_VARIABLE SCRIPT_RESULT
-        OUTPUT_VARIABLE SCRIPT_OUTPUT
-        ERROR_VARIABLE SCRIPT_ERROR
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-message(STATUS "Python script result: ${SCRIPT_RESULT}")
-message(STATUS "Output from Python script: ${SCRIPT_OUTPUT}")
-message(STATUS "Error from Python script: ${SCRIPT_ERROR}")
-set(CPU_NAME ${SCRIPT_OUTPUT})
-
-# Pass the block size to the source code as a preprocessor definition
-message("Block Size is ${BLOCK_SIZE}")
-message("Data directory is ${DATA_DIRECTORY}")
-message("L1 cache size is ${L1_CACHE_SIZE}")
-message("L2 cache size is ${L2_CACHE_SIZE}")
-message("L3 cache size is ${L3_CACHE_SIZE}")
-message("CPU is ${CPU_NAME}")
-
-#file(WRITE "${CMAKE_SOURCE_DIR}/generated_variables.h" "#pragma once\n")
-#file(APPEND "${CMAKE_SOURCE_DIR}/generated_variables.h" "static constexpr const size_t L1_CACHE_SIZE = ${L1_CACHE_SIZE};\n")
-#file(APPEND "${CMAKE_SOURCE_DIR}/generated_variables.h" "static constexpr const size_t L2_CACHE_SIZE = ${L2_CACHE_SIZE};\n")
-#file(APPEND "${CMAKE_SOURCE_DIR}/generated_variables.h" "static constexpr const size_t L3_CACHE_SIZE = ${L3_CACHE_SIZE};\n")
-#file(APPEND "${CMAKE_SOURCE_DIR}/generated_variables.h" "static constexpr const size_t BLOCK_SIZE = ${BLOCK_SIZE};\n")
-#file(APPEND "${CMAKE_SOURCE_DIR}/generated_variables.h" "static constexpr const char* CPU_NAME = \"${CPU_NAME}\\0\";\n")
-
-
-
 
 # Load gtest
 include(FetchContent)
