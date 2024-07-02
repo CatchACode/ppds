@@ -30,9 +30,6 @@
 #include <span>
 //#include <experimental/simd>
 
-
-static int test_counter = 0;
-
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
     omp_set_num_threads(numThreads);
     std::vector<ResultRelation> results;
@@ -81,7 +78,7 @@ TEST(ParallelizationTest, TestJoiningTuples) {
     //auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation, 8); // 8457
     //auto resultTuples = performCacheSizedThreadedHashJoin(leftRelation, rightRelation, 2); //5797
     //auto resultTuples = performCHJ_MAP(leftRelation, rightRelation, 8); // 4996.84
-    //auto resultTuples = performJoin(leftRelation, rightRelation, 8); // 4996.84
+    auto resultTuples = performJoin(leftRelation, rightRelation, 8); // 4996.84
 
     timer.pause();
 
