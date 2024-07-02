@@ -52,57 +52,30 @@ std::pair<int32_t, int32_t> minMaxTitle(const std::vector<TitleRelation>& rightR
     return {min, max};
 }
 
-
-
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
     omp_set_num_threads(numThreads);
-    const auto minMaxCast1 = minMaxCast(leftRelation);
-    const auto minMaxTitle1 = minMaxTitle(rightRelation);
-    const auto minCastMovieId = minMaxCast1.first;
-    const auto maxCastMovieId = minMaxCast1.second;
-    const auto minTitleId = minMaxTitle1.first;
-    const auto maxTitleId = minMaxTitle1.second;
-
     std::vector<ResultRelation> results;
     results.reserve(leftRelation.size());
-
-    bool titleSorted = std::ranges::is_sorted(rightRelation.begin(), rightRelation.end(), [](const auto& a, const auto& b) {return a.titleId < b.titleId;});
-
-
     std::size_t chunkSize = (rightRelation.size() / numThreads) + 1;
+    #pragma omp parallel for
+    for(std::size_t thread = 0; thread < numThreads; ++thread) {
+        std::unordered_map<int32_t, const TitleRelation*> map;
+        map.reserve(chunkSize);
 
-    //#pragma omp parallel
-    {
-        #pragma omp parallel for
-        for(std::size_t thread = 0; thread < numThreads; ++thread) {
-            std::unordered_map<int32_t, const TitleRelation*> map;
-            map.reserve(chunkSize);
-
-            std::size_t start = thread * chunkSize;
-            std::size_t end = start + chunkSize < rightRelation.size() ? start + chunkSize : rightRelation.size();
-            if(titleSorted && (rightRelation[start].titleId > maxCastMovieId)) {
-                std::cout << "Skipping Chunk\n";
-                continue;
-            }
-            if(titleSorted && (rightRelation[end].titleId < minCastMovieId)) {
-                std::cout << "Skipping Chunk\n";
-                continue;
-            }
-
-            for(std::size_t i = start; i < end; ++i) {
-                map[rightRelation[i].titleId] = &rightRelation[i];
-            }
-            for(const auto& record : leftRelation) {
-                auto it = map.find(record.movieId);
-                if (it != map.end()) {
-                    #pragma omp critical
-                    results.emplace_back(createResultTuple(record, *it->second));
-                }
+        std::size_t start = thread * chunkSize;
+        std::size_t end = start + chunkSize < rightRelation.size() ? start + chunkSize : rightRelation.size();
+        for(std::size_t i = start; i < end; ++i) {
+            map[rightRelation[i].titleId] = &rightRelation[i];
+        }
+        for(const auto& record : leftRelation) {
+            auto it = map.find(record.movieId);
+            if (it != map.end()) {
+                #pragma omp critical
+                results.emplace_back(createResultTuple(record, *it->second));
             }
         }
     }
-    std::cout << "Max CastMovieId: " << maxCastMovieId << " Min CastMovieId: " << minCastMovieId << '\n';
-    std::cout << "Max TitleId: " << maxTitleId << " Min TitleId: " << minTitleId << '\n';
+
     std::cout << "Results size: " << results.size() << std::endl;
     return results;
 }
