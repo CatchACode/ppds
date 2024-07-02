@@ -32,6 +32,7 @@
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
     omp_set_num_threads(numThreads);
+    std::cout << "TitleInfo min: " << rightRelation.front().titleId << " max: " << rightRelation.back().titleId << '\n';
     std::vector<ResultRelation> results;
     results.reserve(leftRelation.size());
 
@@ -60,6 +61,10 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
     }
     std::cout << "Results size: " << results.size() << std::endl;
     return results;
+}
+
+TEST(ParallelizationTest, TestBullshit) {
+
 }
 
 
