@@ -37,12 +37,12 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
 
     std::size_t chunkSize = rightRelation.size() / numThreads;
 
-    #pragma omp parallel
+    //#pragma omp parallel
     {
-        #pragma omp for schedule(static)
+        #pragma omp parallel for
         for(std::size_t thread = 0; thread < numThreads; ++thread) {
             std::unordered_map<int32_t, const TitleRelation*> map;
-            map.reserve(MAX_HASH_MAP_SIZE);
+            map.reserve(rightRelation.size() / numThreads);
 
             std::size_t start = thread * chunkSize;
             std::size_t end = std::min(start + chunkSize, rightRelation.size());
@@ -58,6 +58,7 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
             }
         }
     }
+    std::cout << "Results size: " << results.size() << std::endl;
     return results;
 }
 
@@ -76,9 +77,9 @@ TEST(ParallelizationTest, TestJoiningTuples) {
     timer.start();
 
     //auto resultTuples = performThreadedSortJoin(leftRelation, rightRelation, 8); // 8457
-    //auto resultTuples = performCacheSizedThreadedHashJoin(leftRelation, rightRelation, 2); //5797
+    //auto resultTuples = performCacheSizedThreadedHashJoin(leftRelation, rightRelation, 8); //5797
     //auto resultTuples = performCHJ_MAP(leftRelation, rightRelation, 8); // 4996.84
-    auto resultTuples = performJoin(leftRelation, rightRelation, 8); // 4996.84
+    auto resultTuples = performJoin(leftRelation, rightRelation, 6); // 4996.84
 
     timer.pause();
 
