@@ -178,7 +178,7 @@ std::vector<ResultRelation> performThreadedSortJoin(const std::vector<CastRelati
     std::cout << "CastRelation Min: " << minMovieId << " Max: " << maxMovieId << '\n';
     std::cout << "TitleRelation Min: " << minTitleId << " Max: " << maxTitleId << '\n';
     if(maxMovieId < minTitleId || maxTitleId < minMovieId) {
-        return std::vector<ResultRelation>();
+        return {};
     }
     const std::size_t chunkSize = (leftRelation.size() / numThreads) > 0 ? leftRelation.size() / numThreads: leftRelation.size();
     //std::vector<ResultRelation> results(leftRelation.size());
