@@ -56,12 +56,18 @@ std::pair<int32_t, int32_t> minMaxTitle(const std::vector<TitleRelation>& rightR
 
 std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRelation, const std::vector<TitleRelation>& rightRelation, int numThreads = std::jthread::hardware_concurrency()) {
     omp_set_num_threads(numThreads);
-    const auto [minCastMovieId, maxCastMovieId] = minMaxCast(leftRelation);
-    const auto [minTitleId, maxTitleId] = minMaxTitle(rightRelation);
+    const auto minMaxCast1 = minMaxCast(leftRelation);
+    const auto minMaxTitle1 = minMaxTitle(rightRelation);
+    const auto minCastMovieId = minMaxCast1.first;
+    const auto maxCastMovieId = minMaxCast1.second;
+    const auto minTitleId = minMaxTitle1.first;
+    const auto maxTitleId = minMaxTitle1.second;
+
     std::vector<ResultRelation> results;
     results.reserve(leftRelation.size());
 
-    std::cout << "Titles are sorted? " << std::ranges::is_sorted(rightRelation.begin(), rightRelation.end(), [](const auto& a, const auto& b) {return a.titleId < b.titleId;}) << '\n';
+    bool titleSorted = std::ranges::is_sorted(rightRelation.begin(), rightRelation.end(), [](const auto& a, const auto& b) {return a.titleId < b.titleId;});
+
 
     std::size_t chunkSize = (rightRelation.size() / numThreads) + 1;
 
@@ -74,6 +80,14 @@ std::vector<ResultRelation> performJoin(const std::vector<CastRelation>& leftRel
 
             std::size_t start = thread * chunkSize;
             std::size_t end = start + chunkSize < rightRelation.size() ? start + chunkSize : rightRelation.size();
+            if(titleSorted && (rightRelation[start].titleId > maxCastMovieId)) {
+                std::cout << "Skipping Chunk\n";
+                continue;
+            }
+            if(titleSorted && (rightRelation[end].titleId < minCastMovieId)) {
+                std::cout << "Skipping Chunk\n";
+                continue;
+            }
 
             for(std::size_t i = start; i < end; ++i) {
                 map[rightRelation[i].titleId] = &rightRelation[i];
