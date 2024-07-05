@@ -133,30 +133,10 @@ inline void hashJoinMap(std::span<CastRelation> leftRelation, std::span<TitleRel
     }
     std::vector<std::pair<const CastRelation*, const TitleRelation*>> localResults;
     localResults.reserve(leftRelation.size());
-    std::unordered_map<int32_t, const TitleRelation*> map;
-    map.reserve(MAX_HASHMAP_SIZE);
-    auto chunkStart = rightRelation.begin();
-    auto chunkEnd = rightRelation.begin();
-    while(chunkEnd != rightRelation.end()) {
-        if(std::distance(chunkEnd, rightRelation.end()) > MAX_HASHMAP_SIZE) {
-            chunkEnd = std::next(chunkEnd, MAX_HASHMAP_SIZE);
-        } else {
-            chunkEnd = rightRelation.end();
-        }
-        const std::span<TitleRelation> mapSpan(chunkStart, chunkEnd);
-        buildMap(std::span<TitleRelation>(chunkStart, chunkEnd), map);
-        chunkProcessing(leftRelation, map, localResults);
-        //writeLocalResults(localResults, results, m_results);
-        //map.clear();
-        chunkStart = chunkEnd;
-    }
-
-    /*
     std::unordered_map<int32_t, const TitleRelation *> map;
     map.reserve(rightRelation.size());
     buildMap(rightRelation, map);
     chunkProcessing(leftRelation, map, localResults);
-    */
     writeLocalResults(localResults, results, m_results);
 }
 
